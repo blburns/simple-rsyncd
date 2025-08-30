@@ -1,0 +1,308 @@
+# Build directories
+build/
+dist/
+packaging/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!cmake/*.cmake.in
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+simple-rsyncd*
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+
+# Package files
+*.tar.gz
+*.tar.bz2
+*.zip
+*.deb
+*.rpm
+*.dmg
+*.pkg
+
+# Test coverage
+coverage/
+*.gcov
+*.gcda
+*.gcno
+
+# Valgrind output
+*.valgrind
+
+# Dependencies
+vendor/
+third_party/
+
+# Configuration files with sensitive data
+*.conf
+!*.conf.example
+*.key
+*.crt
+*.pem
+users
+keys/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Documentation build
+docs/_build/
+docs/html/
+docs/latex/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Node modules (if any build tools use Node.js)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Rust (if any Rust components)
+target/
+Cargo.lock
+
+# Go (if any Go components)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Java (if any Java components)
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# Scala (if any Scala components)
+*.class
+*.jar
+
+# Kotlin (if any Kotlin components)
+*.class
+*.jar
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Bazel
+bazel-*
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose*.yml
+
+# Kubernetes
+*.yaml
+*.yml
+!deployment/**/*.yaml
+!deployment/**/*.yml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Ansible
+*.retry
+
+# Vagrant
+.vagrant/
+
+# Virtual machines
+*.vmdk
+*.vdi
+*.vbox
+*.vmx
+
+# Backup and archive
+*.tar
+*.gz
+*.bz2
+*.xz
+*.7z
+*.zip
+*.rar
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache
+.cache/
+cache/
+
+# Local development
+local/
+dev/
+development/
+
+# Production
+prod/
+production/
+
+# Staging
+staging/
+stage/
+
+# Testing
+test-results/
+test-output/
+.coverage
+.pytest_cache/
+
+# Profiling
+*.prof
+*.out
+
+# Memory dumps
+*.dmp
+*.hprof
+
+# Core dumps
+core.*
+
+# Lock files
+*.lock
+package-lock.json
+yarn.lock
+Gemfile.lock
+Pipfile.lock
+poetry.lock
+
+# Generated documentation
+docs/generated/
+docs/api/
+
+# API documentation
+swagger.json
+openapi.yaml
+openapi.yml
+
+# SSL certificates and keys
+ssl/
+certs/
+*.p12
+*.pfx
+
+# SSH keys
+*.pub
+id_rsa
+id_ed25519
+
+# GPG keys
+*.gpg
+*.asc
+
+# Passwords and secrets
+secrets/
+*.secret
+*.key
+*.pwd
+
+# User data
+data/
+uploads/
+downloads/
+
+# Runtime data
+run/
+var/
+tmp/
+
+# System files
+/etc/
+/var/
+/usr/
