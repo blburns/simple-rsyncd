@@ -1,0 +1,69 @@
+[Unit]
+Description=Simple RSync Daemon
+Documentation=man:simple-rsyncd(8)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/simple-rsyncd start --config /etc/simple-rsyncd/rsyncd.conf
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/usr/bin/simple-rsyncd stop
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+User=rsync
+Group=rsync
+RuntimeDirectory=simple-rsyncd
+RuntimeDirectoryMode=0755
+StateDirectory=simple-rsyncd
+StateDirectoryMode=0755
+LogsDirectory=simple-rsyncd
+LogsDirectoryMode=0755
+PIDFile=/run/simple-rsyncd/simple-rsyncd.pid
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/simple-rsyncd /var/log/simple-rsyncd
+NoNewPrivileges=true
+LimitNOFILE=65536
+LimitNPROC=4096
+MemoryMax=1G
+CPUQuota=200%
+
+# Security settings
+CapabilityBoundingSet=
+AmbientCapabilities=
+SecureBits=keep-caps
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# Network security
+IPAddressDeny=
+IPAddressAllow=127.0.0.1 ::1
+IPAddressAllow=192.168.0.0/16 10.0.0.0/8 172.16.0.0/12
+
+# Environment variables
+Environment=SIMPLE_RSYNCD_CONFIG=/etc/simple-rsyncd/rsyncd.conf
+Environment=SIMPLE_RSYNCD_LOG_LEVEL=info
+Environment=SIMPLE_RSYNCD_WORKING_DIRECTORY=/var/lib/simple-rsyncd
+
+[Install]
+WantedBy=multi-user.target
+Also=simple-rsyncd.socket
+
+# Additional dependencies
+Requires=simple-rsyncd.socket
+RequiresMountsFor=/var/lib/simple-rsyncd
+RequiresMountsFor=/var/log/simple-rsyncd

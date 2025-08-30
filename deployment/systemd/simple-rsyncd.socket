@@ -1,0 +1,44 @@
+[Unit]
+Description=Simple RSync Daemon Socket
+Documentation=man:simple-rsyncd(8)
+PartOf=simple-rsyncd.service
+Requires=simple-rsyncd.service
+
+[Socket]
+ListenStream=0.0.0.0:873
+ListenStream=[::]:873
+BindIPv6Only=both
+Backlog=128
+MaxConnections=100
+MaxConnectionsPerSource=10
+KeepAlive=yes
+KeepAliveTimeSec=7200
+KeepAliveIntervalSec=75
+KeepAliveProbes=9
+ReceiveBuffer=64K
+SendBuffer=64K
+PassCredentials=no
+PassSecurity=no
+PassEnvironment=no
+PassFD=no
+SocketUser=rsync
+SocketGroup=rsync
+SocketMode=0660
+Accept=yes
+Writable=yes
+Priority=0
+DeferAcceptSec=1
+TimeoutIdleSec=300
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# Security settings
+IPAddressDeny=
+IPAddressAllow=127.0.0.1 ::1
+IPAddressAllow=192.168.0.0/16 10.0.0.0/8 172.16.0.0/12
+BindToDevice=
+BindToInterface=
+
+[Install]
+WantedBy=sockets.target
+Also=simple-rsyncd.service
