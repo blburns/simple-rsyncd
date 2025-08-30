@@ -81,7 +81,7 @@ void printVersion() {
     std::cout << "simple-rsyncd v0.1.0" << std::endl;
     std::cout << "Simple RSync Daemon - A lightweight and secure rsync server" << std::endl;
     std::cout << "Copyright (c) 2024 simple-rsyncd contributors" << std::endl;
-    std::cout << "License: MIT" << std::endl;
+    std::cout << "License: Apache 2.0" << std::endl;
 }
 
 /**
@@ -277,6 +277,7 @@ bool daemonize() {
  */
 int handleStart(const std::string& config_file, bool daemon_mode, bool verbose,
                 const std::string& pid_file, const std::string& user, const std::string& group) {
+    (void)verbose; // Suppress unused parameter warning
     std::cout << "Starting simple-rsyncd..." << std::endl;
     
     // Load configuration

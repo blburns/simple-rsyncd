@@ -11,6 +11,9 @@ SSLContext::~SSLContext() {
 
 bool SSLContext::initialize(const std::string& cert_file, const std::string& key_file, 
                            const std::string& ca_file) {
+    (void)cert_file; // Suppress unused parameter warning
+    (void)key_file; // Suppress unused parameter warning
+    (void)ca_file; // Suppress unused parameter warning
     // Basic SSL initialization
     // For now, just mark as initialized
     initialized_ = true;

@@ -63,6 +63,8 @@ bool RSyncSession::authenticate() {
 }
 
 bool RSyncSession::authorize(const std::string& module_name, const std::string& operation) {
+    (void)module_name; // Suppress unused parameter warning
+    (void)operation; // Suppress unused parameter warning
     if (!config_ || !config_->access.enabled) {
         return true; // No access control required
     }
@@ -79,12 +81,14 @@ bool RSyncSession::readRequest() {
 }
 
 bool RSyncSession::writeResponse(const std::string& response) {
+    (void)response; // Suppress unused parameter warning
     // Basic response writing implementation
     // For now, just return true
     return true;
 }
 
 bool RSyncSession::parseRequest(const std::string& request) {
+    (void)request; // Suppress unused parameter warning
     // Basic request parsing implementation
     // For now, just return true
     return true;

@@ -27,6 +27,7 @@ bool Configuration::loadFromFile(const std::string& filename) {
 }
 
 bool Configuration::loadFromJSON(const std::string& json) {
+    (void)json; // Suppress unused parameter warning
     // Basic JSON loading implementation
     // For now, just mark as loaded
     is_valid_ = true;
@@ -63,6 +64,8 @@ std::vector<std::string> Configuration::getErrors() const {
 }
 
 void Configuration::merge(const Configuration& other, bool overwrite) {
+    (void)other; // Suppress unused parameter warning
+    (void)overwrite; // Suppress unused parameter warning
     // Basic configuration merging
     if (overwrite) {
         // Overwrite current settings

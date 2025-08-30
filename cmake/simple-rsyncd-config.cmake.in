@@ -22,7 +22,7 @@ set(simple-rsyncd_HOMEPAGE "https://github.com/simple-rsyncd/simple-rsyncd")
 set(simple-rsyncd_MAINTAINER "support@blburns.com")
 
 # Set package license
-set(simple-rsyncd_LICENSE "MIT")
+set(simple-rsyncd_LICENSE "Apache-2.0")
 
 # Set package category
 set(simple-rsyncd_CATEGORY "net")
