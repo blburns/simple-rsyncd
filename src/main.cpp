@@ -7,6 +7,13 @@
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include "simple_rsyncd/rsync_daemon.hpp"
 #include "simple_rsyncd/configuration.hpp"
@@ -454,7 +461,7 @@ int handleTest(const std::string& config_file) {
         std::cout << "    Comment: " << module_config.comment << std::endl;
         std::cout << "    Read-only: " << (module_config.read_only ? "yes" : "no") << std::endl;
         std::cout << "    List: " << (module_config.list ? "yes" : "no") << std::endl;
-        std::cout << "    Delete: " << (module_config.delete ? "yes" : "no") << std::endl;
+        std::cout << "    Delete: " << (module_config.allow_delete ? "yes" : "no") << std::endl;
         std::cout << "    Overwrite: " << (module_config.overwrite ? "yes" : "no") << std::endl;
         
         // Check if path exists

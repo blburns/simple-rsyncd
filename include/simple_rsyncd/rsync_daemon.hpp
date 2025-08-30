@@ -113,7 +113,7 @@ private:
     
     // Connection management
     std::vector<std::unique_ptr<RSyncSession>> active_sessions_;
-    std::mutex sessions_mutex_;
+    mutable std::mutex sessions_mutex_;
     std::atomic<size_t> total_connections_;
     
     // Timing
@@ -162,11 +162,16 @@ private:
     std::thread config_watcher_thread_;
     void configWatcherLoop();
     bool hasConfigChanged() const;
-    void reloadModules();
+    bool reloadModules();
+    
+    // Thread management
+    void startWorkerThreads();
+    void startConfigWatcher();
+    void startHealthMonitor();
     
     // Module management
     std::map<std::string, std::shared_ptr<Module>> modules_;
-    std::mutex modules_mutex_;
+    mutable std::mutex modules_mutex_;
     bool loadModules();
     bool unloadModules();
     std::shared_ptr<Module> findModule(const std::string& name) const;

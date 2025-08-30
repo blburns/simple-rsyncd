@@ -94,33 +94,12 @@ struct NetworkConfig {
     bool keep_alive = true;
     std::chrono::seconds keep_alive_time{7200};
     std::chrono::seconds keep_alive_interval{75};
-    std::chrono::seconds keep_alive_probes{9};
+    int keep_alive_probes{9};
     size_t max_connections = 100;
     size_t worker_threads = 4;
 };
 
-/**
- * @brief Module configuration
- */
-struct ModuleConfig {
-    std::string name;
-    std::string path;
-    std::string comment;
-    bool read_only = false;
-    bool list = true;
-    bool delete = false;
-    bool overwrite = false;
-    std::vector<std::string> exclude_patterns;
-    std::vector<std::string> include_patterns;
-    std::map<std::string, std::string> environment_variables;
-    std::string pre_transfer_script;
-    std::string post_transfer_script;
-    std::string pre_delete_script;
-    std::string post_delete_script;
-    std::string pre_list_script;
-    std::string post_list_script;
-    std::map<std::string, std::string> custom_options;
-};
+// ModuleConfig is defined in module.hpp
 
 /**
  * @brief Security configuration

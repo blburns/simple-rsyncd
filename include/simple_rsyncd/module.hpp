@@ -182,7 +182,7 @@ struct ModuleConfig {
     std::string comment;
     bool read_only = false;
     bool list = true;
-    bool delete = false;
+    bool allow_delete = false;
     bool overwrite = false;
     std::vector<std::string> exclude_patterns;
     std::vector<std::string> include_patterns;

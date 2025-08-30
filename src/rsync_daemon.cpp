@@ -1,11 +1,14 @@
 #include "simple_rsyncd/rsync_daemon.hpp"
 #include "simple_rsyncd/configuration.hpp"
 #include "simple_rsyncd/logger.hpp"
+#include "simple_rsyncd/rsync_session.hpp"
 
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <csignal>
+#include <sstream>
+#include <algorithm>
 
 namespace simple_rsyncd {
 
