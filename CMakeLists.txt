@@ -79,6 +79,21 @@ if(NOT JSONCPP_FOUND)
     endif()
 endif()
 
+# For macOS, we need to handle the library name differently
+if(PLATFORM_MACOS AND JSONCPP_FOUND)
+    # On macOS, pkg-config might give us the wrong library name
+    # Let's find the actual library file
+    find_library(JSONCPP_ACTUAL_LIBRARY 
+        NAMES jsoncpp libjsoncpp
+        PATHS /usr/local/lib /usr/local/Cellar/jsoncpp/*/lib
+        NO_DEFAULT_PATH
+    )
+    if(JSONCPP_ACTUAL_LIBRARY)
+        set(JSONCPP_LIBRARIES ${JSONCPP_ACTUAL_LIBRARY})
+        message(STATUS "Found macOS jsoncpp library: ${JSONCPP_LIBRARIES}")
+    endif()
+endif()
+
 if(NOT JSONCPP_FOUND)
     message(WARNING "jsoncpp not found. JSON configuration parsing will not be available.")
     add_definitions(-DDISABLE_JSON_CONFIG)
@@ -357,7 +372,7 @@ endif()
 
 # Examples
 if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    add_subdirectory(src/examples)
 endif()
 
 # Package configuration
