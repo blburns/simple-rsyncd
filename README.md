@@ -62,6 +62,9 @@ sudo dnf install -y gcc-c++ cmake openssl-devel jsoncpp-devel
 #### macOS
 ```bash
 brew install openssl jsoncpp cmake
+
+# If you encounter permission issues during installation, run:
+./scripts/fix-macos-permissions.sh
 ```
 
 #### Windows
@@ -393,11 +396,14 @@ brew install \
 
 ## 📚 Documentation
 
+- **[Installation Guide](docs/installation/README.md)**: Platform-specific installation instructions
 - **[User Guide](docs/user-guide/README.md)**: Complete usage documentation
 - **[Configuration Guide](docs/configuration/README.md)**: Configuration reference
-- **[API Reference](docs/api/README.md)**: Developer API documentation
-- **[Installation Guide](docs/installation/README.md)**: Platform-specific installation
 - **[Development Guide](docs/development/README.md)**: Contributing and development
+- **[API Reference](docs/api/README.md)**: Developer API documentation
+- **[Troubleshooting Guide](docs/troubleshooting/README.md)**: Common issues and solutions
+
+**📖 [Start with the Installation Guide](docs/installation/README.md) for first-time setup**
 
 ## 🤝 Contributing
 
