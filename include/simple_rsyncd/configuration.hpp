@@ -175,70 +175,70 @@ public:
      * @brief Constructor
      */
     Configuration();
-    
+
     /**
      * @brief Destructor
      */
     ~Configuration() = default;
-    
+
     /**
      * @brief Load configuration from file
      * @param filename Configuration file path
      * @return true if loaded successfully, false otherwise
      */
     bool loadFromFile(const std::string& filename);
-    
+
     /**
      * @brief Load configuration from JSON string
      * @param json JSON configuration string
      * @return true if loaded successfully, false otherwise
      */
     bool loadFromJSON(const std::string& json);
-    
+
     /**
      * @brief Save configuration to file
      * @param filename Output file path
      * @return true if saved successfully, false otherwise
      */
     bool saveToFile(const std::string& filename) const;
-    
+
     /**
      * @brief Save configuration as JSON string
      * @return JSON configuration string
      */
     std::string saveToJSON() const;
-    
+
     /**
      * @brief Validate configuration
      * @return true if valid, false otherwise
      */
     bool validate() const;
-    
+
     /**
      * @brief Get configuration errors
      * @return Vector of error messages
      */
     std::vector<std::string> getErrors() const;
-    
+
     /**
      * @brief Merge configuration from another source
      * @param other Configuration to merge
      * @param overwrite Whether to overwrite existing values
      */
     void merge(const Configuration& other, bool overwrite = false);
-    
+
     /**
      * @brief Reload configuration
      * @return true if reloaded successfully, false otherwise
      */
     bool reload();
-    
+
     /**
      * @brief Check if configuration has changed
      * @return true if changed, false otherwise
      */
     bool hasChanged() const;
-    
+
     // Configuration sections
     SSLConfig ssl;
     AuthConfig auth;
@@ -249,10 +249,10 @@ public:
     SecurityConfig security;
     PerformanceConfig performance;
     MonitoringConfig monitoring;
-    
+
     // Module configurations
     std::map<std::string, ModuleConfig> modules;
-    
+
     // Global settings
     std::string pid_file;
     std::string state_file;
@@ -265,7 +265,7 @@ public:
     bool verbose = false;
     bool debug = false;
     std::string version = "0.1.0";
-    
+
     // Configuration file monitoring
     std::string config_file_path;
     std::chrono::system_clock::time_point last_modified;
@@ -277,7 +277,7 @@ private:
     mutable std::vector<std::string> errors_;
     mutable bool is_valid_;
     bool has_changed_;
-    
+
     // Configuration validation
     bool validateSSL() const;
     bool validateAuth() const;
@@ -289,15 +289,15 @@ private:
     bool validatePerformance() const;
     bool validateMonitoring() const;
     bool validateModules() const;
-    
+
     // JSON parsing helpers
     bool parseJSONValue(const std::string& key, const std::string& value);
     bool parseModuleConfig(const std::string& module_name, const std::map<std::string, std::string>& config);
-    
+
     // Configuration file monitoring
     void updateLastModified();
     bool checkFileChanged() const;
-    
+
     // Helper methods
     std::string expandVariables(const std::string& value) const;
     std::string resolvePath(const std::string& path) const;
@@ -305,7 +305,7 @@ private:
     bool validatePort(uint16_t port) const;
     bool validateIPAddress(const std::string& address) const;
     bool validateNetworkRange(const std::string& range) const;
-    
+
     // Default values
     void setDefaults();
     void setDefaultSSL();
@@ -317,14 +317,14 @@ private:
     void setDefaultSecurity();
     void setDefaultPerformance();
     void setDefaultMonitoring();
-    
+
     // Environment variable substitution
     std::string substituteEnvironmentVariables(const std::string& value) const;
-    
+
     // Configuration inheritance
     void inheritFromDefaults();
     void inheritModuleDefaults(ModuleConfig& module) const;
-    
+
     // Configuration validation helpers
     bool validateFileExists(const std::string& file_path, const std::string& description) const;
     bool validateDirectoryExists(const std::string& dir_path, const std::string& description) const;

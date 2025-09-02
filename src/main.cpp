@@ -46,7 +46,7 @@ std::atomic<bool> g_shutdown_requested(false);
 void signalHandler(int signal) {
     std::cout << "\nReceived signal " << signal << ", shutting down gracefully..." << std::endl;
     g_shutdown_requested = true;
-    
+
     if (g_daemon) {
         g_daemon->stop();
     }
@@ -67,7 +67,7 @@ void printUsage() {
     std::cout << "  --pid-file FILE      Write PID to specified file" << std::endl;
     std::cout << "  --user USER          Run as specified user" << std::endl;
     std::cout << "  --group GROUP        Run as specified group" << std::endl;
-    
+
     std::cout << "\nCommands:" << std::endl;
     std::cout << "  start                Start the rsync daemon" << std::endl;
     std::cout << "  stop                 Stop the rsync daemon" << std::endl;
@@ -78,7 +78,7 @@ void printUsage() {
     std::cout << "  modules              List available modules" << std::endl;
     std::cout << "  logs                 Show recent logs" << std::endl;
     std::cout << "  metrics              Show metrics" << std::endl;
-    
+
     std::cout << "\nExamples:" << std::endl;
     std::cout << "  simple-rsyncd start --config /etc/simple-rsyncd/rsyncd.conf" << std::endl;
     std::cout << "  simple-rsyncd start --daemon --config /etc/simple-rsyncd/rsyncd.conf" << std::endl;
@@ -123,10 +123,10 @@ bool parseArguments(int argc, char* argv[], std::string& config_file, std::strin
     pid_file.clear();
     user.clear();
     group.clear();
-    
+
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        
+
         if (arg == "--help" || arg == "-h") {
             printUsage();
             return false;
@@ -176,7 +176,7 @@ bool parseArguments(int argc, char* argv[], std::string& config_file, std::strin
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -189,7 +189,7 @@ std::string getDefaultConfigFile(const std::string& config_file) {
     if (!config_file.empty()) {
         return config_file;
     }
-    
+
     // Try common configuration locations
     std::vector<std::string> config_paths = {
         "/etc/simple-rsyncd/rsyncd.conf",
@@ -198,13 +198,13 @@ std::string getDefaultConfigFile(const std::string& config_file) {
         "./rsyncd.conf",
         "./config/rsyncd.conf"
     };
-    
+
     for (const auto& path : config_paths) {
         if (std::filesystem::exists(path)) {
             return path;
         }
     }
-    
+
     // Return default path
     return "/etc/simple-rsyncd/rsyncd.conf";
 }
@@ -218,7 +218,7 @@ bool writePidFile(const std::string& pid_file) {
     if (pid_file.empty()) {
         return true;
     }
-    
+
     try {
         std::ofstream file(pid_file);
         if (file.is_open()) {
@@ -229,7 +229,7 @@ bool writePidFile(const std::string& pid_file) {
     } catch (const std::exception& e) {
         std::cerr << "Error writing PID file: " << e.what() << std::endl;
     }
-    
+
     return false;
 }
 
@@ -257,7 +257,7 @@ bool dropPrivileges(const std::string& user, const std::string& group) {
     if (user.empty() && group.empty()) {
         return true;
     }
-    
+
     // Implementation would depend on platform-specific code
     // For now, just log the intention
     if (!user.empty()) {
@@ -266,7 +266,7 @@ bool dropPrivileges(const std::string& user, const std::string& group) {
     if (!group.empty()) {
         std::cout << "Would drop privileges to group: " << group << std::endl;
     }
-    
+
     return true;
 }
 
@@ -295,7 +295,7 @@ int handleStart(const std::string& config_file, bool daemon_mode, bool verbose,
                 const std::string& pid_file, const std::string& user, const std::string& group) {
     (void)verbose; // Suppress unused parameter warning
     std::cout << "Starting simple-rsyncd..." << std::endl;
-    
+
     // Load configuration
     auto config = std::make_shared<simple_rsyncd::Configuration>();
     if (!config->loadFromFile(config_file)) {
@@ -306,7 +306,7 @@ int handleStart(const std::string& config_file, bool daemon_mode, bool verbose,
         }
         return 1;
     }
-    
+
     // Validate configuration
     if (!config->validate()) {
         std::cerr << "Error: Configuration validation failed" << std::endl;
@@ -316,15 +316,15 @@ int handleStart(const std::string& config_file, bool daemon_mode, bool verbose,
         }
         return 1;
     }
-    
+
     std::cout << "Configuration loaded successfully" << std::endl;
-    
+
     // Drop privileges if specified
     if (!dropPrivileges(user, group)) {
         std::cerr << "Error: Failed to drop privileges" << std::endl;
         return 1;
     }
-    
+
     // Daemonize if requested
     if (daemon_mode) {
         if (!daemonize()) {
@@ -332,41 +332,41 @@ int handleStart(const std::string& config_file, bool daemon_mode, bool verbose,
             return 1;
         }
     }
-    
+
     // Write PID file
     if (!writePidFile(pid_file)) {
         std::cerr << "Warning: Failed to write PID file" << std::endl;
     }
-    
+
     // Create and start daemon
     try {
         g_daemon = std::make_unique<simple_rsyncd::RSyncDaemon>(config);
-        
+
         if (!g_daemon->start()) {
             std::cerr << "Error: Failed to start daemon" << std::endl;
             removePidFile(pid_file);
             return 1;
         }
-        
+
         std::cout << "Daemon started successfully" << std::endl;
-        
+
         // Main event loop
         while (!g_shutdown_requested && g_daemon->isRunning()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        
+
         std::cout << "Shutting down daemon..." << std::endl;
         g_daemon->stop();
-        
+
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         removePidFile(pid_file);
         return 1;
     }
-    
+
     removePidFile(pid_file);
     std::cout << "Daemon stopped" << std::endl;
-    
+
     return 0;
 }
 
@@ -376,11 +376,11 @@ int handleStart(const std::string& config_file, bool daemon_mode, bool verbose,
  */
 int handleStop() {
     std::cout << "Stopping simple-rsyncd..." << std::endl;
-    
+
     // Implementation would depend on platform-specific code
     // For now, just log the intention
     std::cout << "Would stop the daemon" << std::endl;
-    
+
     return 0;
 }
 
@@ -397,16 +397,16 @@ int handleStop() {
 int handleRestart(const std::string& config_file, bool daemon_mode, bool verbose,
                   const std::string& pid_file, const std::string& user, const std::string& group) {
     std::cout << "Restarting simple-rsyncd..." << std::endl;
-    
+
     // Stop first
     int stop_result = handleStop();
     if (stop_result != 0) {
         std::cerr << "Warning: Failed to stop daemon, continuing with restart" << std::endl;
     }
-    
+
     // Wait a bit
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    
+
     // Start again
     return handleStart(config_file, daemon_mode, verbose, pid_file, user, group);
 }
@@ -417,11 +417,11 @@ int handleRestart(const std::string& config_file, bool daemon_mode, bool verbose
  */
 int handleStatus() {
     std::cout << "Checking simple-rsyncd status..." << std::endl;
-    
+
     // Implementation would depend on platform-specific code
     // For now, just log the intention
     std::cout << "Would check daemon status" << std::endl;
-    
+
     return 0;
 }
 
@@ -431,11 +431,11 @@ int handleStatus() {
  */
 int handleReload() {
     std::cout << "Reloading simple-rsyncd configuration..." << std::endl;
-    
+
     // Implementation would depend on platform-specific code
     // For now, just log the intention
     std::cout << "Would reload configuration" << std::endl;
-    
+
     return 0;
 }
 
@@ -446,7 +446,7 @@ int handleReload() {
  */
 int handleTest(const std::string& config_file) {
     std::cout << "Testing simple-rsyncd configuration..." << std::endl;
-    
+
     // Load configuration
     auto config = std::make_shared<simple_rsyncd::Configuration>();
     if (!config->loadFromFile(config_file)) {
@@ -457,7 +457,7 @@ int handleTest(const std::string& config_file) {
         }
         return 1;
     }
-    
+
     // Validate configuration
     if (!config->validate()) {
         std::cerr << "Error: Configuration validation failed" << std::endl;
@@ -467,9 +467,9 @@ int handleTest(const std::string& config_file) {
         }
         return 1;
     }
-    
+
     std::cout << "Configuration is valid" << std::endl;
-    
+
     // Test modules
     std::cout << "Testing modules..." << std::endl;
     for (const auto& [name, module_config] : config->modules) {
@@ -480,7 +480,7 @@ int handleTest(const std::string& config_file) {
         std::cout << "    List: " << (module_config.list ? "yes" : "no") << std::endl;
         std::cout << "    Delete: " << (module_config.allow_delete ? "yes" : "no") << std::endl;
         std::cout << "    Overwrite: " << (module_config.overwrite ? "yes" : "no") << std::endl;
-        
+
         // Check if path exists
         if (std::filesystem::exists(module_config.path)) {
             std::cout << "    Path exists: yes" << std::endl;
@@ -490,7 +490,7 @@ int handleTest(const std::string& config_file) {
         }
         std::cout << std::endl;
     }
-    
+
     std::cout << "Configuration test completed successfully" << std::endl;
     return 0;
 }
@@ -501,11 +501,11 @@ int handleTest(const std::string& config_file) {
  */
 int handleModules() {
     std::cout << "Listing simple-rsyncd modules..." << std::endl;
-    
+
     // Implementation would depend on platform-specific code
     // For now, just log the intention
     std::cout << "Would list available modules" << std::endl;
-    
+
     return 0;
 }
 
@@ -515,11 +515,11 @@ int handleModules() {
  */
 int handleLogs() {
     std::cout << "Showing simple-rsyncd logs..." << std::endl;
-    
+
     // Implementation would depend on platform-specific code
     // For now, just log the intention
     std::cout << "Would show recent logs" << std::endl;
-    
+
     return 0;
 }
 
@@ -529,11 +529,11 @@ int handleLogs() {
  */
 int handleMetrics() {
     std::cout << "Showing simple-rsyncd metrics..." << std::endl;
-    
+
     // Implementation would depend on platform-specific code
     // For now, just log the intention
     std::cout << "Would show metrics" << std::endl;
-    
+
     return 0;
 }
 
@@ -547,19 +547,19 @@ int main(int argc, char* argv[]) {
     // Parse command line arguments
     std::string config_file, command, pid_file, user, group;
     bool daemon_mode = false, verbose = false;
-    
+
     if (!parseArguments(argc, argv, config_file, command, daemon_mode, verbose, pid_file, user, group)) {
         return 0; // Help or version was printed
     }
-    
+
     // Set default configuration file if none specified
     config_file = getDefaultConfigFile(config_file);
-    
+
     // Set up signal handlers
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
     std::signal(SIGHUP, signalHandler);
-    
+
     // Handle commands
     if (command == "start") {
         return handleStart(config_file, daemon_mode, verbose, pid_file, user, group);
@@ -588,6 +588,6 @@ int main(int argc, char* argv[]) {
         printUsage();
         return 1;
     }
-    
+
     return 0;
 }

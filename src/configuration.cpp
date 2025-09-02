@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "simple_rsyncd/configuration.hpp"
 #include <iostream>
 #include <fstream>
@@ -31,14 +31,14 @@ bool Configuration::loadFromFile(const std::string& filename) {
     if (!file.is_open()) {
         return false;
     }
-    
+
     config_file_path = filename;
     updateLastModified();
-    
+
     // For now, just mark as loaded
     is_valid_ = true;
     has_changed_ = false;
-    
+
     return true;
 }
 
@@ -48,7 +48,7 @@ bool Configuration::loadFromJSON(const std::string& json) {
     // For now, just mark as loaded
     is_valid_ = true;
     has_changed_ = false;
-    
+
     return true;
 }
 
@@ -58,11 +58,11 @@ bool Configuration::saveToFile(const std::string& filename) const {
     if (!file.is_open()) {
         return false;
     }
-    
+
     // For now, just write basic configuration
     file << "# simple-rsyncd Configuration\n";
     file << "# Generated configuration file\n";
-    
+
     return true;
 }
 
@@ -94,7 +94,7 @@ bool Configuration::reload() {
     if (config_file_path.empty()) {
         return false;
     }
-    
+
     return loadFromFile(config_file_path);
 }
 

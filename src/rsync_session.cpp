@@ -20,7 +20,7 @@
 
 namespace simple_rsyncd {
 
-RSyncSession::RSyncSession(int client_socket, const std::string& client_address, 
+RSyncSession::RSyncSession(int client_socket, const std::string& client_address,
                            std::shared_ptr<Configuration> config)
     : client_socket_(client_socket)
     , client_address_(client_address)
@@ -57,12 +57,12 @@ bool RSyncSession::processRequest() {
     if (!active_) {
         return false;
     }
-    
+
     // Read request
     if (!readRequest()) {
         return false;
     }
-    
+
     // Process request
     // For now, just send a basic response
     return writeResponse("OK");
@@ -72,7 +72,7 @@ bool RSyncSession::authenticate() {
     if (!config_ || !config_->auth.enabled) {
         return true; // No authentication required
     }
-    
+
     // Basic authentication implementation
     // For now, always return true
     return true;
@@ -84,7 +84,7 @@ bool RSyncSession::authorize(const std::string& module_name, const std::string& 
     if (!config_ || !config_->access.enabled) {
         return true; // No access control required
     }
-    
+
     // Basic authorization implementation
     // For now, always return true
     return true;

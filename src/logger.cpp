@@ -69,10 +69,10 @@ void Logger::log(const std::string& level, const std::string& message) {
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
     auto tm = *std::localtime(&time_t);
-    
+
     std::stringstream ss;
     ss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
-    
+
     std::cout << "[" << ss.str() << "] [" << level << "] " << message << std::endl;
 }
 

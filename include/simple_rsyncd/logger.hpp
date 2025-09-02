@@ -32,10 +32,10 @@ class Logger {
 public:
     Logger();
     ~Logger();
-    
+
     void setLevel(LogLevel level);
     LogLevel getLevel() const;
-    
+
     void debug(const std::string& message);
     void info(const std::string& message);
     void warn(const std::string& message);
@@ -44,7 +44,7 @@ public:
 
 private:
     void log(const std::string& level, const std::string& message);
-    
+
     LogLevel level_;
 };
 

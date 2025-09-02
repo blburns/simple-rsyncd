@@ -38,11 +38,11 @@ elseif(UNIX AND NOT APPLE)
 elseif(WIN32)
     set(PLATFORM_WINDOWS TRUE)
     message(STATUS "Building for Windows")
-    
+
     # Windows-specific settings
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
-    
+
     # Set Windows SDK version if available
     if(DEFINED ENV{WINDOWS_SDK_VERSION})
         set(CMAKE_SYSTEM_VERSION $ENV{WINDOWS_SDK_VERSION})
@@ -97,7 +97,7 @@ endif()
 if(PLATFORM_MACOS AND JSONCPP_FOUND)
     # On macOS, pkg-config might give us the wrong library name
     # Let's find the actual library file
-    find_library(JSONCPP_ACTUAL_LIBRARY 
+    find_library(JSONCPP_ACTUAL_LIBRARY
         NAMES jsoncpp libjsoncpp
         PATHS /usr/local/lib /usr/local/Cellar/jsoncpp/*/lib
         NO_DEFAULT_PATH
@@ -122,18 +122,18 @@ if(PLATFORM_MACOS)
     find_library(SECURITY_FRAMEWORK Security)
     find_library(CORE_FOUNDATION_FRAMEWORK CoreFoundation)
     find_library(SYSTEM_CONFIGURATION_FRAMEWORK SystemConfiguration)
-    
+
     # macOS doesn't need separate socket or rt libraries
-    set(PLATFORM_LIBRARIES 
+    set(PLATFORM_LIBRARIES
         ${SECURITY_FRAMEWORK}
         ${CORE_FOUNDATION_FRAMEWORK}
         ${SYSTEM_CONFIGURATION_FRAMEWORK}
     )
-    
+
     # Set macOS-specific compiler flags
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-    
+
     # Enable universal binary support for Intel + Apple Silicon
     if(CMAKE_OSX_ARCHITECTURES MATCHES ".*arm64.*")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target arm64-apple-macos12.0")
@@ -141,25 +141,25 @@ if(PLATFORM_MACOS)
     if(CMAKE_OSX_ARCHITECTURES MATCHES ".*x86_64.*")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target x86_64-apple-macos12.0")
     endif()
-    
+
 elseif(PLATFORM_LINUX)
     # Linux specific libraries
     # Socket functions are part of libc, no need to find_library
     # RT library for real-time functions
     find_library(RT_LIBRARY rt)
-    
-    set(PLATFORM_LIBRARIES 
+
+    set(PLATFORM_LIBRARIES
         ${RT_LIBRARY}
         pthread
     )
-    
+
     # Linux compiler flags
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-    
+
 elseif(PLATFORM_WINDOWS)
     # Windows specific libraries
-    set(PLATFORM_LIBRARIES 
+    set(PLATFORM_LIBRARIES
         ws2_32
         iphlpapi
         crypt32
@@ -167,11 +167,11 @@ elseif(PLATFORM_WINDOWS)
         userenv
         shell32
     )
-    
+
     # Windows compiler flags
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
-    
+
     # Windows-specific definitions
     add_definitions(-DWIN32_LEAN_AND_MEAN)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -188,7 +188,7 @@ if(JSONCPP_FOUND)
 endif()
 
 # Source files (exclude tests)
-file(GLOB_RECURSE SOURCES 
+file(GLOB_RECURSE SOURCES
     "src/*.cpp"
     "src/core/*.cpp"
     "src/utils/*.cpp"
@@ -198,7 +198,7 @@ file(GLOB_RECURSE SOURCES
 list(FILTER SOURCES EXCLUDE REGEX ".*test.*\\.cpp$")
 
 # Header files
-file(GLOB_RECURSE HEADERS 
+file(GLOB_RECURSE HEADERS
     "include/*.hpp"
     "src/*.hpp"
 )
@@ -298,7 +298,7 @@ if(PLATFORM_MACOS)
     install(DIRECTORY deployment/ DESTINATION /usr/local/share/simple-rsyncd)
     install(DIRECTORY docs/ DESTINATION /usr/local/share/simple-rsyncd/docs)
     install(FILES LICENSE README.md DESTINATION /usr/local/share/simple-rsyncd)
-    
+
     # Create additional directories for macOS
     install(CODE "
         # Create additional directories for logs and temp
@@ -311,7 +311,7 @@ if(PLATFORM_MACOS)
             ERROR_QUIET
         )
     ")
-    
+
 elseif(PLATFORM_WINDOWS)
     # Windows install paths
     install(TARGETS simple-rsyncd-${SYSTEM_ARCH} simple-rsyncd-lib-${SYSTEM_ARCH}
@@ -324,7 +324,7 @@ elseif(PLATFORM_WINDOWS)
     install(DIRECTORY deployment/ DESTINATION "C:/Program Files/simple-rsyncd/deployment")
     install(DIRECTORY docs/ DESTINATION "C:/Program Files/simple-rsyncd/docs")
     install(FILES LICENSE README.md DESTINATION "C:/Program Files/simple-rsyncd")
-    
+
     # Create additional directories for Windows
     install(CODE "
         # Create additional directories for logs and temp
@@ -337,7 +337,7 @@ elseif(PLATFORM_WINDOWS)
             ERROR_QUIET
         )
     ")
-    
+
 else()
     # Linux install paths - Follow FHS standards
     install(TARGETS simple-rsyncd-${SYSTEM_ARCH} simple-rsyncd-lib-${SYSTEM_ARCH}
@@ -350,22 +350,22 @@ else()
     install(DIRECTORY deployment/ DESTINATION usr/share/simple-rsyncd)
     install(DIRECTORY docs/ DESTINATION usr/share/simple-rsyncd/docs)
     install(FILES LICENSE README.md DESTINATION usr/share/simple-rsyncd)
-    
+
     # Create symlinks for convenience (similar to alternatives)
     install(CODE "
         # Create symlink for simple-rsyncd binary
-        execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink 
+        execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink
             /usr/bin/simple-rsyncd-${SYSTEM_ARCH} /usr/local/bin/simple-rsyncd
             WORKING_DIRECTORY \${CMAKE_INSTALL_PREFIX}
             ERROR_QUIET
         )
         # Create symlink for simple-rsyncd-lib
-        execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink 
+        execute_process(COMMAND \${CMAKE_COMMAND} -E create_symlink
             /usr/lib/libsimple-rsyncd-lib-${SYSTEM_ARCH}.so /usr/local/lib/libsimple-rsyncd-lib.so
             WORKING_DIRECTORY \${CMAKE_INSTALL_PREFIX}
             ERROR_QUIET
         )
-        
+
         # Create additional directories for logs and temp
         execute_process(COMMAND \${CMAKE_COMMAND} -E make_directory /var/log/simple-rsyncd
             WORKING_DIRECTORY \${CMAKE_INSTALL_PREFIX}
@@ -434,23 +434,23 @@ if(PLATFORM_MACOS AND BUILD_SHARED_LIBS)
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Simple RSync Daemon for macOS")
     set(CPACK_PACKAGE_VENDOR "simple-rsyncd")
     set(CPACK_PACKAGE_CONTACT "SimpleDaemons")
-    
+
     # Set the correct package naming format: {VERSION}-{OS}-{ARCH}
     set(CPACK_PACKAGE_FILE_NAME "simple-rsyncd-${PROJECT_VERSION}-macOS-${SYSTEM_ARCH}")
-    
+
     # DMG specific settings
     set(CPACK_DMG_VOLUME_NAME "simple-rsyncd-${PROJECT_VERSION}-macOS-${SYSTEM_ARCH}")
     set(CPACK_DMG_FORMAT "UDZO")
-    
+
     # PKG specific settings (productbuild)
     set(CPACK_PRODUCTBUILD_PACKAGE_NAME "simple-rsyncd-${PROJECT_VERSION}-macOS-${SYSTEM_ARCH}")
     set(CPACK_PRODUCTBUILD_PACKAGE_VERSION "${PROJECT_VERSION}")
     set(CPACK_PRODUCTBUILD_PACKAGE_DESCRIPTION "Simple RSync Daemon for macOS - ${SYSTEM_ARCH}")
     set(CPACK_PRODUCTBUILD_PACKAGE_VENDOR "simple-rsyncd")
     set(CPACK_PRODUCTBUILD_PACKAGE_CONTACT "SimpleDaemons")
-    
+
     include(CPack)
-    
+
 # Linux package generation
 elseif(PLATFORM_LINUX AND BUILD_SHARED_LIBS)
     # Create Linux packages (DEB, RPM, TGZ)
@@ -460,26 +460,26 @@ elseif(PLATFORM_LINUX AND BUILD_SHARED_LIBS)
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Simple RSync Daemon for Linux")
     set(CPACK_PACKAGE_VENDOR "simple-rsyncd")
     set(CPACK_PACKAGE_CONTACT "SimpleDaemons")
-    
+
     # Set the correct package naming format: {VERSION}-{OS}-{ARCH}
     set(CPACK_PACKAGE_FILE_NAME "simple-rsyncd-${PROJECT_VERSION}-Linux-${SYSTEM_ARCH}")
-    
+
     # DEB specific settings
     set(CPACK_DEBIAN_PACKAGE_NAME "simple-rsyncd-${SYSTEM_ARCH}")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libssl3, libjsoncpp25")
     set(CPACK_DEBIAN_PACKAGE_SECTION "net")
     set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
     set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/simple-rsyncd/simple-rsyncd")
-    
+
     # RPM specific settings
     set(CPACK_RPM_PACKAGE_NAME "simple-rsyncd-${SYSTEM_ARCH}")
     set(CPACK_RPM_PACKAGE_REQUIRES "openssl, jsoncpp")
     set(CPACK_RPM_PACKAGE_GROUP "Applications/Internet")
     set(CPACK_RPM_PACKAGE_URL "https://github.com/simple-rsyncd/simple-rsyncd")
-    
+
     # TGZ specific settings (source package - no OS/ARCH needed)
     set(CPACK_TGZ_PACKAGE_NAME "simple-rsyncd-${PROJECT_VERSION}-source")
-    
+
     include(CPack)
 
 # Windows package generation
@@ -492,10 +492,10 @@ elseif(PLATFORM_WINDOWS AND BUILD_SHARED_LIBS)
     set(CPACK_PACKAGE_VENDOR "simple-rsyncd")
     set(CPACK_PACKAGE_CONTACT "SimpleDaemons")
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "simple-rsyncd")
-    
+
     # Set the correct package naming format: {VERSION}-{OS}-{ARCH}
     set(CPACK_PACKAGE_FILE_NAME "simple-rsyncd-${PROJECT_VERSION}-Windows-${SYSTEM_ARCH}")
-    
+
     # NSIS specific settings
     set(CPACK_NSIS_DISPLAY_NAME "simple-rsyncd ${PROJECT_VERSION} (${SYSTEM_ARCH})")
     set(CPACK_NSIS_PACKAGE_NAME "simple-rsyncd-${PROJECT_VERSION}-Windows-${SYSTEM_ARCH}")
@@ -504,27 +504,27 @@ elseif(PLATFORM_WINDOWS AND BUILD_SHARED_LIBS)
     set(CPACK_NSIS_ENABLE_DIRECTORY_PAGE ON)
     set(CPACK_NSIS_MODIFY_PATH ON)
     set(CPACK_NSIS_MENU_LINKS "https://github.com/simple-rsyncd/simple-rsyncd" "Documentation")
-    
+
     # Windows specific settings - follow Windows conventions
     set(CPACK_NSIS_INSTALL_ROOT "C:\\Program Files")
     set(CPACK_NSIS_PROGRAM_MENU_DIR "simple-rsyncd")
     set(CPACK_NSIS_DESKTOP_SHORTCUT ON)
     set(CPACK_NSIS_START_MENU_SHORTCUT ON)
-    
+
     # Ensure Windows package follows Windows conventions
     set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
         # Create Start Menu shortcuts
         CreateDirectory \\\"$SMPROGRAMS\\\\simple-rsyncd\\\"
         CreateShortCut \\\"$SMPROGRAMS\\\\simple-rsyncd\\\\simple-rsyncd.lnk\\\" \\\"$INSTDIR\\\\bin\\\\simple-rsyncd.exe\\\"
         CreateShortCut \\\"$SMPROGRAMS\\\\simple-rsyncd\\\\Documentation.lnk\\\" \\\"$INSTDIR\\\\docs\\\\README.md\\\"
-        
+
         # Create Desktop shortcut
         CreateShortCut \\\"$DESKTOP\\\\simple-rsyncd.lnk\\\" \\\"$INSTDIR\\\\bin\\\\simple-rsyncd.exe\\\"
-        
+
         # Add to PATH
         EnVar::SetHKLM
         EnVar::AddValue \\\"Path\\\" \\\"$INSTDIR\\\\bin\\\"
     ")
-    
+
     include(CPack)
 endif()

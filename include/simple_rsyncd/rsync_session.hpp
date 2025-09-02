@@ -26,15 +26,15 @@ namespace simple_rsyncd {
 
 class RSyncSession {
 public:
-    RSyncSession(int client_socket, const std::string& client_address, 
+    RSyncSession(int client_socket, const std::string& client_address,
                  std::shared_ptr<Configuration> config);
     ~RSyncSession();
-    
+
     std::string getClientAddress() const;
     int getClientSocket() const;
     bool isActive() const;
     void close();
-    
+
     bool processRequest();
     bool authenticate();
     bool authorize(const std::string& module_name, const std::string& operation);
@@ -45,7 +45,7 @@ private:
     std::shared_ptr<Configuration> config_;
     bool active_;
     std::chrono::steady_clock::time_point start_time_;
-    
+
     bool readRequest();
     bool writeResponse(const std::string& response);
     bool parseRequest(const std::string& request);

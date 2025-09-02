@@ -25,8 +25,8 @@ class SSLContext {
 public:
     SSLContext();
     ~SSLContext();
-    
-    bool initialize(const std::string& cert_file, const std::string& key_file, 
+
+    bool initialize(const std::string& cert_file, const std::string& key_file,
                    const std::string& ca_file = "");
     bool isInitialized() const;
     void cleanup();
