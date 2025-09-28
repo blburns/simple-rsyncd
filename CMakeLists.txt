@@ -68,6 +68,8 @@ if(ENABLE_JSON)
         target_link_libraries(${PROJECT_NAME} ${JSONCPP_LIBRARIES})
     endif()
     target_include_directories(${PROJECT_NAME} PRIVATE ${JSONCPP_INCLUDE_DIRS})
+    target_compile_options(${PROJECT_NAME} PRIVATE ${JSONCPP_CFLAGS_OTHER})
+    target_link_directories(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY_DIRS})
 endif()
 
 # Compiler-specific options
