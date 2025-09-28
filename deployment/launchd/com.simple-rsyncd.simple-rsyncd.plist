@@ -4,79 +4,17 @@
 <dict>
     <key>Label</key>
     <string>com.simple-rsyncd.simple-rsyncd</string>
-    
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/simple-rsyncd</string>
-        <string>start</string>
-        <string>--config</string>
-        <string>/usr/local/etc/simple-rsyncd/rsyncd.conf</string>
     </array>
-    
     <key>RunAtLoad</key>
     <true/>
-    
     <key>KeepAlive</key>
     <true/>
-    
-    <key>WorkingDirectory</key>
-    <string>/usr/local/var/lib/simple-rsyncd</string>
-    
     <key>StandardOutPath</key>
-    <string>/usr/local/var/log/simple-rsyncd/rsyncd.log</string>
-    
+    <string>/var/log/simple-rsyncd.log</string>
     <key>StandardErrorPath</key>
-    <string>/usr/local/var/log/simple-rsyncd/rsyncd.log</string>
-    
-    <key>UserName</key>
-    <string>_simple-rsyncd</string>
-    
-    <key>GroupName</key>
-    <string>_simple-rsyncd</string>
-    
-    <key>ProcessType</key>
-    <string>Background</string>
-    
-    <key>ThrottleInterval</key>
-    <integer>10</integer>
-    
-    <key>ExitTimeOut</key>
-    <integer>30</integer>
-    
-    <key>HardResourceLimits</key>
-    <dict>
-        <key>NumberOfFiles</key>
-        <integer>65536</integer>
-        <key>NumberOfProcesses</key>
-        <integer>4096</integer>
-    </dict>
-    
-    <key>SoftResourceLimits</key>
-    <dict>
-        <key>NumberOfFiles</key>
-        <integer>32768</integer>
-        <key>NumberOfProcesses</key>
-        <integer>2048</integer>
-    </dict>
-    
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>SIMPLE_RSYNCD_CONFIG</key>
-        <string>/usr/local/etc/simple-rsyncd/rsyncd.conf</string>
-        <key>SIMPLE_RSYNCD_LOG_LEVEL</key>
-        <string>info</string>
-        <key>SIMPLE_RSYNCD_WORKING_DIRECTORY</key>
-        <string>/usr/local/var/lib/simple-rsyncd</string>
-    </dict>
-    
-    <key>WatchPaths</key>
-    <array>
-        <string>/usr/local/etc/simple-rsyncd/rsyncd.conf</string>
-    </array>
-    
-    <key>QueueDirectories</key>
-    <array>
-        <string>/usr/local/var/lib/simple-rsyncd</string>
-    </array>
+    <string>/var/log/simple-rsyncd.error.log</string>
 </dict>
 </plist>
