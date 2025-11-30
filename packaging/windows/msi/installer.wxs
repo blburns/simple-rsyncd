@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="*" 
+             Name="simple-rsyncd" 
+             Language="1033" 
+             Version="${VERSION}" 
+             Manufacturer="SimpleDaemons" 
+             UpgradeCode="PUT-GUID-HERE">
+        
+        <Package InstallerVersion="200" 
+                 Compressed="yes" 
+                 InstallScope="perMachine"
+                 Description="simple-rsyncd Installer"
+                 Comments="Copyright (C) 2024 SimpleDaemons"/>
+        
+        <!-- License Agreement -->
+        <WixVariable Id="WixUILicenseRtf" Value="..\licenses\LICENSE.rtf"/>
+        
+        <!-- Icons -->
+        <Icon Id="ProductIcon" SourceFile="..\assets\icons\simple-rsyncd.ico"/>
+        <Property Id="ARPPRODUCTICON" Value="ProductIcon"/>
+        
+        <!-- Major Upgrade -->
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        <MediaTemplate />
+        
+        <!-- Features -->
+        <Feature Id="ProductFeature" Title="simple-rsyncd" Level="1">
+            <ComponentGroupRef Id="ProductComponents" />
+        </Feature>
+        
+        <!-- UI -->
+        <UIRef Id="WixUI_Minimal"/>
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER"/>
+        
+        <!-- Directory Structure -->
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLFOLDER" Name="simple-rsyncd">
+                    <Component Id="ProductComponent" Guid="PUT-GUID-HERE">
+                        <File Id="MainExecutable" 
+                              Source="simple-rsyncd.exe" 
+                              KeyPath="yes"/>
+                        <ServiceInstall Id="ServiceInstall"
+                                        Type="ownProcess"
+                                        Name="simple-rsyncd"
+                                        DisplayName="simple-rsyncd"
+                                        Description="simple-rsyncd Service"
+                                        Start="auto"
+                                        Account="LocalSystem"
+                                        ErrorControl="normal"
+                                        Interactive="no">
+                            <ServiceDependency Id="Tcpip"/>
+                        </ServiceInstall>
+                        <ServiceControl Id="ServiceControl"
+                                        Stop="both"
+                                        Remove="uninstall"
+                                        Name="simple-rsyncd"
+                                        Wait="yes"/>
+                    </Component>
+                </Directory>
+            </Directory>
+        </Directory>
+        
+        <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+            <Component Id="MainExecutableComponent">
+                <File Id="MainExecutable" 
+                      Source="simple-rsyncd.exe" 
+                      KeyPath="yes"/>
+            </Component>
+        </ComponentGroup>
+    </Product>
+</Wix>
+

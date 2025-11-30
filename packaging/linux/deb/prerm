@@ -1,0 +1,15 @@
+#!/bin/bash
+# Pre-removal script for simple-rsyncd
+
+set -e
+
+PROJECT_NAME="simple-rsyncd"
+
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ]; then
+    # Stop service before removal
+    systemctl stop "$simple-rsyncd" 2>/dev/null || true
+    systemctl disable "$simple-rsyncd" 2>/dev/null || true
+fi
+
+exit 0
+
