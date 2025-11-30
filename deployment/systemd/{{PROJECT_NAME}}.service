@@ -1,0 +1,17 @@
+[Unit]
+Description=Simple RSync Daemon - A lightweight and secure rsync server
+After=network.target
+
+[Service]
+Type=simple
+User=simple-rsyncd
+Group=simple-rsyncd
+ExecStart=/usr/local/bin/simple-rsyncd
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=simple-rsyncd
+
+[Install]
+WantedBy=multi-user.target

@@ -26,10 +26,10 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "simple_rsyncd/configuration.hpp"
-#include "simple_rsyncd/rsync_session.hpp"
-#include "simple_rsyncd/logger.hpp"
-#include "simple_rsyncd/ssl_context.hpp"
+#include "simple-rsyncd/config/config.hpp"
+#include "simple-rsyncd/core/session.hpp"
+#include "simple-rsyncd/utils/logger.hpp"
+#include "simple-rsyncd/security/ssl_context.hpp"
 
 namespace simple_rsyncd {
 

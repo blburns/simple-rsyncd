@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "simple_rsyncd/configuration.hpp"
+#include "simple-rsyncd/config/config.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>

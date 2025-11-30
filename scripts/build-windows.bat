@@ -1,6 +1,6 @@
 @echo off
 REM Build script for Windows systems
-REM Simple RSync Daemon - Build Script
+REM simple-rsyncd - Build Script
 
 setlocal enabledelayedexpansion
 
@@ -13,6 +13,23 @@ set "GREEN=[92m"
 set "YELLOW=[93m"
 set "BLUE=[94m"
 set "NC=[0m"
+
+REM Script configuration
+set "SCRIPT_DIR=%~dp0"
+set "PROJECT_ROOT=%SCRIPT_DIR%.."
+set "BUILD_DIR=%PROJECT_ROOT%\build"
+set "DIST_DIR=%PROJECT_ROOT%\dist"
+
+REM Build options
+set "BUILD_TYPE=Release"
+set "BUILD_SHARED_LIBS=OFF"
+set "BUILD_TESTS=ON"
+set "ENABLE_SSL=ON"
+set "ENABLE_JSON=ON"
+set "ENABLE_STATIC_LINKING=OFF"
+set "PACKAGE=false"
+set "INSTALL=false"
+set "CLEAN=false"
 
 REM Function to print colored output
 :print_status
@@ -98,71 +115,94 @@ if "%COMMAND_EXISTS%"=="false" (
     goto :end
 ) else (
     call :print_success "CMake found"
-    cmake --version
+    cmake --version | findstr "cmake version"
 )
 goto :eof
 
-REM Function to check vcpkg installation
-:check_vcpkg
-call :print_status "Checking vcpkg installation..."
-if not exist "%USERPROFILE%\vcpkg\vcpkg.exe" (
-    call :print_warning "vcpkg not found. Installing vcpkg..."
-    call :install_vcpkg
-) else (
-    call :print_success "vcpkg found"
-    "%USERPROFILE%\vcpkg\vcpkg.exe" version
-)
-goto :eof
-
-REM Function to install vcpkg
-:install_vcpkg
-call :print_status "Installing vcpkg..."
-cd /d "%USERPROFILE%"
-git clone https://github.com/Microsoft/vcpkg.git
-cd vcpkg
-call bootstrap-vcpkg.bat
-call vcpkg integrate install
-cd /d "%~dp0"
-call :print_success "vcpkg installed successfully"
-goto :eof
-
-REM Function to install dependencies via vcpkg
-:install_dependencies
-call :print_status "Installing dependencies via vcpkg..."
-"%USERPROFILE%\vcpkg\vcpkg.exe" install openssl jsoncpp
-if %ERRORLEVEL% NEQ 0 (
-    call :print_error "Failed to install dependencies"
+REM Function to check Git installation
+:check_git
+call :print_status "Checking Git installation..."
+call :command_exists git
+if "%COMMAND_EXISTS%"=="false" (
+    call :print_error "Git not found. Please install Git from https://git-scm.com/download/win"
     set "EXIT_CODE=1"
     goto :end
+) else (
+    call :print_success "Git found"
+    git --version
 )
+goto :eof
+
+REM Function to install dependencies using vcpkg
+:install_dependencies
+call :print_status "Installing build dependencies using vcpkg..."
+
+REM Check if vcpkg exists
+if not exist "%PROJECT_ROOT%\vcpkg" (
+    call :print_status "Installing vcpkg..."
+    cd /d "%PROJECT_ROOT%"
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    call bootstrap-vcpkg.bat
+) else (
+    call :print_status "vcpkg found, updating..."
+    cd /d "%PROJECT_ROOT%\vcpkg"
+    git pull
+    call bootstrap-vcpkg.bat
+)
+
+REM Install required packages
+call :print_status "Installing required packages..."
+cd /d "%PROJECT_ROOT%\vcpkg"
+vcpkg install openssl:x64-windows
+vcpkg install jsoncpp:x64-windows
+vcpkg install zlib:x64-windows
+
+REM Install optional development tools
+vcpkg install cppcheck:x64-windows
+vcpkg install gtest:x64-windows
+
 call :print_success "Dependencies installed successfully"
 goto :eof
 
-REM Function to build the project
+REM Function to clean build directory
+:clean_build
+if "%CLEAN%"=="true" (
+    call :print_status "Cleaning build directory..."
+    if exist "%BUILD_DIR%" rmdir /s /q "%BUILD_DIR%"
+    if exist "%DIST_DIR%" rmdir /s /q "%DIST_DIR%"
+    call :print_success "Build directory cleaned"
+)
+goto :eof
+
+REM Function to build project
 :build_project
-call :print_status "Building Simple RSync Daemon..."
+call :print_status "Building simple-rsyncd..."
 
 REM Create build directory
-if exist "build" (
-    call :print_warning "Build directory already exists, cleaning..."
-    rmdir /s /q build
-)
+if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+cd /d "%BUILD_DIR%"
 
-mkdir build
-cd build
+REM Configure CMake
+cmake .. ^
+    -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+    -DBUILD_SHARED_LIBS=%BUILD_SHARED_LIBS% ^
+    -DENABLE_TESTS=%BUILD_TESTS% ^
+    -DENABLE_SSL=%ENABLE_SSL% ^
+    -DENABLE_JSON=%ENABLE_JSON% ^
+    -DENABLE_STATIC_LINKING=%ENABLE_STATIC_LINKING% ^
+    -DENABLE_PACKAGING=ON ^
+    -DCMAKE_TOOLCHAIN_FILE="%PROJECT_ROOT%\vcpkg\scripts\buildsystems\vcpkg.cmake"
 
-REM Configure with CMake
-call :print_status "Configuring with CMake..."
-cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DENABLE_LOGGING=ON -DENABLE_SSL=ON -DCMAKE_TOOLCHAIN_FILE="%USERPROFILE%\vcpkg\scripts\buildsystems\vcpkg.cmake"
 if %ERRORLEVEL% NEQ 0 (
     call :print_error "CMake configuration failed"
     set "EXIT_CODE=1"
     goto :end
 )
 
-REM Build
-call :print_status "Building project..."
-cmake --build . --config Release
+REM Build project
+cmake --build . --config %BUILD_TYPE% --parallel
+
 if %ERRORLEVEL% NEQ 0 (
     call :print_error "Build failed"
     set "EXIT_CODE=1"
@@ -170,302 +210,289 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 call :print_success "Build completed successfully"
-cd ..
 goto :eof
 
 REM Function to run tests
 :run_tests
-call :print_status "Running tests..."
-cd build
-if exist "Makefile" (
-    make test
+if "%BUILD_TESTS%"=="ON" (
+    call :print_status "Running tests..."
+    cd /d "%BUILD_DIR%"
+    
+    ctest --output-on-failure --config %BUILD_TYPE%
+    
     if %ERRORLEVEL% NEQ 0 (
-        call :print_warning "Some tests failed"
+        call :print_warning "Some tests failed, but continuing..."
     ) else (
-        call :print_success "Tests completed successfully"
+        call :print_success "All tests passed"
     )
-) else (
-    call :print_warning "No tests found or build not completed"
 )
-cd ..
 goto :eof
 
-REM Function to install the project
+REM Function to install project
 :install_project
-call :print_status "Installing Simple RSync Daemon..."
-cd build
-if exist "Makefile" (
-    cmake --install .
+if "%INSTALL%"=="true" (
+    call :print_status "Installing simple-rsyncd..."
+    cd /d "%BUILD_DIR%"
+    
+    cmake --install . --config %BUILD_TYPE%
+    
     if %ERRORLEVEL% NEQ 0 (
         call :print_error "Installation failed"
         set "EXIT_CODE=1"
         goto :end
     )
     
-    call :print_success "Installation completed successfully"
+    call :print_success "Installation successful"
+)
+goto :eof
+
+REM Function to create packages
+:create_packages
+if "%PACKAGE%"=="true" (
+    call :print_status "Creating Windows packages..."
+    cd /d "%BUILD_DIR%"
     
-    REM Show installation info
-    echo.
-    call :print_status "Installation Summary:"
-    echo   Binary: C:\Program Files\simple-rsyncd\bin\simple-rsyncd.exe
-    echo   Library: C:\Program Files\simple-rsyncd\lib\simple-rsyncd.lib
-    echo   Headers: C:\Program Files\simple-rsyncd\include\simple-rsyncd\
-    echo   Config: C:\Program Files\simple-rsyncd\etc\simple-rsyncd\
-    echo   Docs: C:\Program Files\simple-rsyncd\share\simple-rsyncd\docs\
+    REM Create distribution directory
+    if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
     
-    REM Test binary
-    if exist "C:\Program Files\simple-rsyncd\bin\simple-rsyncd.exe" (
-        echo.
-        call :print_status "Testing binary..."
-        "C:\Program Files\simple-rsyncd\bin\simple-rsyncd.exe" --version
-    )
-) else (
-    call :print_error "Build not completed, cannot install"
-    set "EXIT_CODE=1"
-    goto :end
-)
-cd ..
-goto :eof
-
-REM Function to create package
-:create_package
-call :print_status "Creating package..."
-cd build
-if exist "Makefile" (
-    REM Check if cpack is available
-    call :command_exists cpack
-    if "%COMMAND_EXISTS%"=="true" (
-        cmake --build . --target package
-        if %ERRORLEVEL% NEQ 0 (
-            call :print_warning "Package creation failed"
-        ) else (
-            call :print_success "Package created successfully"
-            
-            REM List created packages
-            dir *.msi *.zip 2>nul
-            if %ERRORLEVEL% NEQ 0 (
-                call :print_warning "No packages found"
-            )
-        )
-    ) else (
-        call :print_warning "cpack not available, skipping package creation"
-    )
-) else (
-    call :print_error "Build not completed, cannot create package"
-    set "EXIT_CODE=1"
-    goto :end
-)
-cd ..
-goto :eof
-
-REM Function to create Windows service
-:create_windows_service
-call :print_status "Creating Windows service..."
-if exist "C:\Program Files\simple-rsyncd\bin\simple-rsyncd.exe" (
-    REM Check if sc.exe is available
-    call :command_exists sc
-    if "%COMMAND_EXISTS%"=="true" (
-        sc create "SimpleRSyncDaemon" binPath= "C:\Program Files\simple-rsyncd\bin\simple-rsyncd.exe start --daemon" start= auto
-        if %ERRORLEVEL% EQU 0 (
-            call :print_success "Windows service created successfully"
-            echo.
-            call :print_status "Service management commands:"
-            echo   sc start SimpleRSyncDaemon
-            echo   sc query SimpleRSyncDaemon
-            echo   sc stop SimpleRSyncDaemon
-            echo   sc delete SimpleRSyncDaemon
-        ) else (
-            call :print_warning "Failed to create Windows service"
-        )
-    ) else (
-        call :print_warning "sc.exe not available, cannot create service"
-    )
-) else (
-    call :print_warning "Binary not found, cannot create service"
+    REM Create packages using CPack
+    cpack
+    
+    REM Move packages to dist directory
+    move *.msi "%DIST_DIR%\" 2>nul
+    move *.exe "%DIST_DIR%\" 2>nul
+    
+    call :print_success "Packages created in %DIST_DIR%"
+    dir "%DIST_DIR%"
 )
 goto :eof
 
-REM Function to show help
-:show_help
-echo Usage: %~nx0 [OPTIONS]
+REM Function to create static binary package
+:create_static_package
+if "%ENABLE_STATIC_LINKING%"=="ON" (
+    call :print_status "Creating static binary package..."
+    
+    REM Create distribution directory
+    if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
+    
+    REM Create static binary directory
+    set "STATIC_DIR=%DIST_DIR%\simple-rsyncd-0.1.0-static-windows"
+    if not exist "%STATIC_DIR%" mkdir "%STATIC_DIR%"
+    
+    REM Copy binary and files
+    copy "%BUILD_DIR%\simple-rsyncd.exe" "%STATIC_DIR%\"
+    copy "%PROJECT_ROOT%\README.md" "%STATIC_DIR%\"
+    copy "%PROJECT_ROOT%\LICENSE" "%STATIC_DIR%\"
+    if exist "%PROJECT_ROOT%\config" xcopy "%PROJECT_ROOT%\config" "%STATIC_DIR%\config\" /E /I
+    
+    REM Create ZIP package
+    cd /d "%DIST_DIR%"
+    powershell -Command "Compress-Archive -Path 'simple-rsyncd-0.1.0-static-windows' -DestinationPath 'simple-rsyncd-0.1.0-static-windows.zip' -Force"
+    rmdir /s /q "simple-rsyncd-0.1.0-static-windows"
+    
+    call :print_success "Static binary package created: simple-rsyncd-0.1.0-static-windows.zip"
+)
+goto :eof
+
+REM Function to show usage
+:show_usage
+echo simple-rsyncd - Windows Build Script
+echo.
+echo Usage: %0 [OPTIONS]
 echo.
 echo Options:
-echo   -h, --help          Show this help message
-echo   -d, --deps          Install dependencies only
-echo   -b, --build         Build project only
-echo   -t, --test          Run tests only
-echo   -i, --install       Install project only
-echo   -p, --package       Create package only
-echo   -s, --service       Create Windows service
-echo   -a, --all           Full build and install (default)
+echo     -h, --help              Show this help message
+echo     -d, --deps              Install dependencies only
+echo     -b, --build             Build project only
+echo     -t, --test              Run tests only
+echo     -i, --install           Install project only
+echo     -p, --package           Create packages only
+echo     -a, --all               Full build and install (default)
+echo     --static                Build static binary
+echo     --debug                 Build in debug mode
+echo     --clean                 Clean build directory before building
+echo     --no-tests              Disable tests
+echo     --no-ssl                Disable SSL support
+echo     --no-json               Disable JSON support
 echo.
 echo Examples:
-echo   %~nx0               # Full build and install
-echo   %~nx0 --deps        # Install dependencies only
-echo   %~nx0 --build       # Build project only
-echo   %~nx0 --install     # Install from existing build
-echo   %~nx0 --service     # Create Windows service
+echo     %0                      # Full build and install
+echo     %0 --deps               # Install dependencies only
+echo     %0 --build --test       # Build and test
+echo     %0 --static --package   # Build static binary and create packages
+echo     %0 --clean --all        # Clean build and full install
+echo.
 goto :eof
 
-REM Main function
-:main
-call :print_status "Simple RSync Daemon Build Script for Windows"
-echo.
-
-REM Parse command line arguments
-set "INSTALL_DEPS=false"
-set "BUILD_PROJECT=false"
-set "RUN_TESTS=false"
-set "INSTALL_PROJECT=false"
-set "CREATE_PACKAGE=false"
-set "CREATE_SERVICE=false"
-set "FULL_BUILD=true"
-
-:parse_args
-if "%~1"=="" goto :end_parse
-if "%~1"=="-h" goto :help
-if "%~1"=="--help" goto :help
-if "%~1"=="-d" goto :set_deps
-if "%~1"=="--deps" goto :set_deps
-if "%~1"=="-b" goto :set_build
-if "%~1"=="--build" goto :set_build
-if "%~1"=="-t" goto :set_test
-if "%~1"=="--test" goto :set_test
-if "%~1"=="-i" goto :set_install
-if "%~1"=="--install" goto :set_install
-if "%~1"=="-p" goto :set_package
-if "%~1"=="--package" goto :set_package
-if "%~1"=="-s" goto :set_service
-if "%~1"=="--service" goto :set_service
-if "%~1"=="-a" goto :set_all
-if "%~1"=="--all" goto :set_all
+REM Function to parse command line arguments
+:parse_arguments
+:parse_loop
+if "%~1"=="" goto :parse_done
+if "%~1"=="-h" goto :parse_help
+if "%~1"=="--help" goto :parse_help
+if "%~1"=="-d" goto :parse_deps
+if "%~1"=="--deps" goto :parse_deps
+if "%~1"=="-b" goto :parse_build
+if "%~1"=="--build" goto :parse_build
+if "%~1"=="-t" goto :parse_test
+if "%~1"=="--test" goto :parse_test
+if "%~1"=="-i" goto :parse_install
+if "%~1"=="--install" goto :parse_install
+if "%~1"=="-p" goto :parse_package
+if "%~1"=="--package" goto :parse_package
+if "%~1"=="-a" goto :parse_all
+if "%~1"=="--all" goto :parse_all
+if "%~1"=="--static" goto :parse_static
+if "%~1"=="--debug" goto :parse_debug
+if "%~1"=="--clean" goto :parse_clean
+if "%~1"=="--no-tests" goto :parse_no_tests
+if "%~1"=="--no-ssl" goto :parse_no_ssl
+if "%~1"=="--no-json" goto :parse_no_json
 call :print_error "Unknown option: %~1"
-call :show_help
+call :show_usage
 set "EXIT_CODE=1"
 goto :end
 
-:help
-call :show_help
-goto :end
+:parse_help
+call :show_usage
+exit /b 0
 
-:set_deps
-set "INSTALL_DEPS=true"
-set "FULL_BUILD=false"
+:parse_deps
+set "DEPENDENCIES_ONLY=true"
 shift
-goto :parse_args
+goto :parse_loop
 
-:set_build
-set "BUILD_PROJECT=true"
-set "FULL_BUILD=false"
+:parse_build
+set "BUILD_ONLY=true"
 shift
-goto :parse_args
+goto :parse_loop
 
-:set_test
-set "RUN_TESTS=true"
-set "FULL_BUILD=false"
+:parse_test
+set "TEST_ONLY=true"
 shift
-goto :parse_args
+goto :parse_loop
 
-:set_install
-set "INSTALL_PROJECT=true"
-set "FULL_BUILD=false"
+:parse_install
+set "INSTALL_ONLY=true"
 shift
-goto :parse_args
+goto :parse_loop
 
-:set_package
-set "CREATE_PACKAGE=true"
-set "FULL_BUILD=false"
+:parse_package
+set "PACKAGE_ONLY=true"
 shift
-goto :parse_args
+goto :parse_loop
 
-:set_service
-set "CREATE_SERVICE=true"
-set "FULL_BUILD=false"
+:parse_all
+set "ALL=true"
 shift
-goto :parse_args
+goto :parse_loop
 
-:set_all
-set "FULL_BUILD=true"
+:parse_static
+set "ENABLE_STATIC_LINKING=ON"
 shift
-goto :parse_args
+goto :parse_loop
 
-:end_parse
+:parse_debug
+set "BUILD_TYPE=Debug"
+shift
+goto :parse_loop
 
-REM Check if running as administrator
-net session >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    call :print_warning "Not running as administrator. Some operations may fail."
+:parse_clean
+set "CLEAN=true"
+shift
+goto :parse_loop
+
+:parse_no_tests
+set "BUILD_TESTS=OFF"
+shift
+goto :parse_loop
+
+:parse_no_ssl
+set "ENABLE_SSL=OFF"
+shift
+goto :parse_loop
+
+:parse_no_json
+set "ENABLE_JSON=OFF"
+shift
+goto :parse_loop
+
+:parse_done
+REM Set default action if none specified
+if not defined DEPENDENCIES_ONLY if not defined BUILD_ONLY if not defined TEST_ONLY if not defined INSTALL_ONLY if not defined PACKAGE_ONLY if not defined ALL (
+    set "ALL=true"
 )
+goto :eof
 
-REM Check if we're in the right directory
-if not exist "CMakeLists.txt" (
-    call :print_error "CMakeLists.txt not found. Please run this script from the project root directory."
-    set "EXIT_CODE=1"
-    goto :end
-)
+REM Main execution
+:main
+call :print_status "Starting simple-rsyncd build process..."
 
-REM Detect Windows version
+REM Parse command line arguments
+call :parse_arguments %*
+
+REM Check system requirements
 call :detect_windows
-
-REM Check Visual Studio
 call :check_visual_studio
-if %EXIT_CODE% NEQ 0 goto :end
-
-REM Check CMake
 call :check_cmake
-if %EXIT_CODE% NEQ 0 goto :end
+call :check_git
 
-REM Check vcpkg
-call :check_vcpkg
-
-REM Execute requested actions
-if "%FULL_BUILD%"=="true" (
-    call :print_status "Performing full build and install..."
+REM Install dependencies
+if defined DEPENDENCIES_ONLY (
     call :install_dependencies
-    if %EXIT_CODE% NEQ 0 goto :end
-    call :build_project
-    if %EXIT_CODE% NEQ 0 goto :end
-    call :run_tests
-    call :install_project
-    if %EXIT_CODE% NEQ 0 goto :end
-    call :create_package
-    call :create_windows_service
-) else (
-    if "%INSTALL_DEPS%"=="true" (
-        call :install_dependencies
-        if %EXIT_CODE% NEQ 0 goto :end
-    )
-    
-    if "%BUILD_PROJECT%"=="true" (
-        call :install_dependencies
-        if %EXIT_CODE% NEQ 0 goto :end
-        call :build_project
-        if %EXIT_CODE% NEQ 0 goto :end
-    )
-    
-    if "%RUN_TESTS%"=="true" (
-        call :run_tests
-    )
-    
-    if "%INSTALL_PROJECT%"=="true" (
-        call :install_project
-        if %EXIT_CODE% NEQ 0 goto :end
-    )
-    
-    if "%CREATE_PACKAGE%"=="true" (
-        call :create_package
-    )
-    
-    if "%CREATE_SERVICE%"=="true" (
-        call :create_windows_service
-    )
+    call :print_success "Dependencies installed successfully"
+    goto :end
+) else if defined ALL (
+    call :install_dependencies
 )
 
-call :print_success "Build script completed successfully!"
+REM Clean build directory
+call :clean_build
+
+REM Build project
+if defined BUILD_ONLY (
+    call :build_project
+    call :print_success "Build completed successfully"
+    goto :end
+) else if defined ALL (
+    call :build_project
+)
+
+REM Run tests
+if defined TEST_ONLY (
+    call :run_tests
+    call :print_success "Tests completed"
+    goto :end
+) else if defined ALL (
+    call :run_tests
+)
+
+REM Install project
+if defined INSTALL_ONLY (
+    set "INSTALL=true"
+    call :install_project
+    call :print_success "Installation completed successfully"
+    goto :end
+) else if defined ALL (
+    set "INSTALL=true"
+    call :install_project
+)
+
+REM Create packages
+if defined PACKAGE_ONLY (
+    set "PACKAGE=true"
+    call :create_packages
+    call :create_static_package
+    call :print_success "Packages created successfully"
+    goto :end
+) else if defined ALL (
+    set "PACKAGE=true"
+    call :create_packages
+    call :create_static_package
+)
+
+call :print_success "simple-rsyncd build process completed successfully!"
 goto :end
 
 :end
-if %EXIT_CODE% NEQ 0 (
-    call :print_error "Build script failed with exit code %EXIT_CODE%"
-)
 exit /b %EXIT_CODE%

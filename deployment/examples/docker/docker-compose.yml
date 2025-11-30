@@ -11,10 +11,10 @@ services:
       - ./data:/var/lib/simple-rsyncd
       - ./logs:/var/log/simple-rsyncd
     environment:
-      - SIMPLE_RSYNCD_CONFIG=/etc/simple-rsyncd/rsyncd.conf
-      - SIMPLE_RSYNCD_LOG_LEVEL=info
-      - SIMPLE_RSYNCD_BIND_ADDRESS=0.0.0.0
-      - SIMPLE_RSYNCD_BIND_PORT=873
+      - SIMPLE-RSYNCD_CONFIG=/etc/simple-rsyncd/simple-rsyncd.conf
+      - SIMPLE-RSYNCD_LOG_LEVEL=info
+      - SIMPLE-RSYNCD_BIND_ADDRESS=0.0.0.0
+      - SIMPLE-RSYNCD_BIND_PORT=873
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "873"]
@@ -23,10 +23,10 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - rsync-network
+      - simple-rsyncd-network
 
 networks:
-  rsync-network:
+  simple-rsyncd-network:
     driver: bridge
     ipam:
       config:

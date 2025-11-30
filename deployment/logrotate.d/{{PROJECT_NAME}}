@@ -1,0 +1,14 @@
+/var/log/simple-rsyncd/*.log {
+    daily
+    missingok
+    rotate 52
+    compress
+    delaycompress
+    notifempty
+    create 644 _simple-rsyncd _simple-rsyncd
+    postrotate
+        /bin/systemctl reload simple-rsyncd > /dev/null 2>&1 || true
+    endscript
+    sharedscripts
+    su _simple-rsyncd _simple-rsyncd
+}

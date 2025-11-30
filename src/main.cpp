@@ -31,9 +31,9 @@
 #include <pwd.h>
 #include <grp.h>
 
-#include "simple_rsyncd/rsync_daemon.hpp"
-#include "simple_rsyncd/configuration.hpp"
-#include "simple_rsyncd/logger.hpp"
+#include "simple-rsyncd/core/daemon.hpp"
+#include "simple-rsyncd/config/config.hpp"
+#include "simple-rsyncd/utils/logger.hpp"
 
 // Global daemon instance for signal handling
 std::unique_ptr<simple_rsyncd::RSyncDaemon> g_daemon;

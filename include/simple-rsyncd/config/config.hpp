@@ -23,7 +23,7 @@
 #include <optional>
 #include <variant>
 
-#include "simple_rsyncd/module.hpp"
+#include "simple-rsyncd/core/module.hpp"
 
 namespace simple_rsyncd {
 

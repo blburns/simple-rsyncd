@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "simple_rsyncd/logger.hpp"
+#include "simple-rsyncd/utils/logger.hpp"
 #include <iostream>
 #include <chrono>
 #include <iomanip>

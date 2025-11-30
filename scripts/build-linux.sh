@@ -1,5 +1,5 @@
 #!/bin/bash
-# Generic Linux build script for Simple RSync Daemon
+# Generic Linux build script for simple-rsyncd
 # Automatically detects distribution and uses appropriate package manager
 
 set -e
@@ -10,6 +10,24 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Script configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+BUILD_DIR="$PROJECT_ROOT/build"
+DIST_DIR="$PROJECT_ROOT/dist"
+
+# Build options
+BUILD_TYPE="Release"
+BUILD_SHARED_LIBS="OFF"
+BUILD_TESTS="ON"
+ENABLE_SSL="ON"
+ENABLE_JSON="ON"
+ENABLE_STATIC_LINKING="OFF"
+PACKAGE="false"
+INSTALL="false"
+SERVICE="false"
+CLEAN="false"
 
 # Function to print colored output
 print_status() {
@@ -99,7 +117,7 @@ install_dependencies() {
             # Update package list
             sudo apt-get update
             
-            # Install essential build tools
+            # Install build tools
             sudo apt-get install -y \
                 build-essential \
                 cmake \
@@ -114,45 +132,34 @@ install_dependencies() {
                 libjsoncpp-dev \
                 libpthread-stubs0-dev
             
-            # Install additional tools (optional)
+            # Install optional development tools
             sudo apt-get install -y \
                 clang-format \
                 cppcheck \
                 valgrind \
                 gdb \
-                doxygen
+                lcov
             ;;
-            
         "dnf"|"yum")
-            # Update package list
-            if [ "$PACKAGE_MANAGER" = "dnf" ]; then
-                sudo dnf update -y
+            # Enable EPEL repository for additional packages
+            if command_exists dnf; then
+                sudo dnf install -y epel-release
             else
-                sudo yum update -y
+                sudo yum install -y epel-release
             fi
             
-            # Install EPEL repository for additional packages
-            if [ "$DISTRO_ID" = "rhel" ] || [ "$DISTRO_ID" = "centos" ]; then
-                print_status "Installing EPEL repository..."
-                if [ "$PACKAGE_MANAGER" = "dnf" ]; then
-                    sudo dnf install -y epel-release
-                else
-                    sudo yum install -y epel-release
-                fi
-            fi
-            
-            # Install essential build tools
-            if [ "$PACKAGE_MANAGER" = "dnf" ]; then
+            # Install build tools
+            if command_exists dnf; then
+                sudo dnf groupinstall -y "Development Tools"
                 sudo dnf install -y \
-                    gcc-c++ \
                     cmake \
                     pkgconfig \
                     git \
                     wget \
                     curl
             else
+                sudo yum groupinstall -y "Development Tools"
                 sudo yum install -y \
-                    gcc-c++ \
                     cmake \
                     pkgconfig \
                     git \
@@ -161,70 +168,68 @@ install_dependencies() {
             fi
             
             # Install development libraries
-            if [ "$PACKAGE_MANAGER" = "dnf" ]; then
+            if command_exists dnf; then
                 sudo dnf install -y \
                     openssl-devel \
-                    jsoncpp-devel \
-                    libpthread-stubs0-devel
+                    jsoncpp-devel
             else
                 sudo yum install -y \
                     openssl-devel \
-                    jsoncpp-devel \
-                    libpthread-stubs0-devel
+                    jsoncpp-devel
             fi
             
-            # Install additional tools (optional)
-            if [ "$PACKAGE_MANAGER" = "dnf" ]; then
+            # Install optional development tools
+            if command_exists dnf; then
                 sudo dnf install -y \
                     clang-tools-extra \
                     cppcheck \
                     valgrind \
                     gdb \
-                    doxygen
+                    lcov
             else
                 sudo yum install -y \
                     clang-tools-extra \
                     cppcheck \
                     valgrind \
                     gdb \
-                    doxygen
+                    lcov
             fi
             ;;
-            
         "pacman")
-            # Update package list
+            # Update package database
             sudo pacman -Sy
             
-            # Install essential build tools
-            sudo pacman -S --needed \
+            # Install build tools
+            sudo pacman -S --needed --noconfirm \
                 base-devel \
                 cmake \
-                pkg-config \
+                pkgconf \
                 git \
                 wget \
                 curl
             
             # Install development libraries
-            sudo pacman -S --needed \
+            sudo pacman -S --needed --noconfirm \
                 openssl \
                 jsoncpp
             
-            # Install additional tools (optional)
-            sudo pacman -S --needed \
+            # Install optional development tools
+            sudo pacman -S --needed --noconfirm \
                 clang \
                 cppcheck \
                 valgrind \
                 gdb \
-                doxygen
+                lcov
             ;;
-            
         "zypper")
-            # Update package list
+            # Update package database
             sudo zypper refresh
             
-            # Install essential build tools
-            sudo zypper install \
+            # Install build tools
+            sudo zypper install -y \
+                gcc \
                 gcc-c++ \
+                make \
                 cmake \
                 pkg-config \
                 git \
@@ -232,19 +237,18 @@ install_dependencies() {
                 curl
             
             # Install development libraries
-            sudo zypper install \
-                openssl-devel \
+            sudo zypper install -y \
+                libopenssl-devel \
                 jsoncpp-devel
             
-            # Install additional tools (optional)
-            sudo zypper install \
+            # Install optional development tools
+            sudo zypper install -y \
                 clang \
                 cppcheck \
                 valgrind \
                 gdb \
-                doxygen
+                lcov
             ;;
-            
         *)
             print_error "Unsupported package manager: $PACKAGE_MANAGER"
             exit 1
@@ -254,302 +258,310 @@ install_dependencies() {
     print_success "Dependencies installed successfully"
 }
 
-# Function to check dependencies
-check_dependencies() {
-    print_status "Checking build dependencies..."
-    
-    local missing_deps=()
-    
-    # Check required commands
-    for cmd in g++ cmake pkg-config; do
-        if ! command_exists "$cmd"; then
-            missing_deps+=("$cmd")
-        fi
-    done
-    
-    # Check required libraries
-    if ! pkg-config --exists openssl; then
-        case "$PACKAGE_MANAGER" in
-            "apt") missing_deps+=("libssl-dev") ;;
-            "dnf"|"yum") missing_deps+=("openssl-devel") ;;
-            "pacman") missing_deps+=("openssl") ;;
-            "zypper") missing_deps+=("openssl-devel") ;;
-        esac
-    fi
-    
-    if ! pkg-config --exists jsoncpp; then
-        case "$PACKAGE_MANAGER" in
-            "apt") missing_deps+=("libjsoncpp-dev") ;;
-            "dnf"|"yum") missing_deps+=("jsoncpp-devel") ;;
-            "pacman") missing_deps+=("jsoncpp") ;;
-            "zypper") missing_deps+=("jsoncpp-devel") ;;
-        esac
-    fi
-    
-    if [ ${#missing_deps[@]} -ne 0 ]; then
-        print_error "Missing dependencies: ${missing_deps[*]}"
-        print_status "Installing missing dependencies..."
-        install_dependencies
-    else
-        print_success "All dependencies are available"
+# Function to clean build directory
+clean_build() {
+    if [ "$CLEAN" = "true" ]; then
+        print_status "Cleaning build directory..."
+        rm -rf "$BUILD_DIR"
+        rm -rf "$DIST_DIR"
+        print_success "Build directory cleaned"
     fi
 }
 
-# Function to build the project
+# Function to build project
 build_project() {
-    print_status "Building Simple RSync Daemon..."
+    print_status "Building simple-rsyncd..."
     
     # Create build directory
-    if [ -d "build" ]; then
-        print_warning "Build directory already exists, cleaning..."
-        rm -rf build
-    fi
+    mkdir -p "$BUILD_DIR"
+    cd "$BUILD_DIR"
     
-    mkdir -p build
-    cd build
-    
-    # Configure with CMake
-    print_status "Configuring with CMake..."
+    # Configure CMake
     cmake .. \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DBUILD_TESTS=ON \
-        -DBUILD_EXAMPLES=ON \
-        -DENABLE_LOGGING=ON \
-        -DENABLE_SSL=ON
+        -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+        -DBUILD_SHARED_LIBS="$BUILD_SHARED_LIBS" \
+        -DENABLE_TESTS="$BUILD_TESTS" \
+        -DENABLE_SSL="$ENABLE_SSL" \
+        -DENABLE_JSON="$ENABLE_JSON" \
+        -DENABLE_STATIC_LINKING="$ENABLE_STATIC_LINKING" \
+        -DENABLE_PACKAGING=ON
     
-    # Build
-    print_status "Building project..."
-    local cpu_count=$(nproc)
-    make -j"$cpu_count"
+    # Build project
+    make -j$(nproc)
     
     print_success "Build completed successfully"
 }
 
 # Function to run tests
 run_tests() {
-    print_status "Running tests..."
-    
-    if [ -f "Makefile" ]; then
-        make test
-        print_success "Tests completed"
-    else
-        print_warning "No tests found or build not completed"
-    fi
-}
-
-# Function to install the project
-install_project() {
-    print_status "Installing Simple RSync Daemon..."
-    
-    if [ -f "Makefile" ]; then
-        sudo make install
-        print_success "Installation completed successfully"
+    if [ "$BUILD_TESTS" = "ON" ]; then
+        print_status "Running tests..."
+        cd "$BUILD_DIR"
         
-        # Show installation info
-        echo ""
-        print_status "Installation Summary:"
-        echo "  Binary: /usr/local/bin/simple-rsyncd-x86_64"
-        echo "  Library: /usr/local/lib/libsimple-rsyncd.so"
-        echo "  Headers: /usr/local/include/simple-rsyncd/"
-        echo "  Config: /usr/local/etc/simple-rsyncd/"
-        echo "  Docs: /usr/local/share/simple-rsyncd/docs/"
-        
-        # Test binary
-        if command_exists simple-rsyncd-x86_64; then
-            echo ""
-            print_status "Testing binary..."
-            simple-rsyncd-x86_64 --version
-        fi
-    else
-        print_error "Build not completed, cannot install"
-        exit 1
-    fi
-}
-
-# Function to create package
-create_package() {
-    print_status "Creating package..."
-    
-    if [ -f "Makefile" ]; then
-        # Check if cpack is available
-        if command_exists cpack; then
-            make package
-            print_success "Package created successfully"
-            
-            # List created packages
-            ls -la *.deb *.rpm 2>/dev/null || print_warning "No packages found"
+        if make test; then
+            print_success "All tests passed"
         else
-            print_warning "cpack not available, skipping package creation"
+            print_warning "Some tests failed, but continuing..."
         fi
-    else
-        print_error "Build not completed, cannot create package"
-        exit 1
     fi
 }
 
-# Function to create systemd service
-create_systemd_service() {
-    print_status "Creating systemd service..."
-    
-    if [ -f "/usr/local/share/simple-rsyncd/systemd/simple-rsyncd.service" ]; then
-        sudo cp /usr/local/share/simple-rsyncd/systemd/simple-rsyncd.service /etc/systemd/system/
+# Function to install project
+install_project() {
+    if [ "$INSTALL" = "true" ]; then
+        print_status "Installing simple-rsyncd..."
+        cd "$BUILD_DIR"
+        
+        sudo make install
+        
+        # Test installation
+        if command_exists simple-rsyncd; then
+            print_success "Installation successful"
+            simple-rsyncd --version
+        else
+            print_error "Installation failed - binary not found in PATH"
+            exit 1
+        fi
+    fi
+}
+
+# Function to create packages
+create_packages() {
+    if [ "$PACKAGE" = "true" ]; then
+        print_status "Creating packages..."
+        cd "$BUILD_DIR"
+        
+        # Create distribution directory
+        mkdir -p "$DIST_DIR"
+        
+        # Create packages using CPack
+        cpack
+        
+        # Move packages to dist directory
+        mv *.deb *.rpm *.tar.gz "$DIST_DIR/" 2>/dev/null || true
+        
+        print_success "Packages created in $DIST_DIR"
+        ls -la "$DIST_DIR"
+    fi
+}
+
+# Function to create system service
+create_service() {
+    if [ "$SERVICE" = "true" ]; then
+        print_status "Creating systemd service..."
+        
+        # Create systemd service file
+        sudo tee /etc/systemd/system/simple-rsyncd.service > /dev/null << EOF
+[Unit]
+Description=Simple RSync Daemon - A lightweight and secure rsync server
+After=network.target
+
+[Service]
+Type=simple
+User=simple-rsyncd
+Group=simple-rsyncd
+ExecStart=/usr/local/bin/simple-rsyncd --daemon
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        
+        # Create user and group
+        sudo useradd --system --no-create-home --shell /bin/false simple-rsyncd 2>/dev/null || true
+        
+        # Reload systemd and enable service
         sudo systemctl daemon-reload
         sudo systemctl enable simple-rsyncd
-        print_success "Systemd service created and enabled"
         
-        echo ""
-        print_status "Service management commands:"
-        echo "  sudo systemctl start simple-rsyncd"
-        echo "  sudo systemctl status simple-rsyncd"
-        echo "  sudo systemctl stop simple-rsyncd"
-        echo "  sudo systemctl restart simple-rsyncd"
-    else
-        print_warning "Systemd service file not found"
+        print_success "Systemd service created and enabled"
+        print_status "Use 'sudo systemctl start simple-rsyncd' to start the service"
     fi
 }
 
-# Function to show help
-show_help() {
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  -h, --help          Show this help message"
-    echo "  -d, --deps          Install dependencies only"
-    echo "  -b, --build         Build project only"
-    echo "  -t, --test          Run tests only"
-    echo "  -i, --install       Install project only"
-    echo "  -p, --package       Create package only"
-    echo "  -s, --service       Create systemd service"
-    echo "  -a, --all           Full build and install (default)"
-    echo ""
-    echo "Examples:"
-    echo "  $0                  # Full build and install"
-    echo "  $0 --deps           # Install dependencies only"
-    echo "  $0 --build          # Build project only"
-    echo "  $0 --install        # Install from existing build"
-    echo "  $0 --service        # Create systemd service"
-    echo ""
-    echo "Supported distributions:"
-    echo "  - Debian/Ubuntu (apt)"
-    echo "  - Red Hat/CentOS/Fedora (dnf/yum)"
-    echo "  - Arch Linux (pacman)"
-    echo "  - openSUSE (zypper)"
+# Function to show usage
+show_usage() {
+    cat << EOF
+simple-rsyncd - Linux Build Script
+
+Usage: $0 [OPTIONS]
+
+Options:
+    -h, --help              Show this help message
+    -d, --deps              Install dependencies only
+    -b, --build             Build project only
+    -t, --test              Run tests only
+    -i, --install           Install project only
+    -p, --package           Create packages only
+    -s, --service           Create system service
+    -a, --all               Full build and install (default)
+    --static                Build static binary
+    --debug                 Build in debug mode
+    --clean                 Clean build directory before building
+    --no-tests              Disable tests
+    --no-ssl                Disable SSL support
+    --no-json               Disable JSON support
+
+Examples:
+    $0                      # Full build and install
+    $0 --deps               # Install dependencies only
+    $0 --build --test       # Build and test
+    $0 --static --package   # Build static binary and create packages
+    $0 --clean --all        # Clean build and full install
+
+EOF
 }
 
-# Main function
-main() {
-    print_status "Simple RSync Daemon Generic Linux Build Script"
-    echo ""
-    
-    # Parse command line arguments
-    local install_deps=false
-    local build_project_flag=false
-    local run_tests_flag=false
-    local install_project_flag=false
-    local create_package_flag=false
-    local create_service_flag=false
-    local full_build=true
-    
+# Function to parse command line arguments
+parse_arguments() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             -h|--help)
-                show_help
+                show_usage
                 exit 0
                 ;;
             -d|--deps)
-                install_deps=true
-                full_build=false
+                DEPENDENCIES_ONLY=true
                 shift
                 ;;
             -b|--build)
-                build_project_flag=true
-                full_build=false
+                BUILD_ONLY=true
                 shift
                 ;;
             -t|--test)
-                run_tests_flag=true
-                full_build=false
+                TEST_ONLY=true
                 shift
                 ;;
             -i|--install)
-                install_project_flag=true
-                full_build=false
+                INSTALL_ONLY=true
                 shift
                 ;;
             -p|--package)
-                create_package_flag=true
-                full_build=false
+                PACKAGE_ONLY=true
                 shift
                 ;;
             -s|--service)
-                create_service_flag=true
-                full_build=false
+                SERVICE_ONLY=true
                 shift
                 ;;
             -a|--all)
-                full_build=true
+                ALL=true
+                shift
+                ;;
+            --static)
+                ENABLE_STATIC_LINKING="ON"
+                shift
+                ;;
+            --debug)
+                BUILD_TYPE="Debug"
+                shift
+                ;;
+            --clean)
+                CLEAN="true"
+                shift
+                ;;
+            --no-tests)
+                BUILD_TESTS="OFF"
+                shift
+                ;;
+            --no-ssl)
+                ENABLE_SSL="OFF"
+                shift
+                ;;
+            --no-json)
+                ENABLE_JSON="OFF"
                 shift
                 ;;
             *)
                 print_error "Unknown option: $1"
-                show_help
+                show_usage
                 exit 1
                 ;;
         esac
     done
     
-    # Detect distribution and package manager
+    # Set default action if none specified
+    if [ -z "$DEPENDENCIES_ONLY" ] && [ -z "$BUILD_ONLY" ] && [ -z "$TEST_ONLY" ] && 
+       [ -z "$INSTALL_ONLY" ] && [ -z "$PACKAGE_ONLY" ] && [ -z "$SERVICE_ONLY" ] && 
+       [ -z "$ALL" ]; then
+        ALL=true
+    fi
+}
+
+# Main execution
+main() {
+    print_status "Starting simple-rsyncd build process..."
+    
+    # Parse command line arguments
+    parse_arguments "$@"
+    
+    # Detect distribution
     detect_distro
     
-    # Check if running as root
-    if [[ $EUID -eq 0 ]]; then
-        print_error "This script should not be run as root"
-        exit 1
+    # Install dependencies
+    if [ "$DEPENDENCIES_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        install_dependencies
+        if [ "$DEPENDENCIES_ONLY" = "true" ]; then
+            print_success "Dependencies installed successfully"
+            exit 0
+        fi
     fi
     
-    # Check if we're in the right directory
-    if [ ! -f "CMakeLists.txt" ]; then
-        print_error "CMakeLists.txt not found. Please run this script from the project root directory."
-        exit 1
-    fi
+    # Clean build directory
+    clean_build
     
-    # Execute requested actions
-    if [ "$full_build" = true ]; then
-        print_status "Performing full build and install..."
-        check_dependencies
+    # Build project
+    if [ "$BUILD_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
         build_project
-        run_tests
-        install_project
-        create_package
-        create_systemd_service
-    else
-        if [ "$install_deps" = true ]; then
-            install_dependencies
-        fi
-        
-        if [ "$build_project_flag" = true ]; then
-            check_dependencies
-            build_project
-        fi
-        
-        if [ "$run_tests_flag" = true ]; then
-            run_tests
-        fi
-        
-        if [ "$install_project_flag" = true ]; then
-            install_project
-        fi
-        
-        if [ "$create_package_flag" = true ]; then
-            create_package
-        fi
-        
-        if [ "$create_service_flag" = true ]; then
-            create_systemd_service
+        if [ "$BUILD_ONLY" = "true" ]; then
+            print_success "Build completed successfully"
+            exit 0
         fi
     fi
     
-    print_success "Build script completed successfully!"
+    # Run tests
+    if [ "$TEST_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        run_tests
+        if [ "$TEST_ONLY" = "true" ]; then
+            print_success "Tests completed"
+            exit 0
+        fi
+    fi
+    
+    # Install project
+    if [ "$INSTALL_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        INSTALL="true"
+        install_project
+        if [ "$INSTALL_ONLY" = "true" ]; then
+            print_success "Installation completed successfully"
+            exit 0
+        fi
+    fi
+    
+    # Create packages
+    if [ "$PACKAGE_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        PACKAGE="true"
+        create_packages
+        if [ "$PACKAGE_ONLY" = "true" ]; then
+            print_success "Packages created successfully"
+            exit 0
+        fi
+    fi
+    
+    # Create service
+    if [ "$SERVICE_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        SERVICE="true"
+        create_service
+        if [ "$SERVICE_ONLY" = "true" ]; then
+            print_success "Service created successfully"
+            exit 0
+        fi
+    fi
+    
+    print_success "simple-rsyncd build process completed successfully!"
 }
 
 # Run main function with all arguments

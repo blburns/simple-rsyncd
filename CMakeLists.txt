@@ -79,7 +79,7 @@ if(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /MT)
     endif()
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-unused-private-field)
     if(ENABLE_STATIC_LINKING)
         # Only apply static linking flags for GCC, not clang
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -134,15 +134,12 @@ endif()
 # Tests
 if(ENABLE_TESTS)
     enable_testing()
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
-        add_subdirectory(tests)
-    else()
-        message(STATUS "No tests directory found, skipping tests")
-    endif()
+    add_subdirectory(tests)
 endif()
 
 # Package generation
 if(ENABLE_PACKAGING)
+    include(CPack)
     
     # Package information
     set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")

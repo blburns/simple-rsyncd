@@ -20,7 +20,7 @@
 #include <memory>
 #include <chrono>
 
-#include "simple_rsyncd/configuration.hpp"
+#include "simple-rsyncd/config/config.hpp"
 
 namespace simple_rsyncd {
 

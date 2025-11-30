@@ -1,6 +1,6 @@
 # Build Scripts
 
-This directory contains platform-specific build scripts for Simple RSync Daemon that automate the build and installation process.
+This directory contains platform-specific build scripts for {{PROJECT_NAME}} that automate the build and installation process.
 
 ## Available Scripts
 
@@ -36,6 +36,16 @@ Optimized for Red Hat-based distributions with EPEL repository support.
 ./scripts/build-redhat.sh [OPTIONS]
 ```
 
+### macOS Script
+
+#### `build-macos.sh` - macOS Build Script
+Designed for macOS systems with Homebrew and Xcode support.
+
+**Usage:**
+```bash
+./scripts/build-macos.sh [OPTIONS]
+```
+
 ### Windows Script
 
 #### `build-windows.bat` - Windows Build Script
@@ -44,6 +54,24 @@ Designed for Windows systems with Visual Studio and CMake support.
 **Usage:**
 ```cmd
 scripts\build-windows.bat [OPTIONS]
+```
+
+### Docker Scripts
+
+#### `build-docker.sh` - Docker Build Script
+Cross-platform Docker build automation with multi-architecture support.
+
+**Usage:**
+```bash
+./scripts/build-docker.sh [OPTIONS]
+```
+
+#### `deploy-docker.sh` - Docker Deployment Script
+Deploy and manage Docker containers for {{PROJECT_NAME}}.
+
+**Usage:**
+```bash
+./scripts/deploy-docker.sh [OPTIONS]
 ```
 
 ## Common Options
@@ -60,6 +88,8 @@ All scripts support the following options:
 | `-p, --package` | Create package only |
 | `-s, --service` | Create system service (Linux) / Windows service |
 | `-a, --all` | Full build and install (default) |
+| `--static` | Build static binary |
+| `--clean` | Clean build directory before building |
 
 ## Quick Start
 
@@ -73,6 +103,15 @@ All scripts support the following options:
 ./scripts/build-redhat.sh      # Red Hat/CentOS/Fedora
 ```
 
+### macOS Users
+```bash
+# From project root directory
+./scripts/build-macos.sh
+
+# Build static binary
+./scripts/build-macos.sh --static
+```
+
 ### Windows Users
 ```cmd
 # From project root directory
@@ -81,6 +120,18 @@ scripts\build-windows.bat
 # Or for specific operations
 scripts\build-windows.bat --deps
 scripts\build-windows.bat --build
+```
+
+### Docker Users
+```bash
+# Build Docker image
+./scripts/build-docker.sh
+
+# Build multi-architecture image
+./scripts/build-docker.sh --platforms linux/amd64,linux/arm64
+
+# Deploy container
+./scripts/deploy-docker.sh
 ```
 
 ## What Each Script Does
@@ -96,6 +147,7 @@ scripts\build-windows.bat --build
 - Runs CMake configuration with optimal settings
 - Compiles the project using all available CPU cores
 - Handles build errors gracefully
+- Supports both regular and static builds
 
 ### 3. **Testing**
 - Runs the test suite
@@ -109,13 +161,20 @@ scripts\build-windows.bat --build
 - Tests the installed binary
 
 ### 5. **Package Creation**
-- Creates distribution packages (DEB, RPM, MSI)
+- Creates distribution packages (DEB, RPM, MSI, DMG, PKG)
 - Uses CPack when available
+- Creates static binary packages
 - Lists created packages
 
 ### 6. **Service Setup**
 - **Linux**: Creates and enables systemd service
+- **macOS**: Creates launchd service
 - **Windows**: Creates Windows service using sc.exe
+
+### 7. **Docker Support**
+- Multi-architecture Docker builds
+- Cross-platform containerization
+- Container deployment and management
 
 ## Prerequisites
 
@@ -124,11 +183,21 @@ scripts\build-windows.bat --build
 - Internet connection for package downloads
 - At least 2GB free disk space
 
+### macOS
+- Xcode Command Line Tools
+- Homebrew package manager
+- At least 2GB free disk space
+
 ### Windows
 - Visual Studio 2017 or later with C++ support
 - CMake 3.16 or later
 - Administrator privileges (recommended)
 - Git for vcpkg installation
+
+### Docker
+- Docker Engine 20.10 or later
+- Docker Buildx for multi-architecture builds
+- Internet connection for base images
 
 ## Troubleshooting
 
@@ -140,7 +209,7 @@ scripts\build-windows.bat --build
 chmod +x scripts/build-*.sh
 
 # Run from project root directory
-cd /path/to/simple-rsyncd
+cd /path/to/{{PROJECT_NAME}}
 ./scripts/build-linux.sh
 ```
 
@@ -190,12 +259,16 @@ You can customize the build process by setting environment variables:
 
 ```bash
 # Custom install prefix
-export CMAKE_INSTALL_PREFIX=/opt/simple-rsyncd
+export CMAKE_INSTALL_PREFIX=/opt/{{PROJECT_NAME}}
 ./scripts/build-linux.sh
 
 # Custom build type
 export CMAKE_BUILD_TYPE=Debug
 ./scripts/build-linux.sh
+
+# Static build
+export ENABLE_STATIC_LINKING=ON
+./scripts/build-linux.sh --static
 ```
 
 ### CMake Options
@@ -209,6 +282,7 @@ cmake .. \
     -DBUILD_EXAMPLES=ON \
     -DENABLE_LOGGING=ON \
     -DENABLE_SSL=ON \
+    -DENABLE_STATIC_LINKING=ON \
     -DCUSTOM_OPTION=ON  # Add your custom options here
 ```
 
@@ -224,15 +298,16 @@ When adding new build scripts or modifying existing ones:
 
 ## Platform Support Matrix
 
-| Platform | Script | Package Manager | Service Manager |
-|----------|--------|----------------|-----------------|
-| Ubuntu/Debian | `build-debian.sh` | apt | systemd |
-| Red Hat/CentOS | `build-redhat.sh` | dnf/yum | systemd |
-| Fedora | `build-redhat.sh` | dnf | systemd |
-| Arch Linux | `build-linux.sh` | pacman | systemd |
-| openSUSE | `build-linux.sh` | zypper | systemd |
-| Generic Linux | `build-linux.sh` | auto-detect | systemd |
-| Windows | `build-windows.bat` | vcpkg | Windows Service |
+| Platform | Script | Package Manager | Service Manager | Docker Support |
+|----------|--------|----------------|-----------------|----------------|
+| Ubuntu/Debian | `build-debian.sh` | apt | systemd | ✅ |
+| Red Hat/CentOS | `build-redhat.sh` | dnf/yum | systemd | ✅ |
+| Fedora | `build-redhat.sh` | dnf | systemd | ✅ |
+| Arch Linux | `build-linux.sh` | pacman | systemd | ✅ |
+| openSUSE | `build-linux.sh` | zypper | systemd | ✅ |
+| Generic Linux | `build-linux.sh` | auto-detect | systemd | ✅ |
+| macOS | `build-macos.sh` | homebrew | launchd | ✅ |
+| Windows | `build-windows.bat` | vcpkg | Windows Service | ✅ |
 
 ## Examples
 
@@ -243,6 +318,9 @@ When adding new build scripts or modifying existing ones:
 
 # Build and test during development
 ./scripts/build-linux.sh --build --test
+
+# Build static binary
+./scripts/build-linux.sh --static
 
 # Install when ready
 ./scripts/build-linux.sh --install
@@ -271,4 +349,18 @@ fi
 COPY scripts/build-linux.sh /tmp/
 RUN chmod +x /tmp/build-linux.sh
 RUN /tmp/build-linux.sh --deps --build --install
+
+# Multi-architecture build
+./scripts/build-docker.sh --platforms linux/amd64,linux/arm64 --push
+```
+
+### Static Binary Distribution
+```bash
+# Create static binary packages
+./scripts/build-linux.sh --static --package
+
+# This creates:
+# - {{PROJECT_NAME}}-{{VERSION}}-static-linux.tar.gz
+# - {{PROJECT_NAME}}-{{VERSION}}-static-macos.tar.gz
+# - {{PROJECT_NAME}}-{{VERSION}}-static-windows.zip
 ```

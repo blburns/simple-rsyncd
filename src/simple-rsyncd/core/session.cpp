@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "simple_rsyncd/rsync_session.hpp"
+#include "simple-rsyncd/core/session.hpp"
 #include <unistd.h>
 #include <iostream>
 

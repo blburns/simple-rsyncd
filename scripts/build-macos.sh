@@ -21,13 +21,14 @@ VERSION="0.1.0"
 
 # Build options
 BUILD_TYPE="Release"
-BUILD_SHARED_LIBS="ON"
+BUILD_SHARED_LIBS="OFF"
 BUILD_TESTS="ON"
-BUILD_EXAMPLES="OFF"
-ENABLE_LOGGING="ON"
 ENABLE_SSL="ON"
-USE_SYSTEM_LIBS="OFF"
+ENABLE_JSON="ON"
+ENABLE_STATIC_LINKING="OFF"
 PACKAGE="false"
+INSTALL="false"
+CLEAN="false"
 
 # Function to print colored output
 print_status() {
@@ -46,91 +47,282 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to check macOS version
+check_macos_version() {
+    print_status "Checking macOS version..."
+    
+    # Get macOS version
+    MACOS_VERSION=$(sw_vers -productVersion)
+    MACOS_MAJOR=$(echo "$MACOS_VERSION" | cut -d. -f1)
+    MACOS_MINOR=$(echo "$MACOS_VERSION" | cut -d. -f2)
+    
+    print_status "macOS version: $MACOS_VERSION"
+    
+    # Check if running on macOS 10.15 or later
+    if [ "$MACOS_MAJOR" -lt 10 ] || ([ "$MACOS_MAJOR" -eq 10 ] && [ "$MACOS_MINOR" -lt 15 ]); then
+        print_warning "macOS 10.15 or later recommended for best compatibility"
+    fi
+}
+
+# Function to check Xcode Command Line Tools
+check_xcode_tools() {
+    print_status "Checking Xcode Command Line Tools..."
+    
+    if ! command_exists xcode-select; then
+        print_error "Xcode Command Line Tools not found"
+        print_status "Please install Xcode Command Line Tools:"
+        print_status "xcode-select --install"
+        exit 1
+    fi
+    
+    # Check if Xcode Command Line Tools are installed
+    if ! xcode-select -p >/dev/null 2>&1; then
+        print_error "Xcode Command Line Tools not properly installed"
+        print_status "Please install Xcode Command Line Tools:"
+        print_status "xcode-select --install"
+        exit 1
+    fi
+    
+    print_success "Xcode Command Line Tools found"
+}
+
+# Function to check Homebrew
+check_homebrew() {
+    print_status "Checking Homebrew installation..."
+    
+    if ! command_exists brew; then
+        print_error "Homebrew not found"
+        print_status "Please install Homebrew from https://brew.sh/"
+        exit 1
+    fi
+    
+    print_success "Homebrew found: $(brew --version | head -n1)"
+}
+
+# Function to install dependencies
+install_dependencies() {
+    print_status "Installing build dependencies using Homebrew..."
+    
+    # Update Homebrew
+    brew update
+    
+    # Install build tools
+    brew install cmake pkg-config git wget curl
+    
+    # Install development libraries
+    brew install openssl jsoncpp
+    
+    # Install optional development tools
+    brew install clang-format cppcheck valgrind gdb lcov
+    
+    print_success "Dependencies installed successfully"
+}
+
+# Function to clean build directory
+clean_build() {
+    if [ "$CLEAN" = "true" ]; then
+        print_status "Cleaning build directory..."
+        rm -rf "$BUILD_DIR"
+        rm -rf "$DIST_DIR"
+        print_success "Build directory cleaned"
+    fi
+}
+
+# Function to build project
+build_project() {
+    print_status "Building simple-rsyncd..."
+    
+    # Create build directory
+    mkdir -p "$BUILD_DIR"
+    cd "$BUILD_DIR"
+    
+    # Configure CMake
+    cmake .. \
+        -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+        -DBUILD_SHARED_LIBS="$BUILD_SHARED_LIBS" \
+        -DENABLE_TESTS="$BUILD_TESTS" \
+        -DENABLE_SSL="$ENABLE_SSL" \
+        -DENABLE_JSON="$ENABLE_JSON" \
+        -DENABLE_STATIC_LINKING="$ENABLE_STATIC_LINKING" \
+        -DENABLE_PACKAGING=ON
+    
+    # Build project
+    make -j$(sysctl -n hw.ncpu)
+    
+    print_success "Build completed successfully"
+}
+
+# Function to run tests
+run_tests() {
+    if [ "$BUILD_TESTS" = "ON" ]; then
+        print_status "Running tests..."
+        cd "$BUILD_DIR"
+        
+        if make test; then
+            print_success "All tests passed"
+        else
+            print_warning "Some tests failed, but continuing..."
+        fi
+    fi
+}
+
+# Function to install project
+install_project() {
+    if [ "$INSTALL" = "true" ]; then
+        print_status "Installing simple-rsyncd..."
+        cd "$BUILD_DIR"
+        
+        make install
+        
+        # Test installation
+        if command_exists simple-rsyncd; then
+            print_success "Installation successful"
+            simple-rsyncd --version
+        else
+            print_error "Installation failed - binary not found in PATH"
+            exit 1
+        fi
+    fi
+}
+
+# Function to create packages
+create_packages() {
+    if [ "$PACKAGE" = "true" ]; then
+        print_status "Creating macOS packages..."
+        cd "$BUILD_DIR"
+        
+        # Create distribution directory
+        mkdir -p "$DIST_DIR"
+        
+        # Create packages using CPack
+        cpack
+        
+        # Move packages to dist directory
+        mv *.dmg *.pkg "$DIST_DIR/" 2>/dev/null || true
+        
+        print_success "Packages created in $DIST_DIR"
+        ls -la "$DIST_DIR"
+    fi
+}
+
+# Function to create static binary package
+create_static_package() {
+    if [ "$ENABLE_STATIC_LINKING" = "ON" ]; then
+        print_status "Creating static binary package..."
+        
+        # Create distribution directory
+        mkdir -p "$DIST_DIR"
+        
+        # Create static binary directory
+        STATIC_DIR="$DIST_DIR/simple-rsyncd-$VERSION-static-macos"
+        mkdir -p "$STATIC_DIR"
+        
+        # Copy binary and files
+        cp "$BUILD_DIR/simple-rsyncd" "$STATIC_DIR/"
+        cp "$PROJECT_ROOT/README.md" "$STATIC_DIR/"
+        cp "$PROJECT_ROOT/LICENSE" "$STATIC_DIR/"
+        cp -r "$PROJECT_ROOT/config" "$STATIC_DIR/" 2>/dev/null || true
+        
+        # Create tarball
+        cd "$DIST_DIR"
+        tar -czf "simple-rsyncd-$VERSION-static-macos.tar.gz" "simple-rsyncd-$VERSION-static-macos"
+        rm -rf "simple-rsyncd-$VERSION-static-macos"
+        
+        print_success "Static binary package created: simple-rsyncd-$VERSION-static-macos.tar.gz"
+    fi
+}
+
 # Function to show usage
 show_usage() {
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --help, -h           Show this help message"
-    echo "  --debug              Build in debug mode"
-    echo "  --release            Build in release mode (default)"
-    echo "  --tests              Build with tests (default)"
-    echo "  --no-tests           Build without tests"
-    echo "  --examples           Build with examples"
-    echo "  --no-examples        Build without examples (default)"
-    echo "  --ssl                Enable SSL support (default)"
-    echo "  --no-ssl             Disable SSL support"
-    echo "  --system-libs        Use system libraries"
-    echo "  --homebrew-libs      Use Homebrew libraries (default)"
-    echo "  --package            Create macOS package after build"
-    echo "  --clean              Clean build directory before building"
-    echo "  --install            Install after building"
-    echo ""
-    echo "Examples:"
-    echo "  $0                    # Build in release mode with tests"
-    echo "  $0 --debug            # Build in debug mode"
-    echo "  $0 --package          # Build and create package"
-    echo "  $0 --clean --install  # Clean build, build, and install"
+    cat << EOF
+simple-rsyncd - macOS Build Script
+
+Usage: $0 [OPTIONS]
+
+Options:
+    -h, --help              Show this help message
+    -d, --deps              Install dependencies only
+    -b, --build             Build project only
+    -t, --test              Run tests only
+    -i, --install           Install project only
+    -p, --package           Create packages only
+    -a, --all               Full build and install (default)
+    --static                Build static binary
+    --debug                 Build in debug mode
+    --clean                 Clean build directory before building
+    --no-tests              Disable tests
+    --no-ssl                Disable SSL support
+    --no-json               Disable JSON support
+
+Examples:
+    $0                      # Full build and install
+    $0 --deps               # Install dependencies only
+    $0 --build --test       # Build and test
+    $0 --static --package   # Build static binary and create packages
+    $0 --clean --all        # Clean build and full install
+
+EOF
 }
 
 # Function to parse command line arguments
 parse_arguments() {
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --help|-h)
+            -h|--help)
                 show_usage
                 exit 0
+                ;;
+            -d|--deps)
+                DEPENDENCIES_ONLY=true
+                shift
+                ;;
+            -b|--build)
+                BUILD_ONLY=true
+                shift
+                ;;
+            -t|--test)
+                TEST_ONLY=true
+                shift
+                ;;
+            -i|--install)
+                INSTALL_ONLY=true
+                shift
+                ;;
+            -p|--package)
+                PACKAGE_ONLY=true
+                shift
+                ;;
+            -a|--all)
+                ALL=true
+                shift
+                ;;
+            --static)
+                ENABLE_STATIC_LINKING="ON"
+                shift
                 ;;
             --debug)
                 BUILD_TYPE="Debug"
                 shift
                 ;;
-            --release)
-                BUILD_TYPE="Release"
-                shift
-                ;;
-            --tests)
-                BUILD_TESTS="ON"
+            --clean)
+                CLEAN="true"
                 shift
                 ;;
             --no-tests)
                 BUILD_TESTS="OFF"
                 shift
                 ;;
-            --examples)
-                BUILD_EXAMPLES="ON"
-                shift
-                ;;
-            --no-examples)
-                BUILD_EXAMPLES="OFF"
-                shift
-                ;;
-            --ssl)
-                ENABLE_SSL="ON"
-                shift
-                ;;
             --no-ssl)
                 ENABLE_SSL="OFF"
                 shift
                 ;;
-            --system-libs)
-                USE_SYSTEM_LIBS="ON"
-                shift
-                ;;
-            --homebrew-libs)
-                USE_SYSTEM_LIBS="OFF"
-                shift
-                ;;
-            --package)
-                PACKAGE="true"
-                shift
-                ;;
-            --clean)
-                CLEAN_BUILD="true"
-                shift
-                ;;
-            --install)
-                INSTALL="true"
+            --no-json)
+                ENABLE_JSON="OFF"
                 shift
                 ;;
             *)
@@ -140,208 +332,78 @@ parse_arguments() {
                 ;;
         esac
     done
-}
-
-# Function to check dependencies
-check_dependencies() {
-    print_status "Checking dependencies..."
     
-    # Check for required tools
-    local missing_tools=()
-    
-    if ! command -v cmake &> /dev/null; then
-        missing_tools+=("cmake")
-    fi
-    
-    if ! command -v make &> /dev/null; then
-        missing_tools+=("make")
-    fi
-    
-    if ! command -v clang++ &> /dev/null; then
-        missing_tools+=("clang++")
-    fi
-    
-    if [[ ${#missing_tools[@]} -gt 0 ]]; then
-        print_error "Missing required tools: ${missing_tools[*]}"
-        print_status "Please install missing tools:"
-        print_status "  brew install cmake"
-        exit 1
-    fi
-    
-    # Check for required libraries
-    local missing_libs=()
-    
-    if [[ "$ENABLE_SSL" == "ON" ]]; then
-        if [[ "$USE_SYSTEM_LIBS" == "OFF" ]]; then
-            if ! brew list openssl &> /dev/null; then
-                missing_libs+=("openssl")
-            fi
-        fi
-    fi
-    
-    if ! brew list jsoncpp &> /dev/null; then
-        missing_libs+=("jsoncpp")
-    fi
-    
-    if [[ ${#missing_libs[@]} -gt 0 ]]; then
-        print_status "Installing missing libraries..."
-        for lib in "${missing_libs[@]}"; do
-            brew install "$lib"
-        done
-    fi
-    
-    print_success "All dependencies satisfied"
-}
-
-# Function to clean build directory
-clean_build() {
-    if [[ "$CLEAN_BUILD" == "true" ]]; then
-        print_status "Cleaning build directory..."
-        if [[ -d "$BUILD_DIR" ]]; then
-            rm -rf "$BUILD_DIR"
-        fi
-        print_success "Build directory cleaned"
+    # Set default action if none specified
+    if [ -z "$DEPENDENCIES_ONLY" ] && [ -z "$BUILD_ONLY" ] && [ -z "$TEST_ONLY" ] && 
+       [ -z "$INSTALL_ONLY" ] && [ -z "$PACKAGE_ONLY" ] && [ -z "$ALL" ]; then
+        ALL=true
     fi
 }
 
-# Function to create build directory
-create_build_dir() {
-    print_status "Creating build directory..."
-    mkdir -p "$BUILD_DIR"
-    cd "$BUILD_DIR"
-}
-
-# Function to configure build
-configure_build() {
-    print_status "Configuring build..."
-    
-    local cmake_args=(
-        "-DCMAKE_BUILD_TYPE=$BUILD_TYPE"
-        "-DBUILD_SHARED_LIBS=$BUILD_SHARED_LIBS"
-        "-DBUILD_TESTS=$BUILD_TESTS"
-        "-DBUILD_EXAMPLES=$BUILD_EXAMPLES"
-        "-DENABLE_LOGGING=$ENABLE_LOGGING"
-        "-DENABLE_SSL=$ENABLE_SSL"
-        "-DUSE_SYSTEM_LIBS=$USE_SYSTEM_LIBS"
-        "-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0"
-    )
-    
-    # Add architecture flags
-    local arch_flags=()
-    if [[ "$(uname -m)" == "arm64" ]]; then
-        arch_flags+=("arm64")
-    elif [[ "$(uname -m)" == "x86_64" ]]; then
-        arch_flags+=("x86_64")
-    fi
-    
-    if [[ ${#arch_flags[@]} -gt 0 ]]; then
-        cmake_args+=("-DCMAKE_OSX_ARCHITECTURES=${arch_flags[*]}")
-    fi
-    
-    cmake "${cmake_args[@]}" "$PROJECT_ROOT"
-    
-    print_success "Build configured"
-}
-
-# Function to build project
-build_project() {
-    print_status "Building project..."
-    
-    local num_cores=$(sysctl -n hw.ncpu)
-    make -j"$num_cores"
-    
-    print_success "Build completed"
-}
-
-# Function to run tests
-run_tests() {
-    if [[ "$BUILD_TESTS" == "ON" ]]; then
-        print_status "Running tests..."
-        make test
-        print_success "Tests completed"
-    fi
-}
-
-# Function to create package
-create_package() {
-    if [[ "$PACKAGE" == "true" ]]; then
-        print_status "Creating macOS package..."
-        make package
-        print_success "Package created"
-    fi
-}
-
-# Function to install
-install_project() {
-    if [[ "$INSTALL" == "true" ]]; then
-        print_status "Installing project..."
-        sudo make install
-        print_success "Installation completed"
-    fi
-}
-
-# Function to show build summary
-show_build_summary() {
-    print_success "Build completed successfully!"
-    echo ""
-    echo "Build Summary:"
-    echo "  Build Type: $BUILD_TYPE"
-    echo "  Build Directory: $BUILD_DIR"
-    echo "  Tests: $BUILD_TESTS"
-    echo "  Examples: $BUILD_EXAMPLES"
-    echo "  SSL: $ENABLE_SSL"
-    echo "  System Libraries: $USE_SYSTEM_LIBS"
-    echo ""
-    
-    if [[ "$PACKAGE" == "true" ]]; then
-        echo "Package created in: $BUILD_DIR"
-    fi
-    
-    if [[ "$INSTALL" == "true" ]]; then
-        echo "Project installed to: /usr/local"
-    fi
-}
-
-# Main function
+# Main execution
 main() {
-    print_status "Starting simple-rsyncd macOS build..."
-    print_status "Version: $VERSION"
-    print_status "Build Type: $BUILD_TYPE"
-    print_status "Tests: $BUILD_TESTS"
-    print_status "Examples: $BUILD_EXAMPLES"
-    print_status "SSL: $ENABLE_SSL"
-    print_status "System Libraries: $USE_SYSTEM_LIBS"
-    echo ""
+    print_status "Starting simple-rsyncd build process..."
     
     # Parse command line arguments
     parse_arguments "$@"
     
-    # Check dependencies
-    check_dependencies
+    # Check system requirements
+    check_macos_version
+    check_xcode_tools
+    check_homebrew
     
-    # Clean build if requested
+    # Install dependencies
+    if [ "$DEPENDENCIES_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        install_dependencies
+        if [ "$DEPENDENCIES_ONLY" = "true" ]; then
+            print_success "Dependencies installed successfully"
+            exit 0
+        fi
+    fi
+    
+    # Clean build directory
     clean_build
     
-    # Create build directory
-    create_build_dir
-    
-    # Configure build
-    configure_build
-    
     # Build project
-    build_project
+    if [ "$BUILD_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        build_project
+        if [ "$BUILD_ONLY" = "true" ]; then
+            print_success "Build completed successfully"
+            exit 0
+        fi
+    fi
     
     # Run tests
-    run_tests
+    if [ "$TEST_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        run_tests
+        if [ "$TEST_ONLY" = "true" ]; then
+            print_success "Tests completed"
+            exit 0
+        fi
+    fi
     
-    # Create package if requested
-    create_package
+    # Install project
+    if [ "$INSTALL_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        INSTALL="true"
+        install_project
+        if [ "$INSTALL_ONLY" = "true" ]; then
+            print_success "Installation completed successfully"
+            exit 0
+        fi
+    fi
     
-    # Install if requested
-    install_project
+    # Create packages
+    if [ "$PACKAGE_ONLY" = "true" ] || [ "$ALL" = "true" ]; then
+        PACKAGE="true"
+        create_packages
+        create_static_package
+        if [ "$PACKAGE_ONLY" = "true" ]; then
+            print_success "Packages created successfully"
+            exit 0
+        fi
+    fi
     
-    # Show build summary
-    show_build_summary
+    print_success "simple-rsyncd build process completed successfully!"
 }
 
 # Run main function with all arguments

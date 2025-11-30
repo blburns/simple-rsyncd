@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "simple_rsyncd/ssl_context.hpp"
+#include "simple-rsyncd/security/ssl_context.hpp"
 
 namespace simple_rsyncd {
 

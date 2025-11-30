@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "simple_rsyncd/rsync_daemon.hpp"
-#include "simple_rsyncd/configuration.hpp"
-#include "simple_rsyncd/logger.hpp"
-#include "simple_rsyncd/rsync_session.hpp"
+#include "simple-rsyncd/core/daemon.hpp"
+#include "simple-rsyncd/config/config.hpp"
+#include "simple-rsyncd/utils/logger.hpp"
+#include "simple-rsyncd/core/session.hpp"
 
 #include <iostream>
 #include <thread>
