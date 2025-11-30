@@ -1,15 +1,28 @@
 # Build directories
 build/
 dist/
-packaging/
+out/
+cmake-build-*/
+cmake-build/
 
 # CMake generated files
 CMakeCache.txt
 CMakeFiles/
+CMakeScripts/
+Testing/
 cmake_install.cmake
-Makefile
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
 *.cmake
 !cmake/*.cmake.in
+!cmake/*.cmake
+CMakeFiles/Makefile
+Makefile.cmake
+
+# Keep custom Makefile, ignore CMake-generated ones
+!Makefile
 
 # Compiled Object files
 *.slo
@@ -36,20 +49,26 @@ Makefile
 *.exe
 *.out
 *.app
-simple-rsyncd*
 
 # Debug files
 *.dSYM/
 *.su
 *.idb
 *.pdb
+*.ilk
+*.exp
 
 # IDE files
 .vscode/
 .idea/
+.vs/
 *.swp
 *.swo
 *~
+*.sublime-*
+*.vcxproj.user
+*.vcxproj.filters
+*.code-workspace
 
 # OS generated files
 .DS_Store
@@ -59,250 +78,158 @@ simple-rsyncd*
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
+.fuse_hidden*
+.directory
+.Trash-*
 
 # Log files
 *.log
 logs/
+log/
+*.pid
 
 # Temporary files
 *.tmp
 *.temp
+*.bak
+*.backup
+*.orig
+*.rej
 temp/
+tmp/
 
 # Package files
 *.tar.gz
 *.tar.bz2
+*.tar.xz
 *.zip
 *.deb
 *.rpm
 *.dmg
 *.pkg
+*.msi
+*.7z
+*.rar
 
 # Test coverage
-coverage/
 *.gcov
 *.gcda
 *.gcno
+coverage/
+lcov.info
 
 # Valgrind output
+valgrind-out.txt
 *.valgrind
+*.vglog
+*.massif
+
+# Configuration files (keep examples and templates)
+config/*.conf
+!config/*.conf.example
+!config/*.example
+!config/*.template
+!config/*.sample
+local.conf
+local.ini
+local.json
+
+# SSL certificates and keys
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+config/ssl/
+config/certs/
+
+# User data and uploads (if applicable)
+uploads/
+user_data/
+public/
+
+# Documentation build
+docs/_build/
+docs/html/
+docs/latex/
+docs/pdf/
+docs/.doctrees/
 
 # Dependencies
 vendor/
 third_party/
-
-# Configuration files with sensitive data
-*.conf
-!*.conf.example
-*.key
-*.crt
-*.pem
-users
-keys/
+external/
+vcpkg_installed/
+conan/
+vcpkg/
+packages/
 
 # Environment files
 .env
 .env.local
 .env.production
 
-# Backup files
-*.bak
-*.backup
-*.old
-
-# Documentation build
-docs/_build/
-docs/html/
-docs/latex/
-
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Node modules (if any build tools use Node.js)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Rust (if any Rust components)
-target/
-Cargo.lock
-
-# Go (if any Go components)
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-go.work
-
-# Java (if any Java components)
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-
-# Scala (if any Scala components)
-*.class
-*.jar
-
-# Kotlin (if any Kotlin components)
-*.class
-*.jar
-
-# Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-
-# Gradle
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-# Bazel
-bazel-*
-
-# Docker
-.dockerignore
-Dockerfile
-docker-compose*.yml
-
-# Kubernetes
-*.yaml
-*.yml
-!deployment/**/*.yaml
-!deployment/**/*.yml
-
-# Terraform
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-
-# Ansible
-*.retry
-
-# Vagrant
-.vagrant/
-
-# Virtual machines
-*.vmdk
-*.vdi
-*.vbox
-*.vmx
-
-# Backup and archive
-*.tar
-*.gz
-*.bz2
-*.xz
-*.7z
-*.zip
-*.rar
-
-# Database
+# Database files
 *.db
 *.sqlite
 *.sqlite3
 
-# Cache
+# Cache files
 .cache/
-cache/
-
-# Local development
-local/
-dev/
-development/
-
-# Production
-prod/
-production/
-
-# Staging
-staging/
-stage/
-
-# Testing
-test-results/
-test-output/
-.coverage
-.pytest_cache/
+*.cache
 
 # Profiling
 *.prof
-*.out
-
-# Memory dumps
-*.dmp
-*.hprof
+gmon.out
+callgrind.out.*
 
 # Core dumps
+core
 core.*
+*.core
+*.dump
 
-# Lock files
+# Network captures
+*.pcap
+*.cap
+
+# Backup and swap
+.#*
+#*#
+
+# Windows specific
+*.user
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# macOS specific
+*.dmg
+*.pkg
+
+# Clang/LLVM
+.clangd/
+.clang-format
+
+# Python cache (if any)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
 *.lock
-package-lock.json
-yarn.lock
-Gemfile.lock
-Pipfile.lock
-poetry.lock
 
-# Generated documentation
-docs/generated/
-docs/api/
-
-# API documentation
-swagger.json
-openapi.yaml
-openapi.yml
-
-# SSL certificates and keys
-ssl/
-certs/
-*.p12
-*.pfx
-
-# SSH keys
-*.pub
-id_rsa
-id_ed25519
-
-# GPG keys
-*.gpg
-*.asc
-
-# Passwords and secrets
-secrets/
-*.secret
-*.key
-*.pwd
-
-# User data
-data/
-uploads/
-downloads/
-
-# Runtime data
-run/
-var/
-tmp/
-
-# System files
-/etc/
-/var/
-/usr/
