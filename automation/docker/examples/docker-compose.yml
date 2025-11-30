@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  simple-rsyncd:
+    image: simple-rsyncd:latest
+    container_name: simple-rsyncd
+    ports:
+      - "873:873/tcp"
+    volumes:
+      - ./config:/etc/simple-rsyncd:ro
+      - ./data:/var/lib/simple-rsyncd
+      - ./logs:/var/log/simple-rsyncd
+    environment:
+      - SIMPLE-RSYNCD_CONFIG=/etc/simple-rsyncd/simple-rsyncd.conf
+      - SIMPLE-RSYNCD_LOG_LEVEL=info
+      - SIMPLE-RSYNCD_BIND_ADDRESS=0.0.0.0
+      - SIMPLE-RSYNCD_BIND_PORT=873
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "873"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - simple-rsyncd-network
+
+networks:
+  simple-rsyncd-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
