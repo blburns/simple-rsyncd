@@ -12,16 +12,16 @@ graph TB
 
     subgraph "RSync Server"
         Server[simple-rsyncd<br/>Main Process]
-        Config[/etc/simple-rsyncd/<br/>Configuration]
-        Modules[/etc/simple-rsyncd/modules.d/<br/>Module Configs]
-        UserDB[/etc/simple-rsyncd/users<br/>User Database]
-        Logs[/var/log/simple-rsyncd/<br/>Transfer Logs]
+        Config[Configuration<br/>/etc/simple-rsyncd/]
+        Modules[Module Configs<br/>/etc/simple-rsyncd/modules.d/]
+        UserDB[User Database<br/>/etc/simple-rsyncd/users]
+        Logs[Transfer Logs<br/>/var/log/simple-rsyncd/]
     end
 
     subgraph "Module Directories"
-        Module1[/var/backup<br/>Backup Module]
-        Module2[/var/public<br/>Public Module]
-        ModuleN[/var/data<br/>Data Module]
+        Module1[Backup Module<br/>/var/backup]
+        Module2[Public Module<br/>/var/public]
+        ModuleN[Data Module<br/>/var/data]
     end
 
     subgraph "System Services"
