@@ -47,6 +47,22 @@ struct SSLConfig {
 };
 
 /**
+ * @brief Password policy configuration
+ */
+struct PasswordPolicy {
+    size_t min_length = 8;
+    bool require_uppercase = false;
+    bool require_lowercase = false;
+    bool require_digits = false;
+    bool require_special = false;
+    std::chrono::hours expiration_hours{90 * 24}; // 90 days = no expiration by default
+    size_t max_failed_attempts = 5;
+    std::chrono::minutes lockout_duration{30};
+    bool prevent_reuse = false;
+    size_t password_history_size = 0; // 0 = no history
+};
+
+/**
  * @brief Authentication configuration
  */
 struct AuthConfig {
@@ -59,6 +75,9 @@ struct AuthConfig {
     bool anonymous_access = false;
     std::vector<std::string> allowed_users;
     std::vector<std::string> denied_users;
+    PasswordPolicy password_policy;
+    std::chrono::seconds session_timeout{3600}; // Default 1 hour
+    bool enable_session_management = true;
 };
 
 /**

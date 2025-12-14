@@ -119,6 +119,52 @@ std::string PasswordHasher::generateSalt(size_t length) {
     return ss.str();
 }
 
+// PasswordPolicyValidator implementation
+std::pair<bool, std::string> PasswordPolicyValidator::validatePassword(const std::string& password,
+                                                                        const PasswordPolicy& policy) {
+    // Check minimum length
+    if (password.length() < policy.min_length) {
+        return {false, "Password must be at least " + std::to_string(policy.min_length) + " characters long"};
+    }
+    
+    // Check complexity requirements
+    if (!meetsComplexityRequirements(password, policy)) {
+        std::string requirements;
+        if (policy.require_uppercase) requirements += "uppercase letter, ";
+        if (policy.require_lowercase) requirements += "lowercase letter, ";
+        if (policy.require_digits) requirements += "digit, ";
+        if (policy.require_special) requirements += "special character, ";
+        if (!requirements.empty()) {
+            requirements = requirements.substr(0, requirements.length() - 2);
+            return {false, "Password must contain: " + requirements};
+        }
+    }
+    
+    return {true, ""};
+}
+
+bool PasswordPolicyValidator::meetsComplexityRequirements(const std::string& password,
+                                                           const PasswordPolicy& policy) {
+    bool has_uppercase = false;
+    bool has_lowercase = false;
+    bool has_digit = false;
+    bool has_special = false;
+    
+    for (char c : password) {
+        if (std::isupper(c)) has_uppercase = true;
+        else if (std::islower(c)) has_lowercase = true;
+        else if (std::isdigit(c)) has_digit = true;
+        else if (!std::isalnum(c)) has_special = true;
+    }
+    
+    if (policy.require_uppercase && !has_uppercase) return false;
+    if (policy.require_lowercase && !has_lowercase) return false;
+    if (policy.require_digits && !has_digit) return false;
+    if (policy.require_special && !has_special) return false;
+    
+    return true;
+}
+
 // Simple password file format: username:password (one per line)
 // Supports both plain text and hashed passwords (sha256:salt:hash format)
 
@@ -253,6 +299,45 @@ bool UserDatabase::createUser(const std::string& username, const std::string& pa
     user_info.password_hash = PasswordHasher::hashPassword(password);
     user_info.password_hashed = true;
     user_info.password_expires = std::chrono::system_clock::time_point::max();
+    user_info.account_expires = std::chrono::system_clock::time_point::max();
+    user_info.account_locked = false;
+    user_info.failed_login_attempts = 0;
+    user_info.permissions = permissions;
+    
+    users_[username] = user_info;
+    
+    if (!database_file_.empty()) {
+        save();
+    }
+    
+    return true;
+}
+
+bool UserDatabase::createUserWithPolicy(const std::string& username, const std::string& password,
+                                        const std::vector<std::string>& permissions,
+                                        const PasswordPolicy& policy) {
+    if (userExists(username)) {
+        return false;
+    }
+    
+    // Validate password against policy
+    auto [valid, error] = PasswordPolicyValidator::validatePassword(password, policy);
+    if (!valid) {
+        return false; // Password doesn't meet policy requirements
+    }
+    
+    UserInfo user_info;
+    user_info.username = username;
+    user_info.password_hash = PasswordHasher::hashPassword(password);
+    user_info.password_hashed = true;
+    
+    // Set password expiration if policy requires it
+    if (policy.expiration_hours.count() > 0) {
+        user_info.password_expires = std::chrono::system_clock::now() + policy.expiration_hours;
+    } else {
+        user_info.password_expires = std::chrono::system_clock::time_point::max();
+    }
+    
     user_info.account_expires = std::chrono::system_clock::time_point::max();
     user_info.account_locked = false;
     user_info.failed_login_attempts = 0;

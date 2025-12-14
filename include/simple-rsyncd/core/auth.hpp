@@ -93,6 +93,30 @@ public:
 };
 
 /**
+ * @brief Password policy validator
+ */
+class PasswordPolicyValidator {
+public:
+    /**
+     * @brief Validate password against policy
+     * @param password Password to validate
+     * @param policy Password policy
+     * @return Pair of (is_valid, error_message)
+     */
+    static std::pair<bool, std::string> validatePassword(const std::string& password, 
+                                                          const PasswordPolicy& policy);
+
+    /**
+     * @brief Check password complexity requirements
+     * @param password Password to check
+     * @param policy Password policy
+     * @return true if meets requirements, false otherwise
+     */
+    static bool meetsComplexityRequirements(const std::string& password, 
+                                            const PasswordPolicy& policy);
+};
+
+/**
  * @brief Password file manager
  */
 class PasswordFile {
@@ -176,6 +200,18 @@ public:
      */
     bool createUser(const std::string& username, const std::string& password, 
                     const std::vector<std::string>& permissions = {});
+
+    /**
+     * @brief Create a new user with password policy validation
+     * @param username Username
+     * @param password Password (will be hashed)
+     * @param permissions User permissions
+     * @param policy Password policy to validate against
+     * @return true if created successfully, false otherwise
+     */
+    bool createUserWithPolicy(const std::string& username, const std::string& password,
+                              const std::vector<std::string>& permissions,
+                              const PasswordPolicy& policy);
 
     /**
      * @brief Update user password
