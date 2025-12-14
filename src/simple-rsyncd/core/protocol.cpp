@@ -216,7 +216,7 @@ void ProtocolHandler::setModule(const std::string& module_name) {
     current_module_ = module_name;
 }
 
-std::string ProtocolHandler::getModule() const {
+std::string ProtocolHandler::getCurrentModule() const {
     return current_module_;
 }
 

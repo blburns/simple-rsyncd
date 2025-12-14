@@ -41,13 +41,14 @@ endif()
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Source files - separate main from library sources
+# Source files - separate main and tests from library sources
 file(GLOB_RECURSE ALL_SOURCES "src/*.cpp" "src/*.c")
 file(GLOB_RECURSE HEADERS "include/*.hpp" "include/*.h")
 
-# Separate main.cpp from library sources
+# Separate main.cpp and test files from library sources
 set(LIBRARY_SOURCES ${ALL_SOURCES})
 list(FILTER LIBRARY_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
+list(FILTER LIBRARY_SOURCES EXCLUDE REGEX ".*test.*\\.cpp$")
 set(MAIN_SOURCE "")
 file(GLOB MAIN_SOURCE "src/main.cpp")
 

@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include <chrono>
+#include <fstream>
 
 #include "simple-rsyncd/config/config.hpp"
 #include "simple-rsyncd/core/protocol.hpp"

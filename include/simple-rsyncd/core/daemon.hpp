@@ -172,7 +172,7 @@ private:
         size_t access_denied;
         std::map<std::string, size_t> module_usage;
         std::map<std::string, size_t> client_usage;
-    } stats_;
+    } mutable stats_;
 
     // Update statistics
     void updateStats(const std::string& module, const std::string& client,

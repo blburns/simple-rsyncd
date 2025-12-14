@@ -19,9 +19,13 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 #include <cstdint>
 
 namespace simple_rsyncd {
+
+// Forward declaration
+class Module;
 
 /**
  * @brief RSync protocol version
@@ -141,7 +145,7 @@ public:
      * @brief Get current module name
      * @return Module name
      */
-    std::string getModule() const;
+    std::string getCurrentModule() const;
 
 private:
     std::string current_module_;

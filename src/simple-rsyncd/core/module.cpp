@@ -526,6 +526,92 @@ std::string Module::normalizePath(const std::string& path) const {
     return sanitizePath(path);
 }
 
+// Permission checking methods
+bool Module::checkFilePermissions(const std::string& path, const std::string& operation) const {
+    std::string resolved = resolvePath(path);
+    if (resolved.empty() || !std::filesystem::exists(resolved)) {
+        return false;
+    }
+
+    if (operation == "read") {
+        return checkReadPermission(path);
+    } else if (operation == "write") {
+        return checkWritePermission(path);
+    } else if (operation == "delete") {
+        return checkDeletePermission(path);
+    }
+
+    return false;
+}
+
+bool Module::checkReadPermission(const std::string& path) const {
+    // Check if file exists
+    if (!fileExists(path)) {
+        return false;
+    }
+
+    // Check if file is readable
+    std::string resolved = resolvePath(path);
+    if (resolved.empty()) {
+        return false;
+    }
+    
+    std::filesystem::path file_path(resolved);
+    if (std::filesystem::exists(file_path)) {
+        std::ifstream test_file(file_path);
+        return test_file.good();
+    }
+
+    return false;
+}
+
+bool Module::checkWritePermission(const std::string& path) const {
+    // Check module is not read-only
+    if (isReadOnly()) {
+        return false;
+    }
+
+    // Check if directory is writable
+    std::string resolved = resolvePath(path);
+    if (resolved.empty()) {
+        return false;
+    }
+    
+    std::filesystem::path file_path(resolved);
+    std::filesystem::path parent_dir = file_path.parent_path();
+    
+    if (!parent_dir.empty() && std::filesystem::exists(parent_dir)) {
+        // Check if we can write to parent directory
+        std::filesystem::path test_file = parent_dir / ".rsyncd_write_test";
+        std::ofstream test(test_file);
+        if (test.is_open()) {
+            test.close();
+            std::filesystem::remove(test_file);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Module::checkDeletePermission(const std::string& path) const {
+    // Check module allows deletion
+    if (!allowsDeletion()) {
+        return false;
+    }
+
+    // Check module is not read-only
+    if (isReadOnly()) {
+        return false;
+    }
+
+    // Check if file exists and is deletable
+    if (!fileExists(path) && !directoryExists(path)) {
+        return false;
+    }
+
+    return true;
+}
 
 // Factory function to create modules
 std::shared_ptr<Module> createModule(const ModuleConfig& config) {
