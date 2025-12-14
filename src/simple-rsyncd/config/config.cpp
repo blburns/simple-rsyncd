@@ -93,9 +93,7 @@ bool Configuration::loadFromFile(const std::string& filename) {
             return false;
         }
 
-        config_file_path = filename;
-
-    std::string line;
+        std::string line;
     std::string current_section;
     int line_number = 0;
     bool in_module = false;
