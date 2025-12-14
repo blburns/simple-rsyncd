@@ -23,10 +23,7 @@
 #include <filesystem>
 
 // JSON support - try to include jsoncpp
-#if __has_include(<json/json.h>)
-#include <json/json.h>
-#define JSONCPP_AVAILABLE 1
-#elif defined(JSONCPP_FOUND)
+#if defined(JSONCPP_FOUND) || __has_include(<json/json.h>)
 #include <json/json.h>
 #define JSONCPP_AVAILABLE 1
 #else
@@ -397,8 +394,6 @@ bool Configuration::loadFromJSON(const std::string& json) {
     is_valid_ = true;
     has_changed_ = false;
     return true;
-#else
-    return false;
 #endif
 }
 
@@ -433,6 +428,7 @@ void Configuration::parseJSONGlobal(const Json::Value& global) {
 }
 
 void Configuration::parseJSONModule(const std::string& module_name, const Json::Value& module_json) {
+#if JSONCPP_AVAILABLE
     if (modules.find(module_name) == modules.end()) {
         modules[module_name] = ModuleConfig();
     }
@@ -474,6 +470,7 @@ void Configuration::parseJSONModule(const std::string& module_name, const Json::
             }
         }
     }
+#endif
 }
 
 bool Configuration::saveToFile(const std::string& filename) const {
