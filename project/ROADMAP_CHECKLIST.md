@@ -1,6 +1,6 @@
 # ROADMAP CHECKLIST
 
-This document tracks the development progress of Simple RSync Daemon, covering completed tasks, in-progress work, and future development plans.
+This document provides detailed, granular checklists for all development tasks in Simple RSync Daemon. For high-level roadmap information, see [ROADMAP.md](../ROADMAP.md).
 
 ## ✅ COMPLETED TASKS
 
@@ -40,474 +40,887 @@ This document tracks the development progress of Simple RSync Daemon, covering c
 - [x] **Debug builds** - Debug/Release configurations
 - [x] **Coverage reporting** - LCOV integration (Linux/macOS)
 
-## 🎯 **RELEASE MILESTONES**
+---
 
-### **v0.1.0 - Foundation Release** ✅ **CURRENT**
-**Status:** Complete
-**Target Date:** December 2024
-**Completion:** ~25-30%
+## 🎯 v0.2.0 - MVP Release Checklist
 
-**Deliverables:**
-- ✅ Build system (CMake, Makefile)
-- ✅ Code structure and organization
-- ✅ Class interfaces and headers
-- ✅ Cross-platform configuration
-- ✅ Basic logging framework
-- ✅ Configuration data structures
-- ✅ Documentation structure
+### **RSync Protocol Implementation** (100-150 hours)
 
-**What's NOT included:**
-- ❌ RSync protocol implementation
-- ❌ File transfer functionality
-- ❌ Configuration file parsing
-- ❌ Tests
+#### Protocol Parser
+- [ ] **Protocol message structure**
+  - [ ] Define protocol message format
+  - [ ] Implement message header parsing
+  - [ ] Implement message body parsing
+  - [ ] Add message validation
+  - [ ] Add message error handling
+- [ ] **Protocol commands**
+  - [ ] Implement LIST command parser
+  - [ ] Implement GET command parser
+  - [ ] Implement PUT command parser
+  - [ ] Implement DELETE command parser
+  - [ ] Implement STAT command parser
+  - [ ] Add command validation
+  - [ ] Add command error handling
+- [ ] **Protocol state machine**
+  - [ ] Define protocol states
+  - [ ] Implement state transitions
+  - [ ] Add state validation
+  - [ ] Add state error recovery
+- [ ] **Protocol version negotiation**
+  - [ ] Implement version detection
+  - [ ] Implement version negotiation
+  - [ ] Add version compatibility checking
+- [ ] **Protocol error handling**
+  - [ ] Define error codes
+  - [ ] Implement error reporting
+  - [ ] Add error recovery mechanisms
+
+#### Command Handling
+- [ ] **Command dispatcher**
+  - [ ] Implement command routing
+  - [ ] Add command validation
+  - [ ] Add command logging
+- [ ] **Command handlers**
+  - [ ] Implement LIST handler
+  - [ ] Implement GET handler
+  - [ ] Implement PUT handler
+  - [ ] Implement DELETE handler
+  - [ ] Implement STAT handler
+- [ ] **Command response generation**
+  - [ ] Implement success responses
+  - [ ] Implement error responses
+  - [ ] Add response formatting
+
+#### Message Parsing
+- [ ] **Message parsing utilities**
+  - [ ] Implement message reader
+  - [ ] Implement message writer
+  - [ ] Add message buffering
+  - [ ] Add message validation
+- [ ] **Data type parsing**
+  - [ ] Implement integer parsing
+  - [ ] Implement string parsing
+  - [ ] Implement path parsing
+  - [ ] Add type validation
+
+### **Basic File Transfer** (50-75 hours)
+
+#### File Operations
+- [ ] **File reading**
+  - [ ] Implement file open for reading
+  - [ ] Implement file read operations
+  - [ ] Add file size handling
+  - [ ] Add file permissions checking
+  - [ ] Add error handling
+- [ ] **File writing**
+  - [ ] Implement file open for writing
+  - [ ] Implement file write operations
+  - [ ] Add file creation
+  - [ ] Add file truncation
+  - [ ] Add error handling
+- [ ] **File deletion**
+  - [ ] Implement file deletion
+  - [ ] Add permission checking
+  - [ ] Add error handling
+- [ ] **File metadata**
+  - [ ] Implement file stat operations
+  - [ ] Add file size retrieval
+  - [ ] Add file permissions retrieval
+  - [ ] Add file timestamps
+
+#### Directory Operations
+- [ ] **Directory listing**
+  - [ ] Implement directory reading
+  - [ ] Implement file enumeration
+  - [ ] Add directory recursion
+  - [ ] Add filtering support
+  - [ ] Add error handling
+- [ ] **Directory creation**
+  - [ ] Implement directory creation
+  - [ ] Add parent directory creation
+  - [ ] Add permission setting
+  - [ ] Add error handling
+- [ ] **Directory deletion**
+  - [ ] Implement directory deletion
+  - [ ] Add recursive deletion
+  - [ ] Add permission checking
+  - [ ] Add error handling
+
+#### Transfer Operations
+- [ ] **File transfer**
+  - [ ] Implement file transfer logic
+  - [ ] Add transfer progress tracking
+  - [ ] Add transfer error handling
+  - [ ] Add transfer cancellation
+- [ ] **Directory transfer**
+  - [ ] Implement directory transfer
+  - [ ] Add recursive transfer
+  - [ ] Add transfer progress tracking
+  - [ ] Add error handling
+
+### **Configuration File Parsing** (20-30 hours)
+
+#### INI/Config Parser
+- [ ] **Parser implementation**
+  - [ ] Implement INI file reader
+  - [ ] Implement section parsing
+  - [ ] Implement key-value parsing
+  - [ ] Add comment handling
+  - [ ] Add error handling
+- [ ] **Configuration loading**
+  - [ ] Implement file loading
+  - [ ] Add file validation
+  - [ ] Add error reporting
+  - [ ] Add default value handling
+- [ ] **Configuration validation**
+  - [ ] Implement value validation
+  - [ ] Add type checking
+  - [ ] Add range checking
+  - [ ] Add required field checking
+- [ ] **Configuration merging**
+  - [ ] Implement configuration inheritance
+  - [ ] Add override handling
+  - [ ] Add merge conflict resolution
+
+#### Configuration Structure
+- [ ] **Global configuration**
+  - [ ] Parse global settings
+  - [ ] Validate global settings
+  - [ ] Apply global defaults
+- [ ] **Module configuration**
+  - [ ] Parse module sections
+  - [ ] Validate module settings
+  - [ ] Apply module defaults
+- [ ] **SSL configuration**
+  - [ ] Parse SSL settings
+  - [ ] Validate SSL settings
+  - [ ] Validate certificate paths
+- [ ] **Authentication configuration**
+  - [ ] Parse auth settings
+  - [ ] Validate auth settings
+  - [ ] Validate password file paths
+
+### **Module Operations** (30-40 hours)
+
+#### File Operations
+- [ ] **Module file read**
+  - [ ] Implement module file reading
+  - [ ] Add path validation
+  - [ ] Add permission checking
+  - [ ] Add error handling
+- [ ] **Module file write**
+  - [ ] Implement module file writing
+  - [ ] Add path validation
+  - [ ] Add permission checking
+  - [ ] Add read-only checking
+  - [ ] Add error handling
+- [ ] **Module file delete**
+  - [ ] Implement module file deletion
+  - [ ] Add path validation
+  - [ ] Add permission checking
+  - [ ] Add delete permission checking
+  - [ ] Add error handling
+
+#### Path Validation
+- [ ] **Path sanitization**
+  - [ ] Implement path normalization
+  - [ ] Add path traversal prevention
+  - [ ] Add absolute path checking
+  - [ ] Add symlink handling
+- [ ] **Module path validation**
+  - [ ] Check path is within module root
+  - [ ] Validate path permissions
+  - [ ] Check path exists
+  - [ ] Validate path type
+
+#### Permission Checking
+- [ ] **Read permissions**
+  - [ ] Check read permission
+  - [ ] Check file exists
+  - [ ] Check file readable
+- [ ] **Write permissions**
+  - [ ] Check write permission
+  - [ ] Check module not read-only
+  - [ ] Check directory writable
+- [ ] **Delete permissions**
+  - [ ] Check delete permission
+  - [ ] Check module allows delete
+  - [ ] Check file deletable
+
+### **Basic Authentication** (20-30 hours)
+
+#### Password File Parsing
+- [ ] **Password file format**
+  - [ ] Define password file format
+  - [ ] Implement password file reader
+  - [ ] Add password file validation
+  - [ ] Add error handling
+- [ ] **Password storage**
+  - [ ] Implement password hashing
+  - [ ] Add password verification
+  - [ ] Add password file caching
+- [ ] **User management**
+  - [ ] Implement user lookup
+  - [ ] Add user validation
+  - [ ] Add user permissions
+
+#### Authentication Flow
+- [ ] **Authentication request**
+  - [ ] Implement auth request parsing
+  - [ ] Add username extraction
+  - [ ] Add password extraction
+- [ ] **Authentication verification**
+  - [ ] Implement password verification
+  - [ ] Add user lookup
+  - [ ] Add permission checking
+- [ ] **Authentication response**
+  - [ ] Implement success response
+  - [ ] Implement failure response
+  - [ ] Add error handling
+
+### **Test Framework** (30-50 hours)
+
+#### Test Infrastructure
+- [ ] **Test framework setup**
+  - [ ] Choose test framework (Google Test)
+  - [ ] Configure test framework
+  - [ ] Set up test build system
+  - [ ] Add test utilities
+- [ ] **Test organization**
+  - [ ] Create test directory structure
+  - [ ] Organize test files
+  - [ ] Add test fixtures
+  - [ ] Add test helpers
+
+#### Unit Tests
+- [ ] **Configuration tests**
+  - [ ] Test configuration loading
+  - [ ] Test configuration validation
+  - [ ] Test configuration parsing
+  - [ ] Test configuration merging
+- [ ] **Protocol tests**
+  - [ ] Test protocol parsing
+  - [ ] Test command handling
+  - [ ] Test message parsing
+  - [ ] Test error handling
+- [ ] **File operation tests**
+  - [ ] Test file reading
+  - [ ] Test file writing
+  - [ ] Test file deletion
+  - [ ] Test directory operations
+- [ ] **Module tests**
+  - [ ] Test module operations
+  - [ ] Test path validation
+  - [ ] Test permission checking
+- [ ] **Authentication tests**
+  - [ ] Test password parsing
+  - [ ] Test authentication flow
+  - [ ] Test user management
+
+#### Integration Tests
+- [ ] **End-to-end tests**
+  - [ ] Test full transfer flow
+  - [ ] Test authentication flow
+  - [ ] Test error scenarios
+- [ ] **Protocol tests**
+  - [ ] Test with real rsync client
+  - [ ] Test protocol compatibility
+  - [ ] Test error handling
 
 ---
 
-### **v0.2.0 - MVP Release** 🎯 **NEXT**
-**Status:** Not Started
-**Target Date:** Q1 2025
-**Estimated Effort:** 200-300 hours
-**Completion Target:** ~60%
+## 🎯 v0.3.0 - Core Features Release Checklist
 
-**Critical Deliverables:**
-- [ ] **RSync Protocol Implementation** (100-150 hours)
-  - [ ] Protocol parser
-  - [ ] Command handling
-  - [ ] Message parsing
-  - [ ] Protocol state machine
-- [ ] **Basic File Transfer** (50-75 hours)
-  - [ ] File read/write operations
-  - [ ] Directory listing
-  - [ ] Basic error handling
-- [ ] **Configuration File Parsing** (20-30 hours)
-  - [ ] INI/config file parser
-  - [ ] Configuration validation
-- [ ] **Module Operations** (30-40 hours)
-  - [ ] File operations for modules
-  - [ ] Path validation
-  - [ ] Permission checking
-- [ ] **Basic Authentication** (20-30 hours)
-  - [ ] Password file parsing
-  - [ ] Authentication flow
-- [ ] **Test Framework** (30-50 hours)
-  - [ ] Test infrastructure setup
-  - [ ] Unit tests for core components
-  - [ ] Integration tests
+### **Complete Configuration System**
 
-**Success Criteria:**
-- Can accept rsync connections
-- Can transfer files (basic, no delta sync)
-- Can read configuration files
-- Can authenticate users
-- Has basic test coverage
+#### JSON Configuration
+- [ ] **JSON parser**
+  - [ ] Implement JSON file reader
+  - [ ] Implement JSON parsing
+  - [ ] Add JSON validation
+  - [ ] Add error handling
+- [ ] **JSON structure**
+  - [ ] Define JSON schema
+  - [ ] Implement schema validation
+  - [ ] Add default value handling
+- [ ] **JSON conversion**
+  - [ ] Implement JSON to config conversion
+  - [ ] Implement config to JSON conversion
+  - [ ] Add format conversion utilities
 
----
+#### Configuration Hot-Reload
+- [ ] **File monitoring**
+  - [ ] Implement file change detection
+  - [ ] Add file watching
+  - [ ] Add change notification
+- [ ] **Hot-reload logic**
+  - [ ] Implement configuration reload
+  - [ ] Add reload validation
+  - [ ] Add reload error handling
+  - [ ] Add reload logging
 
-### **v0.3.0 - Core Features Release**
-**Status:** Planned
-**Target Date:** Q2 2025
-**Estimated Effort:** 150-200 hours
-**Completion Target:** ~75%
+#### Environment Variables
+- [ ] **Environment variable support**
+  - [ ] Implement env var substitution
+  - [ ] Add env var validation
+  - [ ] Add env var documentation
 
-**Deliverables:**
-- [ ] **Complete Configuration System**
-  - [ ] JSON configuration support
-  - [ ] Configuration hot-reload
-  - [ ] Environment variable support
-- [ ] **Enhanced Module System**
-  - [ ] Pattern matching (include/exclude)
-  - [ ] Script hooks
-  - [ ] Module-specific settings
-- [ ] **Improved Authentication**
-  - [ ] Multiple authentication methods
-  - [ ] User management
-  - [ ] Session management
-- [ ] **Error Handling & Logging**
-  - [ ] Comprehensive error handling
-  - [ ] Enhanced logging
-  - [ ] Log rotation
-- [ ] **Testing Expansion**
-  - [ ] Expanded unit test coverage
-  - [ ] Integration test suite
-  - [ ] Protocol testing
+### **Enhanced Module System**
 
-**Success Criteria:**
-- Full configuration system working
-- Multiple authentication methods
-- Comprehensive error handling
-- >60% test coverage
+#### Pattern Matching
+- [ ] **Include patterns**
+  - [ ] Implement include pattern matching
+  - [ ] Add glob pattern support
+  - [ ] Add regex pattern support
+- [ ] **Exclude patterns**
+  - [ ] Implement exclude pattern matching
+  - [ ] Add pattern priority
+  - [ ] Add pattern caching
 
----
+#### Script Hooks
+- [ ] **Pre-transfer hooks**
+  - [ ] Implement pre-transfer script execution
+  - [ ] Add script validation
+  - [ ] Add script error handling
+- [ ] **Post-transfer hooks**
+  - [ ] Implement post-transfer script execution
+  - [ ] Add script logging
+  - [ ] Add script timeout
 
-### **v0.4.0 - Security Release**
-**Status:** Planned
-**Target Date:** Q3 2025
-**Estimated Effort:** 100-150 hours
-**Completion Target:** ~85%
+### **Improved Authentication**
 
-**Deliverables:**
-- [ ] **SSL/TLS Implementation**
-  - [ ] Complete SSL/TLS support
-  - [ ] Certificate management
-  - [ ] TLS version negotiation
-- [ ] **Access Control**
-  - [ ] IP-based access control
-  - [ ] Network-based access control
-  - [ ] Access logging
-- [ ] **Rate Limiting**
-  - [ ] Connection rate limiting
-  - [ ] Bandwidth rate limiting
-  - [ ] Per-client rate limiting
-- [ ] **Security Hardening**
-  - [ ] Privilege dropping
-  - [ ] Chroot support
-  - [ ] Path validation
-  - [ ] Security audit logging
+#### Multiple Authentication Methods
+- [ ] **Password authentication**
+  - [ ] Enhance password auth
+  - [ ] Add password policies
+  - [ ] Add password expiration
+- [ ] **Public key authentication**
+  - [ ] Implement public key parsing
+  - [ ] Implement key verification
+  - [ ] Add key management
+- [ ] **OAuth2 authentication**
+  - [ ] Implement OAuth2 flow
+  - [ ] Add token validation
+  - [ ] Add token refresh
 
-**Success Criteria:**
-- Full SSL/TLS encryption working
-- Access control functional
-- Rate limiting operational
-- Security best practices implemented
+#### User Management
+- [ ] **User database**
+  - [ ] Implement user storage
+  - [ ] Add user CRUD operations
+  - [ ] Add user permissions
+- [ ] **Session management**
+  - [ ] Implement session tracking
+  - [ ] Add session timeout
+  - [ ] Add session cleanup
 
----
+### **Error Handling & Logging**
 
-### **v0.5.0 - Production Ready Release**
-**Status:** Planned
-**Target Date:** Q4 2025
-**Estimated Effort:** 100-150 hours
-**Completion Target:** ~90%
+#### Comprehensive Error Handling
+- [ ] **Error types**
+  - [ ] Define error categories
+  - [ ] Implement error codes
+  - [ ] Add error messages
+- [ ] **Error reporting**
+  - [ ] Implement error logging
+  - [ ] Add error context
+  - [ ] Add error recovery
 
-**Deliverables:**
-- [ ] **Monitoring & Observability**
-  - [ ] Metrics collection
-  - [ ] Health checks
-  - [ ] Prometheus integration
-  - [ ] Performance monitoring
-- [ ] **Testing & Quality**
-  - [ ] >80% test coverage
-  - [ ] Performance benchmarks
-  - [ ] Security testing
-  - [ ] Load testing
-- [ ] **Documentation**
-  - [ ] Complete API documentation
-  - [ ] Deployment guides
-  - [ ] Troubleshooting guides
-  - [ ] Performance tuning guides
-- [ ] **Packaging & Distribution**
-  - [ ] Docker images
-  - [ ] CI/CD pipelines
-  - [ ] Release automation
-
-**Success Criteria:**
-- Production-ready stability
-- Comprehensive monitoring
-- >80% test coverage
-- Complete documentation
+#### Enhanced Logging
+- [ ] **Log rotation**
+  - [ ] Implement log file rotation
+  - [ ] Add rotation policies
+  - [ ] Add log compression
+- [ ] **Structured logging**
+  - [ ] Implement JSON logging
+  - [ ] Add log levels
+  - [ ] Add log filtering
 
 ---
 
-### **v0.6.0 - Advanced Features Release**
-**Status:** Planned
-**Target Date:** Q1 2026
-**Estimated Effort:** 150-200 hours
-**Completion Target:** ~95%
+## 🎯 v0.4.0 - Security Release Checklist
 
-**Deliverables:**
-- [ ] **Delta Sync**
-  - [ ] Intelligent file synchronization
-  - [ ] Checksum-based delta sync
-  - [ ] Bandwidth optimization
-- [ ] **Performance Optimizations**
-  - [ ] Multi-threading improvements
-  - [ ] Connection pooling
-  - [ ] Compression optimization
-  - [ ] Memory optimization
-- [ ] **Advanced Features**
-  - [ ] Conflict resolution
-  - [ ] File versioning
-  - [ ] Backup strategies
-- [ ] **Network Enhancements**
-  - [ ] IPv6 support
-  - [ ] Proxy support
-  - [ ] Load balancing
+### **SSL/TLS Implementation**
 
-**Success Criteria:**
-- Delta sync working
-- Significant performance improvements
-- Advanced features operational
+#### SSL/TLS Setup
+- [ ] **Certificate management**
+  - [ ] Implement certificate loading
+  - [ ] Add certificate validation
+  - [ ] Add certificate chain validation
+  - [ ] Add certificate expiration checking
+- [ ] **TLS negotiation**
+  - [ ] Implement TLS handshake
+  - [ ] Add TLS version negotiation
+  - [ ] Add cipher suite selection
+  - [ ] Add TLS error handling
 
----
+#### SSL/TLS Integration
+- [ ] **SSL context**
+  - [ ] Complete SSL context implementation
+  - [ ] Add SSL context configuration
+  - [ ] Add SSL context validation
+- [ ] **SSL connections**
+  - [ ] Implement SSL connection handling
+  - [ ] Add SSL connection monitoring
+  - [ ] Add SSL connection cleanup
 
-### **v1.0.0 - Full Feature Release** 🎉
-**Status:** Future
-**Target Date:** Q2-Q3 2026
-**Estimated Effort:** 200-300 hours
-**Completion Target:** 100%
+### **Access Control**
 
-**Deliverables:**
-- [ ] **All Planned Features**
-  - [ ] YAML configuration support
-  - [ ] Plugin system
-  - [ ] REST API
-  - [ ] WebSocket support
-  - [ ] Database integration
-  - [ ] Message queue integration
-- [ ] **Enterprise Features**
-  - [ ] High availability
-  - [ ] Failover mechanisms
-  - [ ] Disaster recovery
-  - [ ] Advanced monitoring dashboard
-- [ ] **Final Polish**
-  - [ ] Complete test coverage
-  - [ ] Performance optimization
-  - [ ] Security audit
-  - [ ] Documentation completion
+#### IP-based Access Control
+- [ ] **IP whitelist/blacklist**
+  - [ ] Implement IP checking
+  - [ ] Add IP list management
+  - [ ] Add IP validation
+- [ ] **Network-based Access Control**
+  - [ ] Implement CIDR checking
+  - [ ] Add network validation
+  - [ ] Add network caching
 
-**Success Criteria:**
-- All roadmap features implemented
-- Enterprise-grade stability
-- Complete documentation
-- Production-proven
+#### Access Logging
+- [ ] **Access log**
+  - [ ] Implement access logging
+  - [ ] Add log format configuration
+  - [ ] Add log rotation
+- [ ] **Access monitoring**
+  - [ ] Implement access tracking
+  - [ ] Add access statistics
+  - [ ] Add access alerts
 
----
+### **Rate Limiting**
 
-## 🔄 IN-PROGRESS TASKS
+#### Connection Rate Limiting
+- [ ] **Connection limits**
+  - [ ] Implement connection counting
+  - [ ] Add connection rate checking
+  - [ ] Add connection throttling
+- [ ] **Per-client limits**
+  - [ ] Implement per-IP limits
+  - [ ] Add limit configuration
+  - [ ] Add limit enforcement
 
-### 🧪 **Testing & Quality Assurance**
-- [ ] **Unit test coverage** - Expand test suite coverage ❌ **NOT STARTED** (0% - no tests written)
-- [ ] **Integration tests** - End-to-end testing scenarios ❌ **NOT STARTED** (0%)
-- [ ] **Performance benchmarks** - Performance testing framework ❌ **NOT STARTED** (0%)
-- [ ] **Security testing** - Vulnerability scanning and testing ❌ **NOT STARTED** (0%)
-- [ ] **Test framework setup** - Configure testing infrastructure ❌ **NOT STARTED** (5% - directory exists)
+#### Bandwidth Rate Limiting
+- [ ] **Bandwidth limits**
+  - [ ] Implement bandwidth tracking
+  - [ ] Add bandwidth throttling
+  - [ ] Add bandwidth monitoring
+- [ ] **Per-connection limits**
+  - [ ] Implement per-connection bandwidth
+  - [ ] Add bandwidth configuration
+  - [ ] Add bandwidth enforcement
 
-### 📦 **Packaging & Distribution**
-- [ ] **Docker images** - Multi-platform Docker containers
-- [ ] **CI/CD pipelines** - Automated build and test workflows
-- [ ] **Release automation** - Automated versioning and releases
+### **Security Hardening**
 
-## 📋 PLANNED TASKS
+#### Privilege Management
+- [ ] **Privilege dropping**
+  - [ ] Implement user switching
+  - [ ] Implement group switching
+  - [ ] Add privilege validation
+- [ ] **Chroot support**
+  - [ ] Implement chroot setup
+  - [ ] Add chroot validation
+  - [ ] Add chroot error handling
 
-### 🔧 **Core Functionality (Phase 1) - CRITICAL PATH**
-- [ ] **Basic rsync daemon** - Core rsync protocol implementation ⚠️ **NOT STARTED** (0%)
-- [ ] **File transfer engine** - Efficient file transfer mechanisms ⚠️ **NOT STARTED** (0%)
-- [ ] **Authentication system** - User authentication and authorization ⚠️ **NOT STARTED** (5% - config only)
-- [ ] **Module system** - Pluggable module architecture ⚠️ **PARTIAL** (30% - interface only, operations stubbed)
-- [ ] **Configuration management** - Flexible configuration system ⚠️ **PARTIAL** (60% - structure complete, parsing stubbed)
-
-### ⚙️ **Configuration & Management (Phase 2)**
-- [ ] **JSON configuration** - Primary configuration format
-- [ ] **YAML configuration** - Alternative configuration format support
-  - [ ] **YAML parser integration** - Add yaml-cpp dependency
-  - [ ] **Configuration validation** - YAML schema validation
-  - [ ] **Configuration conversion** - JSON ↔ YAML conversion tools
-  - [ ] **Mixed format support** - Support both JSON and YAML simultaneously
-- [ ] **Environment variables** - Environment-based configuration
-- [ ] **Configuration hot-reload** - Runtime configuration updates
-- [ ] **Configuration templates** - Pre-built configuration examples
-
-### 🔐 **Security Features (Phase 3)**
-- [ ] **SSL/TLS encryption** - Secure communication protocols ⚠️ **PARTIAL** (40% - interface exists)
-- [ ] **SSH key authentication** - Public key authentication ❌ **NOT STARTED** (0%)
-- [ ] **Access control lists** - Granular permission management ❌ **NOT STARTED** (5% - config only)
-- [ ] **Audit logging** - Security event logging ❌ **NOT STARTED** (0%)
-- [ ] **Rate limiting** - DDoS protection mechanisms ❌ **NOT STARTED** (5% - config only)
-
-### 📊 **Monitoring & Observability (Phase 4)**
-- [ ] **Metrics collection** - Performance and usage metrics
-- [ ] **Health checks** - Service health monitoring
-- [ ] **Log aggregation** - Centralized logging system
-- [ ] **Alerting system** - Automated alert notifications
-- [ ] **Dashboard** - Web-based monitoring interface
-
-### 🔌 **Integration & Extensions (Phase 5)**
-- [ ] **Plugin system** - Extensible plugin architecture
-- [ ] **REST API** - HTTP API for management
-- [ ] **WebSocket support** - Real-time communication
-- [ ] **Database integration** - Persistent storage options
-- [ ] **Message queue integration** - Async processing support
-
-### 🌐 **Network & Protocol (Phase 6)**
-- [ ] **IPv6 support** - Full IPv6 compatibility
-- [ ] **Proxy support** - HTTP/HTTPS proxy integration
-- [ ] **Load balancing** - Multi-instance load balancing
-- [ ] **Failover mechanisms** - High availability features
-- [ ] **Bandwidth management** - Traffic shaping and QoS
-
-### 🚀 **Performance & Scalability (Phase 7)**
-- [ ] **Multi-threading** - Concurrent connection handling
-- [ ] **Connection pooling** - Efficient resource management
-- [ ] **Caching system** - Intelligent caching mechanisms
-- [ ] **Compression optimization** - Enhanced compression algorithms
-- [ ] **Memory optimization** - Reduced memory footprint
-
-### 🧩 **Advanced Features (Phase 8)**
-- [ ] **Delta sync** - Intelligent file synchronization
-- [ ] **Conflict resolution** - File conflict handling
-- [ ] **Version control** - File versioning support
-- [ ] **Backup strategies** - Automated backup systems
-- [ ] **Disaster recovery** - Recovery mechanisms
-
-## 🎯 **YAML CONFIGURATION SUPPORT DETAILS**
-
-### **Implementation Plan**
-1. **Add yaml-cpp dependency** to CMakeLists.txt
-2. **Create YAML configuration parser** class
-3. **Implement configuration format detection** (auto-detect JSON vs YAML)
-4. **Add configuration validation** for YAML schemas
-5. **Create configuration conversion utilities**
-6. **Update documentation** with YAML examples
-7. **Add YAML configuration templates**
-
-### **YAML Configuration Benefits**
-- **Human-readable** - More intuitive than JSON for complex configurations
-- **Comments support** - Inline documentation and explanations
-- **Multi-line strings** - Better for long text values
-- **References and anchors** - Reusable configuration sections
-- **Type safety** - Better handling of data types
-
-### **Example YAML Configuration**
-```yaml
-# Simple RSync Daemon Configuration
-daemon:
-  name: "simple-rsyncd"
-  version: "0.1.0"
-  log_level: "info"
-
-  # Network settings
-  network:
-    host: "0.0.0.0"
-    port: 873
-    max_connections: 100
-    timeout: 300
-
-  # SSL/TLS configuration
-  ssl:
-    enabled: true
-    certificate: "/etc/ssl/certs/rsyncd.crt"
-    private_key: "/etc/ssl/private/rsyncd.key"
-    ca_certificate: "/etc/ssl/certs/ca.crt"
-
-  # Authentication
-  authentication:
-    method: "password"  # password, public_key, oauth2
-    users:
-      - username: "admin"
-        password_hash: "$2y$10$..."
-        permissions: ["read", "write", "delete"]
-      - username: "user1"
-        password_hash: "$2y$10$..."
-        permissions: ["read"]
-
-  # Modules configuration
-  modules:
-    - name: "public"
-      path: "/var/www/public"
-      read_only: true
-      allow_anonymous: true
-
-    - name: "private"
-      path: "/var/www/private"
-      read_only: false
-      allow_anonymous: false
-      allowed_users: ["admin", "user1"]
-
-  # Logging configuration
-  logging:
-    file: "/var/log/simple-rsyncd.log"
-    max_size: "100MB"
-    max_files: 5
-    format: "json"
-
-  # Performance tuning
-  performance:
-    buffer_size: "64KB"
-    compression: true
-    parallel_transfers: 4
-    memory_limit: "512MB"
-```
-
-## 📅 **TIMELINE ESTIMATES**
-
-### **Short Term (Q1 2025) - v0.2.0 MVP**
-- Complete core rsync daemon implementation
-- Implement basic configuration file parsing (INI)
-- Basic authentication and module system
-- Basic file transfer (no delta sync)
-
-**Target:** Working MVP that can transfer files
-
-### **Medium Term (Q2-Q3 2025) - v0.3.0 & v0.4.0**
-- Complete configuration system (JSON support)
-- Implement SSL/TLS encryption
-- Add access control and rate limiting
-- Add monitoring and metrics
-- Expand test coverage
-
-**Target:** Production-ready with security features
-
-### **Long Term (Q4 2025 - Q2 2026) - v0.5.0, v0.6.0, v1.0.0**
-- Advanced features (delta sync, performance optimizations)
-- YAML configuration support
-- Plugin system and extensions
-- Enterprise features (HA, failover)
-- Complete feature set
-
-**Target:** Full-featured, enterprise-grade rsync daemon
-
-### **Milestone Summary**
-
-| Version | Target Date | Focus | Completion |
-|---------|-------------|-------|------------|
-| **v0.1.0** | Dec 2024 | Foundation | ✅ 25-30% |
-| **v0.2.0** | Q1 2025 | MVP | 🎯 60% |
-| **v0.3.0** | Q2 2025 | Core Features | 📋 75% |
-| **v0.4.0** | Q3 2025 | Security | 📋 85% |
-| **v0.5.0** | Q4 2025 | Production Ready | 📋 90% |
-| **v0.6.0** | Q1 2026 | Advanced Features | 📋 95% |
-| **v1.0.0** | Q2-Q3 2026 | Full Feature Set | 📋 100% |
-
-## 🤝 **CONTRIBUTION AREAS**
-
-### **High Priority (Critical Path to MVP)**
-- [ ] **Core rsync implementation** - Protocol handling and file transfer ❌ **CRITICAL** (0% - not implemented)
-- [ ] **Configuration system** - INI/config file parsing (JSON/YAML later) ⚠️ **CRITICAL** (20% - stubs only)
-- [ ] **Authentication system** - Basic password authentication ⚠️ **HIGH** (5% - config only)
-- [ ] **Testing framework** - Comprehensive test coverage ❌ **HIGH** (0% - no tests)
-
-### **Medium Priority**
-- [ ] **Documentation updates** - Keep docs current with features
-- [ ] **Build system improvements** - Enhanced cross-platform support
-- [ ] **Performance optimizations** - Speed and efficiency improvements
-- [ ] **Security hardening** - Vulnerability fixes and improvements
-
-### **Low Priority**
-- [ ] **UI improvements** - Better user interfaces and tools
-- [ ] **Additional protocols** - Support for other transfer protocols
-- [ ] **Cloud integration** - Cloud storage provider support
-- [ ] **Mobile support** - Mobile app development
-
-## 📝 **NOTES & CONSIDERATIONS**
-
-### **Technical Decisions**
-- **C++17 standard** - Modern C++ features for better code quality
-- **CMake build system** - Cross-platform compatibility
-- **JSON primary, YAML secondary** - JSON for APIs, YAML for human editing
-- **Plugin architecture** - Extensible design for future features
-
-### **Community Feedback**
-- **User surveys** - Regular feedback collection from users
-- **Feature requests** - Prioritize based on community needs
-- **Bug reports** - Quick response to reported issues
-- **Documentation requests** - Address documentation gaps
-
-### **Quality Standards**
-- **Code coverage** - Maintain >80% test coverage
-- **Performance benchmarks** - Regular performance testing
-- **Security audits** - Regular security reviews
-- **Documentation quality** - Comprehensive and up-to-date docs
+#### Path Security
+- [ ] **Path validation**
+  - [ ] Enhance path sanitization
+  - [ ] Add symlink protection
+  - [ ] Add hardlink protection
+- [ ] **File security**
+  - [ ] Add file type checking
+  - [ ] Add device file protection
+  - [ ] Add socket protection
 
 ---
 
-*This roadmap is a living document that will be updated as development progresses. Feedback and suggestions are welcome!*
+## 🎯 v0.5.0 - Production Ready Release Checklist
+
+### **Monitoring & Observability**
+
+#### Metrics Collection
+- [ ] **Performance metrics**
+  - [ ] Implement transfer rate metrics
+  - [ ] Implement connection metrics
+  - [ ] Implement error rate metrics
+- [ ] **Usage metrics**
+  - [ ] Implement user activity metrics
+  - [ ] Implement module usage metrics
+  - [ ] Implement bandwidth metrics
+
+#### Health Checks
+- [ ] **Health check endpoint**
+  - [ ] Implement health check API
+  - [ ] Add health check validation
+  - [ ] Add health check logging
+- [ ] **Service monitoring**
+  - [ ] Implement service status checking
+  - [ ] Add dependency checking
+  - [ ] Add alerting
+
+#### Prometheus Integration
+- [ ] **Prometheus metrics**
+  - [ ] Implement Prometheus endpoint
+  - [ ] Add metric export
+  - [ ] Add metric documentation
+- [ ] **Metric collection**
+  - [ ] Implement metric gathering
+  - [ ] Add metric aggregation
+  - [ ] Add metric storage
+
+### **Testing & Quality**
+
+#### Test Coverage
+- [ ] **Unit test expansion**
+  - [ ] Expand unit test coverage to >80%
+  - [ ] Add edge case tests
+  - [ ] Add error case tests
+- [ ] **Integration test expansion**
+  - [ ] Add more integration tests
+  - [ ] Add protocol compatibility tests
+  - [ ] Add performance tests
+
+#### Performance Testing
+- [ ] **Benchmark suite**
+  - [ ] Create performance benchmarks
+  - [ ] Add load testing
+  - [ ] Add stress testing
+- [ ] **Performance documentation**
+  - [ ] Document performance characteristics
+  - [ ] Add performance tuning guide
+  - [ ] Add performance best practices
+
+#### Security Testing
+- [ ] **Vulnerability scanning**
+  - [ ] Run security scans
+  - [ ] Fix identified vulnerabilities
+  - [ ] Add security testing to CI/CD
+- [ ] **Penetration testing**
+  - [ ] Conduct penetration tests
+  - [ ] Fix identified issues
+  - [ ] Document security findings
+
+### **Documentation**
+
+#### API Documentation
+- [ ] **Complete API docs**
+  - [ ] Document all APIs
+  - [ ] Add code examples
+  - [ ] Add usage examples
+- [ ] **Configuration documentation**
+  - [ ] Document all configuration options
+  - [ ] Add configuration examples
+  - [ ] Add configuration best practices
+
+#### Deployment Guides
+- [ ] **Installation guides**
+  - [ ] Update installation guides
+  - [ ] Add platform-specific guides
+  - [ ] Add troubleshooting guides
+- [ ] **Deployment guides**
+  - [ ] Add deployment best practices
+  - [ ] Add scaling guides
+  - [ ] Add monitoring setup guides
+
+### **Packaging & Distribution**
+
+#### Docker Images
+- [ ] **Multi-platform images**
+  - [ ] Create Docker images
+  - [ ] Add multi-arch support
+  - [ ] Add image optimization
+- [ ] **Docker documentation**
+  - [ ] Add Docker usage guide
+  - [ ] Add docker-compose examples
+  - [ ] Add deployment examples
+
+#### CI/CD Pipelines
+- [ ] **Build pipeline**
+  - [ ] Set up automated builds
+  - [ ] Add cross-platform builds
+  - [ ] Add build notifications
+- [ ] **Test pipeline**
+  - [ ] Set up automated testing
+  - [ ] Add test reporting
+  - [ ] Add test notifications
+- [ ] **Release pipeline**
+  - [ ] Set up automated releases
+  - [ ] Add version management
+  - [ ] Add release notes generation
+
+---
+
+## 🎯 v0.6.0 - Advanced Features Release Checklist
+
+### **Delta Sync**
+
+#### Checksum-based Delta Sync
+- [ ] **Checksum calculation**
+  - [ ] Implement file checksumming
+  - [ ] Add checksum algorithms (MD5, SHA1, SHA256)
+  - [ ] Add checksum caching
+- [ ] **Delta calculation**
+  - [ ] Implement delta calculation
+  - [ ] Add block-level comparison
+  - [ ] Add delta optimization
+
+#### Intelligent Synchronization
+- [ ] **Change detection**
+  - [ ] Implement file change detection
+  - [ ] Add metadata comparison
+  - [ ] Add change tracking
+- [ ] **Sync optimization**
+  - [ ] Implement bandwidth optimization
+  - [ ] Add transfer prioritization
+  - [ ] Add sync scheduling
+
+### **Performance Optimizations**
+
+#### Multi-threading
+- [ ] **Thread pool**
+  - [ ] Implement thread pool
+  - [ ] Add thread management
+  - [ ] Add thread monitoring
+- [ ] **Concurrent transfers**
+  - [ ] Implement concurrent file transfers
+  - [ ] Add transfer coordination
+  - [ ] Add transfer monitoring
+
+#### Connection Pooling
+- [ ] **Connection pool**
+  - [ ] Implement connection pooling
+  - [ ] Add pool management
+  - [ ] Add pool monitoring
+- [ ] **Resource management**
+  - [ ] Implement resource tracking
+  - [ ] Add resource limits
+  - [ ] Add resource cleanup
+
+#### Compression Optimization
+- [ ] **Compression algorithms**
+  - [ ] Implement multiple compression algorithms
+  - [ ] Add algorithm selection
+  - [ ] Add compression tuning
+- [ ] **Compression optimization**
+  - [ ] Implement adaptive compression
+  - [ ] Add compression caching
+  - [ ] Add compression monitoring
+
+### **Advanced Features**
+
+#### Conflict Resolution
+- [ ] **Conflict detection**
+  - [ ] Implement conflict detection
+  - [ ] Add conflict types
+  - [ ] Add conflict reporting
+- [ ] **Conflict resolution**
+  - [ ] Implement resolution strategies
+  - [ ] Add user interaction
+  - [ ] Add resolution logging
+
+#### File Versioning
+- [ ] **Version management**
+  - [ ] Implement file versioning
+  - [ ] Add version storage
+  - [ ] Add version retrieval
+- [ ] **Version control**
+  - [ ] Implement version history
+  - [ ] Add version comparison
+  - [ ] Add version restoration
+
+### **Network Enhancements**
+
+#### IPv6 Support
+- [ ] **IPv6 implementation**
+  - [ ] Add IPv6 socket support
+  - [ ] Add IPv6 address handling
+  - [ ] Add IPv6 testing
+- [ ] **Dual-stack support**
+  - [ ] Implement IPv4/IPv6 dual-stack
+  - [ ] Add address selection
+  - [ ] Add compatibility testing
+
+#### Proxy Support
+- [ ] **HTTP proxy**
+  - [ ] Implement HTTP proxy support
+  - [ ] Add proxy authentication
+  - [ ] Add proxy configuration
+- [ ] **HTTPS proxy**
+  - [ ] Implement HTTPS proxy support
+  - [ ] Add proxy SSL/TLS
+  - [ ] Add proxy testing
+
+---
+
+## 🎯 v1.0.0 - Full Feature Release Checklist
+
+### **All Planned Features**
+
+#### YAML Configuration
+- [ ] **YAML parser**
+  - [ ] Add yaml-cpp dependency
+  - [ ] Implement YAML parser
+  - [ ] Add YAML validation
+- [ ] **YAML support**
+  - [ ] Add YAML configuration loading
+  - [ ] Add YAML/JSON conversion
+  - [ ] Add YAML examples
+
+#### Plugin System
+- [ ] **Plugin architecture**
+  - [ ] Design plugin system
+  - [ ] Implement plugin loader
+  - [ ] Add plugin API
+- [ ] **Plugin management**
+  - [ ] Implement plugin loading
+  - [ ] Add plugin configuration
+  - [ ] Add plugin monitoring
+
+#### REST API
+- [ ] **API design**
+  - [ ] Design REST API
+  - [ ] Implement API endpoints
+  - [ ] Add API authentication
+- [ ] **API implementation**
+  - [ ] Implement HTTP server
+  - [ ] Add API documentation
+  - [ ] Add API testing
+
+#### WebSocket Support
+- [ ] **WebSocket implementation**
+  - [ ] Implement WebSocket server
+  - [ ] Add WebSocket protocol
+  - [ ] Add WebSocket authentication
+- [ ] **Real-time features**
+  - [ ] Implement real-time updates
+  - [ ] Add event streaming
+  - [ ] Add connection management
+
+#### Database Integration
+- [ ] **Database support**
+  - [ ] Add database abstraction
+  - [ ] Implement database backends
+  - [ ] Add database configuration
+- [ ] **Data persistence**
+  - [ ] Implement data storage
+  - [ ] Add data retrieval
+  - [ ] Add data migration
+
+#### Message Queue Integration
+- [ ] **Queue support**
+  - [ ] Add message queue abstraction
+  - [ ] Implement queue backends
+  - [ ] Add queue configuration
+- [ ] **Async processing**
+  - [ ] Implement async operations
+  - [ ] Add job queuing
+  - [ ] Add job monitoring
+
+### **Enterprise Features**
+
+#### High Availability
+- [ ] **HA architecture**
+  - [ ] Design HA system
+  - [ ] Implement HA components
+  - [ ] Add HA configuration
+- [ ] **Failover mechanisms**
+  - [ ] Implement failover logic
+  - [ ] Add health checking
+  - [ ] Add automatic failover
+
+#### Disaster Recovery
+- [ ] **Backup strategies**
+  - [ ] Implement backup system
+  - [ ] Add backup scheduling
+  - [ ] Add backup verification
+- [ ] **Recovery mechanisms**
+  - [ ] Implement recovery procedures
+  - [ ] Add recovery testing
+  - [ ] Add recovery documentation
+
+#### Advanced Monitoring Dashboard
+- [ ] **Dashboard implementation**
+  - [ ] Design dashboard UI
+  - [ ] Implement dashboard backend
+  - [ ] Add dashboard authentication
+- [ ] **Dashboard features**
+  - [ ] Add real-time monitoring
+  - [ ] Add historical data
+  - [ ] Add alerting
+
+### **Final Polish**
+
+#### Complete Test Coverage
+- [ ] **Test coverage**
+  - [ ] Achieve >95% test coverage
+  - [ ] Add all edge cases
+  - [ ] Add all error cases
+- [ ] **Test quality**
+  - [ ] Review all tests
+  - [ ] Improve test quality
+  - [ ] Add test documentation
+
+#### Performance Optimization
+- [ ] **Performance review**
+  - [ ] Conduct performance audit
+  - [ ] Identify bottlenecks
+  - [ ] Optimize critical paths
+- [ ] **Optimization implementation**
+  - [ ] Implement optimizations
+  - [ ] Verify improvements
+  - [ ] Document optimizations
+
+#### Security Audit
+- [ ] **Security review**
+  - [ ] Conduct security audit
+  - [ ] Fix identified issues
+  - [ ] Add security documentation
+- [ ] **Security hardening**
+  - [ ] Implement security best practices
+  - [ ] Add security monitoring
+  - [ ] Add security testing
+
+#### Documentation Completion
+- [ ] **Complete documentation**
+  - [ ] Review all documentation
+  - [ ] Update outdated docs
+  - [ ] Add missing documentation
+- [ ] **Documentation quality**
+  - [ ] Improve documentation clarity
+  - [ ] Add more examples
+  - [ ] Add troubleshooting guides
+
+---
+
+## 📋 General Development Tasks
+
+### **Code Quality**
+- [ ] **Code review**
+  - [ ] Establish code review process
+  - [ ] Review all code
+  - [ ] Fix identified issues
+- [ ] **Code standards**
+  - [ ] Enforce coding standards
+  - [ ] Add code style checks
+  - [ ] Add automated formatting
+
+### **Documentation**
+- [ ] **API documentation**
+  - [ ] Document all APIs
+  - [ ] Add code examples
+  - [ ] Add usage examples
+- [ ] **User documentation**
+  - [ ] Complete user guides
+  - [ ] Add tutorials
+  - [ ] Add FAQ
+
+### **Testing**
+- [ ] **Test infrastructure**
+  - [ ] Improve test infrastructure
+  - [ ] Add test utilities
+  - [ ] Add test helpers
+- [ ] **Test coverage**
+  - [ ] Increase test coverage
+  - [ ] Add missing tests
+  - [ ] Improve test quality
+
+---
+
+*This checklist is a living document that will be updated as development progresses. For high-level roadmap information, see [ROADMAP.md](../ROADMAP.md).*

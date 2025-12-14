@@ -14,8 +14,8 @@ This directory contains project management, development, and internal documentat
 - **[FEATURE_AUDIT.md](FEATURE_AUDIT.md)** - Comprehensive audit of implemented vs. stubbed features
 
 ### Planning & Roadmap
-- **[ROADMAP.md](../ROADMAP.md)** - Development roadmap and future plans (in project root for visibility, if available)
-- **[ROADMAP_CHECKLIST.md](ROADMAP_CHECKLIST.md)** - Detailed checklist tracking roadmap items
+- **[ROADMAP.md](../ROADMAP.md)** - High-level development roadmap, milestones, and timeline
+- **[ROADMAP_CHECKLIST.md](ROADMAP_CHECKLIST.md)** - Detailed, granular checklists for all development tasks
 
 ### Technical Debt
 - **[TECHNICAL_DEBT.md](TECHNICAL_DEBT.md)** - Technical debt items, priorities, and action plans
