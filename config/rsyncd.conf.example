@@ -12,6 +12,8 @@ group = rsync
 umask = 022
 
 # Network settings
+# Note: Environment variable substitution supported (v0.3.0)
+# Example: bind_address = ${BIND_ADDRESS:0.0.0.0}
 bind_address = 0.0.0.0
 bind_port = 873
 backlog = 128
@@ -36,6 +38,22 @@ auth_password_file = /etc/simple-rsyncd/users
 auth_public_key_file = /etc/simple-rsyncd/keys
 auth_oauth2_config_file = /etc/simple-rsyncd/oauth2.json
 auth_anonymous_access = false
+
+# Password policies (v0.3.0)
+password_policy_min_length = 8
+password_policy_require_uppercase = false
+password_policy_require_lowercase = false
+password_policy_require_digits = false
+password_policy_require_special = false
+password_policy_expiration_hours = 0
+password_policy_max_failed_attempts = 5
+password_policy_lockout_duration = 30
+password_policy_prevent_reuse = false
+password_policy_password_history_size = 0
+
+# Session management (v0.3.0)
+session_timeout = 3600
+enable_session_management = true
 
 # Access control settings
 access_enabled = true

@@ -251,7 +251,7 @@ Configuration errors are automatically caught and reported:
 simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.conf
 
 # Example output:
-# Error [CONFIGURATION] [CONFIG_VALIDATION_FAILED]: 
+# Error [CONFIGURATION] [CONFIG_VALIDATION_FAILED]:
 #   - Module 'backup': path '/var/backup' does not exist
 #   - SSL certificate file '/etc/ssl/certs/server.crt' not found
 ```
