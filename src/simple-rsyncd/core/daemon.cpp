@@ -124,6 +124,8 @@ void RSyncDaemon::stop() {
         return;
     }
 
+    logger_->info("Stopping simple-rsyncd daemon");
+
     shutdown_requested_ = true;
     running_ = false;
 
@@ -134,33 +136,16 @@ void RSyncDaemon::stop() {
         logger_->info("Listen socket closed");
     }
 
-    // Close all sessions
-    closeSessions();
-
     // Join accept thread
     if (accept_thread_.joinable()) {
         accept_thread_.join();
     }
 
-    // Join all threads
-    joinThreads();
-
-    logger_->info("Daemon stopped");
-}
-
-    logger_->info("Stopping simple-rsyncd daemon");
-
-    shutdown_requested_ = true;
-    running_ = false;
-
-    // Close listen socket
-    if (listen_socket_ >= 0) {
-        ::close(listen_socket_);
-        listen_socket_ = -1;
-    }
-
     // Stop all threads
     joinThreads();
+
+    // Close all sessions
+    closeSessions();
 
     // Clean up sessions
     cleanupSessions();
@@ -640,7 +625,7 @@ void RSyncDaemon::acceptLoop() {
         }
 
         try {
-            auto session = std::make_unique<RSyncSession>(client_socket, client_address, modules_copy);
+            auto session = std::make_unique<RSyncSession>(client_socket, client_address, config_, modules_copy);
             {
                 std::lock_guard<std::mutex> lock(sessions_mutex_);
                 active_sessions_.push_back(std::move(session));
