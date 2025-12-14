@@ -25,6 +25,11 @@
 
 #include "simple-rsyncd/core/module.hpp"
 
+// Forward declaration for JSON
+namespace Json {
+    class Value;
+}
+
 namespace simple_rsyncd {
 
 /**
@@ -295,7 +300,8 @@ private:
     void parseModuleConfig(const std::string& module_name, const std::string& key, const std::string& value);
 
     // JSON parsing helpers
-    bool parseJSONValue(const std::string& key, const std::string& value);
+    void parseJSONGlobal(const Json::Value& global);
+    void parseJSONModule(const std::string& module_name, const Json::Value& module_json);
 
     // Configuration file monitoring
     void updateLastModified();

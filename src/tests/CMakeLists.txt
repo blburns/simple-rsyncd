@@ -42,7 +42,15 @@ target_link_libraries(test_protocol
     GTest::gtest_main
 )
 
+add_executable(test_auth test_auth.cpp)
+target_link_libraries(test_auth
+    simple-rsyncd
+    GTest::gtest
+    GTest::gtest_main
+)
+
 # Add tests to CTest
 add_test(NAME ConfigTests COMMAND test_config)
 add_test(NAME ModuleTests COMMAND test_module)
 add_test(NAME ProtocolTests COMMAND test_protocol)
+add_test(NAME AuthTests COMMAND test_auth)

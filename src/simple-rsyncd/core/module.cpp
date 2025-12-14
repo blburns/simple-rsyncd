@@ -42,8 +42,13 @@ public:
         listing.recursive = recursive;
         listing.listing_time = std::chrono::system_clock::now();
 
+        // Check read permission
+        if (!checkReadPermission(path)) {
+            return listing;
+        }
+
         std::string full_path = resolvePath(path);
-        if (!validatePath(full_path)) {
+        if (full_path.empty() || !isPathSafe(path)) {
             return listing;
         }
 
@@ -70,9 +75,14 @@ public:
 
     FileInfo getFileInfo(const std::string& path) override {
         FileInfo info;
-        std::string full_path = resolvePath(path);
+        
+        // Check read permission
+        if (!checkReadPermission(path)) {
+            return info;
+        }
 
-        if (!validatePath(full_path)) {
+        std::string full_path = resolvePath(path);
+        if (full_path.empty() || !isPathSafe(path)) {
             return info;
         }
 
@@ -107,7 +117,11 @@ public:
 
     bool fileExists(const std::string& path) override {
         std::string full_path = resolvePath(path);
-        if (!validatePath(full_path)) {
+        if (full_path.empty()) {
+            return false;
+        }
+        // Check path is within module root (validatePath checks this)
+        if (!isPathSafe(path)) {
             return false;
         }
         return std::filesystem::exists(full_path) && std::filesystem::is_regular_file(full_path);
@@ -115,7 +129,11 @@ public:
 
     bool directoryExists(const std::string& path) override {
         std::string full_path = resolvePath(path);
-        if (!validatePath(full_path)) {
+        if (full_path.empty()) {
+            return false;
+        }
+        // Check path is within module root (validatePath checks this)
+        if (!isPathSafe(path)) {
             return false;
         }
         return std::filesystem::exists(full_path) && std::filesystem::is_directory(full_path);
@@ -126,8 +144,18 @@ public:
             return false;
         }
 
+        // Check write permission
+        if (!checkWritePermission(path)) {
+            return false;
+        }
+
         std::string full_path = resolvePath(path);
-        if (!validatePath(full_path)) {
+        if (full_path.empty()) {
+            return false;
+        }
+
+        // Validate path is safe (within module root)
+        if (!isPathSafe(path)) {
             return false;
         }
 
@@ -147,8 +175,18 @@ public:
             return false;
         }
 
+        // Check delete permission
+        if (!checkDeletePermission(path)) {
+            return false;
+        }
+
         std::string full_path = resolvePath(path);
-        if (!validatePath(full_path)) {
+        if (full_path.empty()) {
+            return false;
+        }
+
+        // Validate path is safe (within module root)
+        if (!isPathSafe(path)) {
             return false;
         }
 
@@ -168,8 +206,18 @@ public:
             return false;
         }
 
+        // Check delete permission
+        if (!checkDeletePermission(path)) {
+            return false;
+        }
+
         std::string full_path = resolvePath(path);
-        if (!validatePath(full_path)) {
+        if (full_path.empty()) {
+            return false;
+        }
+
+        // Validate path is safe (within module root)
+        if (!isPathSafe(path)) {
             return false;
         }
 
@@ -193,14 +241,20 @@ public:
             return result;
         }
 
+        // Check write permission
+        if (!checkWritePermission(remote_path)) {
+            result.error_message = "Write permission denied";
+            return result;
+        }
+
         if (!overwrite && fileExists(remote_path)) {
             result.error_message = "File already exists and overwrite not allowed";
             return result;
         }
 
         std::string full_remote_path = resolvePath(remote_path);
-        if (!validatePath(full_remote_path)) {
-            result.error_message = "Invalid path";
+        if (full_remote_path.empty() || !isPathSafe(remote_path)) {
+            result.error_message = "Invalid path or path outside module root";
             return result;
         }
 
@@ -233,8 +287,14 @@ public:
         TransferResult result;
         result.stats.start_time = std::chrono::steady_clock::now();
 
+        // Check read permission
+        if (!checkReadPermission(remote_path)) {
+            result.error_message = "Read permission denied";
+            return result;
+        }
+
         std::string full_remote_path = resolvePath(remote_path);
-        if (!validatePath(full_remote_path) || !fileExists(remote_path)) {
+        if (full_remote_path.empty() || !isPathSafe(remote_path) || !fileExists(remote_path)) {
             result.error_message = "File does not exist or invalid path";
             return result;
         }
@@ -404,8 +464,16 @@ bool Module::validatePath(const std::string& path) const {
 
     std::string resolved = resolvePath(path);
     if (resolved.empty()) {
+        return false; // Path outside module root
+    }
+
+    // Check if path exists
+    if (!std::filesystem::exists(resolved)) {
         return false;
     }
+
+    // Validate path type (file or directory)
+    // This is done by the caller based on operation type
 
     // Check if path is excluded
     std::string filename = std::filesystem::path(path).filename().string();
@@ -419,6 +487,43 @@ bool Module::validatePath(const std::string& path) const {
     }
 
     return true;
+}
+
+bool Module::isPathAllowed(const std::string& path) const {
+    return validatePath(path);
+}
+
+std::string Module::sanitizePath(const std::string& path) const {
+    std::string resolved = resolvePath(path);
+    if (resolved.empty()) {
+        return "";
+    }
+    return resolved;
+}
+
+bool Module::isPathTraversal(const std::string& path) const {
+    // Check for directory traversal attempts
+    if (path.find("..") != std::string::npos) {
+        return true;
+    }
+    if (path.find("/../") != std::string::npos) {
+        return true;
+    }
+    if (path.find("../") == 0) {
+        return true;
+    }
+    
+    // Check resolved path is within module root
+    std::string resolved = resolvePath(path);
+    return resolved.empty();
+}
+
+bool Module::isPathSafe(const std::string& path) const {
+    return !isPathTraversal(path) && validatePath(path);
+}
+
+std::string Module::normalizePath(const std::string& path) const {
+    return sanitizePath(path);
 }
 
 

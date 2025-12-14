@@ -97,4 +97,40 @@ TEST_F(ProtocolTest, InvalidMessage) {
     EXPECT_EQ(msg.command, ProtocolCommand::UNKNOWN);
 }
 
+TEST_F(ProtocolTest, ProtocolParsing) {
+    std::string data = "LIST test /path recursive=true\n";
+    ProtocolMessage msg = parser_->parse(data);
+
+    EXPECT_TRUE(msg.valid);
+    EXPECT_EQ(msg.command, ProtocolCommand::LIST);
+    EXPECT_NE(msg.arguments.find("recursive"), msg.arguments.end());
+}
+
+TEST_F(ProtocolTest, CommandHandling) {
+    // Test all command types
+    std::vector<std::pair<std::string, ProtocolCommand>> commands = {
+        {"LIST test /path", ProtocolCommand::LIST},
+        {"GET test /file.txt", ProtocolCommand::GET},
+        {"PUT test /file.txt", ProtocolCommand::PUT},
+        {"DELETE test /file.txt", ProtocolCommand::DELETE},
+        {"STAT test /file.txt", ProtocolCommand::STAT}
+    };
+
+    for (const auto& [cmd_str, expected_cmd] : commands) {
+        ProtocolMessage msg = parser_->parse(cmd_str + "\n");
+        EXPECT_TRUE(msg.valid) << "Failed to parse: " << cmd_str;
+        EXPECT_EQ(msg.command, expected_cmd) << "Wrong command for: " << cmd_str;
+    }
+}
+
+TEST_F(ProtocolTest, ErrorHandling) {
+    // Test empty message
+    ProtocolMessage msg1 = parser_->parse("");
+    EXPECT_FALSE(msg1.valid);
+
+    // Test malformed message
+    ProtocolMessage msg2 = parser_->parse("INVALID\n");
+    EXPECT_FALSE(msg2.valid);
+}
+
 } // namespace simple_rsyncd

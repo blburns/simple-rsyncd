@@ -22,6 +22,32 @@
 #include <cctype>
 #include <filesystem>
 
+// JSON support
+#ifdef JSONCPP_FOUND
+#include <json/json.h>
+#else
+// Fallback if jsoncpp not found - will need to implement basic JSON parsing
+namespace Json {
+    class Value {
+    public:
+        bool isMember(const std::string&) const { return false; }
+        const Value& operator[](const std::string&) const { return *this; }
+        const Value& operator[](size_t) const { return *this; }
+        std::string asString() const { return ""; }
+        bool asBool() const { return false; }
+        unsigned int asUInt() const { return 0; }
+        bool isObject() const { return false; }
+        bool isArray() const { return false; }
+        std::vector<std::string> getMemberNames() const { return {}; }
+    };
+    class Reader {
+    public:
+        bool parse(const std::string&, Value&) { return false; }
+        std::string getFormattedErrorMessages() const { return "JSON parsing not available"; }
+    };
+}
+#endif
+
 namespace simple_rsyncd {
 
 Configuration::Configuration() : is_valid_(false), has_changed_(false) {
@@ -38,13 +64,34 @@ bool Configuration::loadFromFile(const std::string& filename) {
         return false;
     }
 
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        errors_.push_back("Failed to open configuration file: " + filename);
-        return false;
-    }
-
     config_file_path = filename;
+
+    // Detect file format by extension
+    std::string ext = std::filesystem::path(filename).extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+    if (ext == ".json") {
+        // Load as JSON
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            errors_.push_back("Failed to open configuration file: " + filename);
+            return false;
+        }
+
+        std::string json_content((std::istreambuf_iterator<char>(file)),
+                                 std::istreambuf_iterator<char>());
+        file.close();
+
+        return loadFromJSON(json_content);
+    } else {
+        // Load as INI/config file
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            errors_.push_back("Failed to open configuration file: " + filename);
+            return false;
+        }
+
+        config_file_path = filename;
 
     std::string line;
     std::string current_section;
@@ -219,13 +266,198 @@ void Configuration::parseModuleConfig(const std::string& module_name, const std:
 }
 
 bool Configuration::loadFromJSON(const std::string& json) {
-    (void)json; // Suppress unused parameter warning
-    // Basic JSON loading implementation
-    // For now, just mark as loaded
+    errors_.clear();
+    is_valid_ = false;
+
+    if (json.empty()) {
+        errors_.push_back("Empty JSON configuration");
+        return false;
+    }
+
+    Json::Value root;
+    Json::Reader reader;
+
+    if (!reader.parse(json, root)) {
+        errors_.push_back("Failed to parse JSON: " + reader.getFormattedErrorMessages());
+        return false;
+    }
+
+    // Parse global configuration
+    if (root.isMember("global")) {
+        const Json::Value& global = root["global"];
+        parseJSONGlobal(global);
+    } else {
+        // If no "global" section, parse root as global
+        parseJSONGlobal(root);
+    }
+
+    // Parse network configuration
+    if (root.isMember("network")) {
+        const Json::Value& net = root["network"];
+        if (net.isMember("bind_address")) {
+            network.bind_address = net["bind_address"].asString();
+        }
+        if (net.isMember("bind_port")) {
+            network.bind_port = static_cast<uint16_t>(net["bind_port"].asUInt());
+        }
+        if (net.isMember("max_connections")) {
+            network.max_connections = net["max_connections"].asUInt();
+        }
+        if (net.isMember("backlog")) {
+            network.backlog = net["backlog"].asUInt();
+        }
+        if (net.isMember("worker_threads")) {
+            network.worker_threads = net["worker_threads"].asUInt();
+        }
+    }
+
+    // Parse SSL configuration
+    if (root.isMember("ssl")) {
+        const Json::Value& ssl_config = root["ssl"];
+        if (ssl_config.isMember("enabled")) {
+            ssl.enabled = ssl_config["enabled"].asBool();
+        }
+        if (ssl_config.isMember("certificate_file")) {
+            ssl.certificate_file = ssl_config["certificate_file"].asString();
+        }
+        if (ssl_config.isMember("private_key_file")) {
+            ssl.private_key_file = ssl_config["private_key_file"].asString();
+        }
+        if (ssl_config.isMember("ca_file")) {
+            ssl.ca_file = ssl_config["ca_file"].asString();
+        }
+    }
+
+    // Parse authentication configuration
+    if (root.isMember("auth")) {
+        const Json::Value& auth_config = root["auth"];
+        if (auth_config.isMember("enabled")) {
+            auth.enabled = auth_config["enabled"].asBool();
+        }
+        if (auth_config.isMember("method")) {
+            auth.method = auth_config["method"].asString();
+        }
+        if (auth_config.isMember("password_file")) {
+            auth.password_file = auth_config["password_file"].asString();
+        }
+        if (auth_config.isMember("realm")) {
+            auth.realm = auth_config["realm"].asString();
+        }
+        if (auth_config.isMember("anonymous_access")) {
+            auth.anonymous_access = auth_config["anonymous_access"].asBool();
+        }
+        if (auth_config.isMember("allowed_users")) {
+            const Json::Value& users = auth_config["allowed_users"];
+            if (users.isArray()) {
+                for (const auto& user : users) {
+                    auth.allowed_users.push_back(user.asString());
+                }
+            }
+        }
+        if (auth_config.isMember("denied_users")) {
+            const Json::Value& users = auth_config["denied_users"];
+            if (users.isArray()) {
+                for (const auto& user : users) {
+                    auth.denied_users.push_back(user.asString());
+                }
+            }
+        }
+    }
+
+    // Parse modules
+    if (root.isMember("modules")) {
+        const Json::Value& modules_json = root["modules"];
+        if (modules_json.isObject()) {
+            for (const auto& module_name : modules_json.getMemberNames()) {
+                const Json::Value& module_json = modules_json[module_name];
+                parseJSONModule(module_name, module_json);
+            }
+        }
+    }
+
+    updateLastModified();
+
+    // Validate configuration
+    if (!validate()) {
+        return false;
+    }
+
     is_valid_ = true;
     has_changed_ = false;
-
     return true;
+}
+
+void Configuration::parseJSONGlobal(const Json::Value& global) {
+    // Parse global settings that might be at root or in "global" object
+    if (global.isMember("bind_address") || global.isMember("address")) {
+        network.bind_address = global.isMember("bind_address") 
+            ? global["bind_address"].asString() 
+            : global["address"].asString();
+    }
+    if (global.isMember("bind_port") || global.isMember("port")) {
+        network.bind_port = static_cast<uint16_t>(
+            global.isMember("bind_port") 
+                ? global["bind_port"].asUInt() 
+                : global["port"].asUInt());
+    }
+    if (global.isMember("max_connections")) {
+        network.max_connections = global["max_connections"].asUInt();
+    }
+    if (global.isMember("pid_file")) {
+        pid_file = global["pid_file"].asString();
+    }
+    if (global.isMember("user")) {
+        user = global["user"].asString();
+        security.user = user;
+    }
+    if (global.isMember("group")) {
+        group = global["group"].asString();
+        security.group = group;
+    }
+}
+
+void Configuration::parseJSONModule(const std::string& module_name, const Json::Value& module_json) {
+    if (modules.find(module_name) == modules.end()) {
+        modules[module_name] = ModuleConfig();
+    }
+
+    auto& module = modules[module_name];
+    module.name = module_name;
+
+    if (module_json.isMember("path")) {
+        module.path = module_json["path"].asString();
+    }
+    if (module_json.isMember("comment")) {
+        module.comment = module_json["comment"].asString();
+    }
+    if (module_json.isMember("read_only")) {
+        module.read_only = module_json["read_only"].asBool();
+    }
+    if (module_json.isMember("list")) {
+        module.list = module_json["list"].asBool();
+    }
+    if (module_json.isMember("allow_delete")) {
+        module.allow_delete = module_json["allow_delete"].asBool();
+    }
+    if (module_json.isMember("overwrite")) {
+        module.overwrite = module_json["overwrite"].asBool();
+    }
+    if (module_json.isMember("exclude")) {
+        const Json::Value& exclude = module_json["exclude"];
+        if (exclude.isArray()) {
+            for (const auto& pattern : exclude) {
+                module.exclude_patterns.push_back(pattern.asString());
+            }
+        }
+    }
+    if (module_json.isMember("include")) {
+        const Json::Value& include = module_json["include"];
+        if (include.isArray()) {
+            for (const auto& pattern : include) {
+                module.include_patterns.push_back(pattern.asString());
+            }
+        }
+    }
 }
 
 bool Configuration::saveToFile(const std::string& filename) const {
