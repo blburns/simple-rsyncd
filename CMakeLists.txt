@@ -134,13 +134,11 @@ endif()
 # Tests
 if(ENABLE_TESTS)
     enable_testing()
-    add_subdirectory(tests)
+    add_subdirectory(src/tests)
 endif()
 
 # Package generation
 if(ENABLE_PACKAGING)
-    include(CPack)
-    
     # Package information
     set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
     set(CPACK_PACKAGE_VENDOR "SimpleDaemons")
@@ -148,16 +146,16 @@ if(ENABLE_PACKAGING)
     set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
     set(CPACK_PACKAGE_CONTACT "info@simpledaemons.com")
     set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/simpledaemons/${PROJECT_NAME}")
-    
+
     # Package files
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
     set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-    
+
     # Platform-specific package settings
     if(WIN32)
         # Windows MSI and ZIP packages
         set(CPACK_GENERATOR "WIX;ZIP")
-        
+
         # WIX (MSI) settings
         set(CPACK_WIX_PRODUCT_GUID "12345678-1234-1234-1234-123456789012")
         set(CPACK_WIX_UPGRADE_GUID "87654321-4321-4321-4321-210987654321")
@@ -166,28 +164,28 @@ if(ENABLE_PACKAGING)
         set(CPACK_WIX_PROPERTY_ARPURLINFOABOUT "https://github.com/simpledaemons/${PROJECT_NAME}")
         set(CPACK_WIX_PROPERTY_ARPNOREPAIR "1")
         set(CPACK_WIX_PROPERTY_ARPNOMODIFY "1")
-        
+
         # ZIP package settings
         set(CPACK_ZIP_COMPONENT_INSTALL ON)
-        
+
     elseif(APPLE)
         # macOS DMG and PKG packages
         set(CPACK_GENERATOR "DragNDrop;productbuild")
-        
+
         # DMG settings
         set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME}")
         set(CPACK_DMG_FORMAT "UDBZ")
         set(CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_CURRENT_SOURCE_DIR}/assets/dmg_background.png")
         set(CPACK_DMG_DS_STORE "${CMAKE_CURRENT_SOURCE_DIR}/assets/DS_Store")
-        
+
         # PKG settings
         set(CPACK_PRODUCTBUILD_IDENTIFIER "com.simpledaemons.${PROJECT_NAME}")
         set(CPACK_PRODUCTBUILD_PACKAGE_NAME "${PROJECT_NAME}")
-        
+
     else()
         # Linux DEB and RPM packages
         set(CPACK_GENERATOR "DEB;RPM")
-        
+
         # DEB package settings
         set(CPACK_DEBIAN_PACKAGE_MAINTAINER "SimpleDaemons <info@simpledaemons.com>")
         set(CPACK_DEBIAN_PACKAGE_SECTION "net")
@@ -200,7 +198,7 @@ if(ENABLE_PACKAGING)
         set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/simpledaemons/${PROJECT_NAME}")
         set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${PROJECT_DESCRIPTION}")
         set(CPACK_DEBIAN_PACKAGE_LONG_DESCRIPTION "${PROJECT_DESCRIPTION}")
-        
+
         # RPM package settings
         set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
         set(CPACK_RPM_PACKAGE_GROUP "Applications/System")
@@ -210,7 +208,7 @@ if(ENABLE_PACKAGING)
         set(CPACK_RPM_PACKAGE_SUGGESTS "systemd")
         set(CPACK_RPM_PACKAGE_CONFLICTS "ntp")
         set(CPACK_RPM_PACKAGE_PROVIDES "${PROJECT_NAME}")
-        
+
         # Set package architecture
         if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
             set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
@@ -223,29 +221,29 @@ if(ENABLE_PACKAGING)
             set(CPACK_RPM_PACKAGE_ARCHITECTURE "armv7hl")
         endif()
     endif()
-    
+
     # Common package settings
     set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${PLATFORM_NAME}")
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")
-    
+
     # Component installation
     set(CPACK_COMPONENT_APPLICATIONS_DISPLAY_NAME "Application")
     set(CPACK_COMPONENT_APPLICATIONS_DESCRIPTION "The ${PROJECT_NAME} executable and related files")
-    
+
     set(CPACK_COMPONENT_DEVELOPMENT_DISPLAY_NAME "Development")
     set(CPACK_COMPONENT_DEVELOPMENT_DESCRIPTION "Header files for developing with ${PROJECT_NAME}")
-    
+
     set(CPACK_COMPONENT_CONFIG_DISPLAY_NAME "Configuration")
     set(CPACK_COMPONENT_CONFIG_DESCRIPTION "Configuration files and examples")
-    
+
     set(CPACK_COMPONENT_SERVICE_DISPLAY_NAME "Service")
     set(CPACK_COMPONENT_SERVICE_DESCRIPTION "System service files")
-    
+
     # Set component dependencies
     set(CPACK_COMPONENT_DEVELOPMENT_DEPENDS applications)
     set(CPACK_COMPONENT_CONFIG_DEPENDS applications)
     set(CPACK_COMPONENT_SERVICE_DEPENDS applications)
-    
+
     # Source package generation
     set(CPACK_SOURCE_GENERATOR "TGZ;ZIP")
     set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-src")
@@ -277,7 +275,7 @@ if(ENABLE_PACKAGING)
         "*.exp"
         "*.lib"
     )
-    
+
     # Include CPack configuration
     include(CPack)
 endif()
