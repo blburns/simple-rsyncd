@@ -18,6 +18,8 @@
 #include "simple-rsyncd/config/config.hpp"
 #include "simple-rsyncd/utils/logger.hpp"
 #include "simple-rsyncd/core/session.hpp"
+#include "simple-rsyncd/core/module.hpp"
+#include "simple-rsyncd/core/auth.hpp"
 
 #include <iostream>
 #include <thread>
@@ -42,6 +44,12 @@ RSyncDaemon::RSyncDaemon(std::shared_ptr<Configuration> config)
     if (config_) {
         bind_address_ = config_->network.bind_address;
         bind_port_ = config_->network.bind_port;
+
+        // Initialize authentication manager
+        if (config_->auth.enabled) {
+            auth_manager_ = std::make_unique<AuthenticationManager>(config_->auth);
+            logger_->info("Authentication enabled: " + config_->auth.method);
+        }
     }
 
     // Initialize statistics
@@ -337,6 +345,87 @@ void RSyncDaemon::closeSessions() {
         }
     }
     logger_->info("All sessions closed");
+}
+
+bool RSyncDaemon::checkAuthentication(const std::string& username, const std::string& password) const {
+    if (!config_ || !config_->auth.enabled) {
+        // If auth is disabled, allow if anonymous access is enabled
+        return config_ && config_->auth.anonymous_access;
+    }
+
+    if (!auth_manager_) {
+        return false;
+    }
+
+    bool authenticated = auth_manager_->authenticate(username, password);
+    
+    if (!authenticated) {
+        std::lock_guard<std::mutex> lock(stats_mutex_);
+        stats_.authentication_failures++;
+    }
+
+    return authenticated;
+}
+
+bool RSyncDaemon::checkAccess(const std::string& client_address, const std::string& module_name) const {
+    if (!config_ || !config_->access.enabled) {
+        return true; // Access control disabled, allow all
+    }
+
+    // Check denied hosts first
+    for (const auto& denied : config_->access.denied_hosts) {
+        if (client_address == denied) {
+            std::lock_guard<std::mutex> lock(stats_mutex_);
+            stats_.access_denied++;
+            return false;
+        }
+    }
+
+    // Check allowed hosts
+    if (!config_->access.allowed_hosts.empty()) {
+        bool allowed = false;
+        for (const auto& allowed_host : config_->access.allowed_hosts) {
+            if (client_address == allowed_host) {
+                allowed = true;
+                break;
+            }
+        }
+        if (!allowed) {
+            std::lock_guard<std::mutex> lock(stats_mutex_);
+            stats_.access_denied++;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool RSyncDaemon::checkPermissions(const std::string& username, const std::string& module_name,
+                                   const std::string& operation) const {
+    // Basic permission checking
+    // TODO: Implement more sophisticated permission system
+    
+    std::lock_guard<std::mutex> lock(modules_mutex_);
+    auto it = modules_.find(module_name);
+    if (it == modules_.end()) {
+        return false;
+    }
+
+    auto module = it->second;
+    if (!module) {
+        return false;
+    }
+
+    // Check operation-specific permissions
+    if (operation == "read" || operation == "list") {
+        return module->allowsListing();
+    } else if (operation == "write" || operation == "upload") {
+        return !module->isReadOnly() && module->allowsOverwriting();
+    } else if (operation == "delete") {
+        return !module->isReadOnly() && module->allowsDeletion();
+    }
+
+    return false;
 }
 
 } // namespace simple_rsyncd

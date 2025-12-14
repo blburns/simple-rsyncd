@@ -30,6 +30,7 @@
 #include "simple-rsyncd/core/session.hpp"
 #include "simple-rsyncd/utils/logger.hpp"
 #include "simple-rsyncd/security/ssl_context.hpp"
+#include "simple-rsyncd/core/auth.hpp"
 
 namespace simple_rsyncd {
 
@@ -115,6 +116,9 @@ private:
 
     // SSL context
     std::unique_ptr<SSLContext> ssl_context_;
+
+    // Authentication
+    std::unique_ptr<AuthenticationManager> auth_manager_;
 
     // Network components
     int listen_socket_;

@@ -384,7 +384,7 @@ std::string Module::resolvePath(const std::string& path) const {
     std::string base_str = base_absolute.string();
 
     // Check if resolved path starts with base path
-    if (resolved_str.length() < base_str.length() || 
+    if (resolved_str.length() < base_str.length() ||
         resolved_str.substr(0, base_str.length()) != base_str) {
         return ""; // Path outside module root
     }
