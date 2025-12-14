@@ -20,38 +20,38 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src
 )
 
-# Test executables
+# Test executables - link to library target instead of executable
 add_executable(test_config test_config.cpp)
 target_link_libraries(test_config
-    simple-rsyncd
+    simple-rsyncd_lib
     GTest::gtest
     GTest::gtest_main
 )
 
 add_executable(test_module test_module.cpp)
 target_link_libraries(test_module
-    simple-rsyncd
+    simple-rsyncd_lib
     GTest::gtest
     GTest::gtest_main
 )
 
 add_executable(test_protocol test_protocol.cpp)
 target_link_libraries(test_protocol
-    simple-rsyncd
+    simple-rsyncd_lib
     GTest::gtest
     GTest::gtest_main
 )
 
 add_executable(test_auth test_auth.cpp)
 target_link_libraries(test_auth
-    simple-rsyncd
+    simple-rsyncd_lib
     GTest::gtest
     GTest::gtest_main
 )
 
 add_executable(test_integration test_integration.cpp)
 target_link_libraries(test_integration
-    simple-rsyncd
+    simple-rsyncd_lib
     GTest::gtest
     GTest::gtest_main
 )

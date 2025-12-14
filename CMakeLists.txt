@@ -41,18 +41,33 @@ endif()
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Source files
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.c")
+# Source files - separate main from library sources
+file(GLOB_RECURSE ALL_SOURCES "src/*.cpp" "src/*.c")
 file(GLOB_RECURSE HEADERS "include/*.hpp" "include/*.h")
 
-# Create executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+# Separate main.cpp from library sources
+set(LIBRARY_SOURCES ${ALL_SOURCES})
+list(FILTER LIBRARY_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
+set(MAIN_SOURCE "")
+file(GLOB MAIN_SOURCE "src/main.cpp")
 
-# Link libraries
-target_link_libraries(${PROJECT_NAME} Threads::Threads)
+# Create library target for shared code (used by executable and tests)
+add_library(${PROJECT_NAME}_lib STATIC ${LIBRARY_SOURCES} ${HEADERS})
+
+# Create executable that links to the library
+if(MAIN_SOURCE)
+    add_executable(${PROJECT_NAME} ${MAIN_SOURCE})
+    target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib)
+else()
+    # Fallback: if no main.cpp, create executable from all sources
+    add_executable(${PROJECT_NAME} ${ALL_SOURCES} ${HEADERS})
+endif()
+
+# Link libraries to library target (shared by executable and tests)
+target_link_libraries(${PROJECT_NAME}_lib Threads::Threads)
 
 if(ENABLE_SSL)
-    target_link_libraries(${PROJECT_NAME} OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(${PROJECT_NAME}_lib OpenSSL::SSL OpenSSL::Crypto)
 endif()
 
 if(ENABLE_JSON)
@@ -60,31 +75,49 @@ if(ENABLE_JSON)
         # For static linking, find the static library directly
         find_library(JSONCPP_STATIC_LIB jsoncpp PATHS /opt/local/lib /usr/local/lib /usr/lib)
         if(JSONCPP_STATIC_LIB)
-            target_link_libraries(${PROJECT_NAME} ${JSONCPP_STATIC_LIB})
+            target_link_libraries(${PROJECT_NAME}_lib ${JSONCPP_STATIC_LIB})
         else()
-            target_link_libraries(${PROJECT_NAME} ${JSONCPP_LIBRARIES})
+            target_link_libraries(${PROJECT_NAME}_lib ${JSONCPP_LIBRARIES})
         endif()
     else()
-        target_link_libraries(${PROJECT_NAME} ${JSONCPP_LIBRARIES})
+        target_link_libraries(${PROJECT_NAME}_lib ${JSONCPP_LIBRARIES})
     endif()
-    target_include_directories(${PROJECT_NAME} PRIVATE ${JSONCPP_INCLUDE_DIRS})
-    target_compile_options(${PROJECT_NAME} PRIVATE ${JSONCPP_CFLAGS_OTHER})
-    target_link_directories(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARY_DIRS})
+    target_include_directories(${PROJECT_NAME}_lib PRIVATE ${JSONCPP_INCLUDE_DIRS})
+    target_compile_options(${PROJECT_NAME}_lib PRIVATE ${JSONCPP_CFLAGS_OTHER})
+    target_link_directories(${PROJECT_NAME}_lib PRIVATE ${JSONCPP_LIBRARY_DIRS})
 endif()
 
-# Compiler-specific options
+# Link executable to library
+if(MAIN_SOURCE)
+    target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib)
+endif()
+
+# Compiler-specific options (apply to both library and executable)
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W3 /WX)
+    target_compile_options(${PROJECT_NAME}_lib PRIVATE /W3 /WX)
+    if(MAIN_SOURCE)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W3 /WX)
+    endif()
     if(ENABLE_STATIC_LINKING)
-        target_compile_options(${PROJECT_NAME} PRIVATE /MT)
+        target_compile_options(${PROJECT_NAME}_lib PRIVATE /MT)
+        if(MAIN_SOURCE)
+            target_compile_options(${PROJECT_NAME} PRIVATE /MT)
+        endif()
     endif()
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-unused-private-field)
+    target_compile_options(${PROJECT_NAME}_lib PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-unused-private-field)
+    if(MAIN_SOURCE)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-unused-private-field)
+    endif()
     if(ENABLE_STATIC_LINKING)
         # Only apply static linking flags for GCC, not clang
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-            target_compile_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++)
-            target_link_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++)
+            target_compile_options(${PROJECT_NAME}_lib PRIVATE -static-libgcc -static-libstdc++)
+            target_link_options(${PROJECT_NAME}_lib PRIVATE -static-libgcc -static-libstdc++)
+            if(MAIN_SOURCE)
+                target_compile_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++)
+                target_link_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++)
+            endif()
         endif()
     endif()
 endif()
