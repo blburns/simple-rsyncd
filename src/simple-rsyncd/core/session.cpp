@@ -68,7 +68,7 @@ bool RSyncSession::processRequest() {
     // Read request from socket
     std::vector<uint8_t> buffer(4096);
     ssize_t bytes_read = recv(client_socket_, buffer.data(), buffer.size() - 1, 0);
-    
+
     if (bytes_read <= 0) {
         active_ = false;
         return false;

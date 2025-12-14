@@ -27,6 +27,13 @@
 #include <csignal>
 #include <sstream>
 #include <algorithm>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <cstring>
 
 namespace simple_rsyncd {
 
@@ -84,11 +91,20 @@ bool RSyncDaemon::start() {
         return false;
     }
 
+    // Initialize network
+    if (!initializeNetwork()) {
+        logger_->error("Failed to initialize network");
+        return false;
+    }
+
     // Set up signal handlers
     setupSignalHandlers();
 
-    // Start worker threads
+    // Start accept thread
     running_ = true;
+    accept_thread_ = std::thread(&RSyncDaemon::acceptLoop, this);
+
+    // Start worker threads
     startWorkerThreads();
 
     // Start configuration watcher if enabled
@@ -112,6 +128,12 @@ void RSyncDaemon::stop() {
 
     shutdown_requested_ = true;
     running_ = false;
+
+    // Close listen socket
+    if (listen_socket_ >= 0) {
+        ::close(listen_socket_);
+        listen_socket_ = -1;
+    }
 
     // Stop all threads
     joinThreads();
@@ -266,8 +288,47 @@ void RSyncDaemon::startWorkerThreads() {
 
 void RSyncDaemon::workerLoop() {
     while (running_ && !shutdown_requested_) {
-        // Worker thread processing would go here
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        // Process sessions
+        std::vector<std::unique_ptr<RSyncSession>> sessions_to_process;
+        
+        {
+            std::lock_guard<std::mutex> lock(sessions_mutex_);
+            // Move active sessions to processing list
+            for (auto it = active_sessions_.begin(); it != active_sessions_.end();) {
+                if (*it && (*it)->isActive()) {
+                    sessions_to_process.push_back(std::move(*it));
+                    it = active_sessions_.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+
+        // Process each session
+        for (auto& session : sessions_to_process) {
+            if (session && session->isActive()) {
+                try {
+                    if (!session->processRequest()) {
+                        session->close();
+                    }
+                } catch (const std::exception& e) {
+                    logger_->error("Error processing session: " + std::string(e.what()));
+                    session->close();
+                }
+            }
+        }
+
+        // Return processed sessions (if still active)
+        {
+            std::lock_guard<std::mutex> lock(sessions_mutex_);
+            for (auto& session : sessions_to_process) {
+                if (session && session->isActive()) {
+                    active_sessions_.push_back(std::move(session));
+                }
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
@@ -358,7 +419,7 @@ bool RSyncDaemon::checkAuthentication(const std::string& username, const std::st
     }
 
     bool authenticated = auth_manager_->authenticate(username, password);
-    
+
     if (!authenticated) {
         std::lock_guard<std::mutex> lock(stats_mutex_);
         stats_.authentication_failures++;
@@ -404,7 +465,7 @@ bool RSyncDaemon::checkPermissions(const std::string& username, const std::strin
                                    const std::string& operation) const {
     // Basic permission checking
     // TODO: Implement more sophisticated permission system
-    
+
     std::lock_guard<std::mutex> lock(modules_mutex_);
     auto it = modules_.find(module_name);
     if (it == modules_.end()) {

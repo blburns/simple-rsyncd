@@ -29,7 +29,7 @@ ProtocolParser::ProtocolParser() : version_(ProtocolVersion::VERSION_30) {
 
 ProtocolMessage ProtocolParser::parse(const uint8_t* buffer, size_t size) {
     ProtocolMessage message;
-    
+
     if (size == 0 || buffer == nullptr) {
         message.error_message = "Empty buffer";
         return message;
@@ -42,7 +42,7 @@ ProtocolMessage ProtocolParser::parse(const uint8_t* buffer, size_t size) {
 
 ProtocolMessage ProtocolParser::parse(const std::string& data) {
     ProtocolMessage message;
-    
+
     if (data.empty()) {
         message.error_message = "Empty data";
         return message;
@@ -50,10 +50,10 @@ ProtocolMessage ProtocolParser::parse(const std::string& data) {
 
     // Basic rsync protocol parsing
     // Format: @RSYNCD: <version>\n<command> <module> <path> [args]\n
-    
+
     std::istringstream stream(data);
     std::string line;
-    
+
     // Parse first line - protocol header
     if (std::getline(stream, line)) {
         // Check for rsync protocol header
@@ -65,7 +65,7 @@ ProtocolMessage ProtocolParser::parse(const std::string& data) {
                 // Remove whitespace
                 version_str.erase(0, version_str.find_first_not_of(" \t"));
                 version_str.erase(version_str.find_last_not_of(" \t") + 1);
-                
+
                 try {
                     int version_num = std::stoi(version_str);
                     if (version_num == 30) version_ = ProtocolVersion::VERSION_30;
@@ -145,15 +145,15 @@ std::string ProtocolParser::parsePath(const std::string& line) {
 
 std::map<std::string, std::string> ProtocolParser::parseArguments(const std::string& line) {
     std::map<std::string, std::string> args;
-    
+
     // Simple argument parsing - look for key=value pairs
     std::istringstream stream(line);
     std::string token;
-    
+
     // Skip command, module, path
     std::string dummy;
     stream >> dummy >> dummy >> dummy;
-    
+
     while (stream >> token) {
         size_t eq_pos = token.find('=');
         if (eq_pos != std::string::npos) {
@@ -162,7 +162,7 @@ std::map<std::string, std::string> ProtocolParser::parseArguments(const std::str
             args[key] = value;
         }
     }
-    
+
     return args;
 }
 
@@ -231,7 +231,7 @@ std::shared_ptr<Module> ProtocolHandler::getModule(const std::string& module_nam
 std::string ProtocolHandler::handleList(const ProtocolMessage& message) {
     std::string module_name = message.module.empty() ? current_module_ : message.module;
     auto module = getModule(module_name);
-    
+
     if (!module) {
         return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
     }
@@ -243,7 +243,7 @@ std::string ProtocolHandler::handleList(const ProtocolMessage& message) {
     try {
         bool recursive = message.arguments.find("recursive") != message.arguments.end();
         DirectoryListing listing = module->listDirectory(message.path, recursive);
-        
+
         // Format directory listing as response
         std::ostringstream response;
         response << "@RSYNCD: OK\n";
@@ -251,17 +251,17 @@ std::string ProtocolHandler::handleList(const ProtocolMessage& message) {
         response << "Files: " << listing.total_files << "\n";
         response << "Directories: " << listing.total_directories << "\n";
         response << "Total size: " << listing.total_size << "\n";
-        
+
         // List files
         for (const auto& file : listing.files) {
             response << "F " << file.name << " " << file.size << "\n";
         }
-        
+
         // List directories
         for (const auto& dir : listing.directories) {
             response << "D " << dir.name << "\n";
         }
-        
+
         return response.str();
     } catch (const std::exception& e) {
         return ProtocolParser().buildErrorResponse(3, "Error listing directory: " + std::string(e.what()));
@@ -271,7 +271,7 @@ std::string ProtocolHandler::handleList(const ProtocolMessage& message) {
 std::string ProtocolHandler::handleGet(const ProtocolMessage& message) {
     std::string module_name = message.module.empty() ? current_module_ : message.module;
     auto module = getModule(module_name);
-    
+
     if (!module) {
         return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
     }
@@ -282,7 +282,7 @@ std::string ProtocolHandler::handleGet(const ProtocolMessage& message) {
 
     try {
         FileInfo info = module->getFileInfo(message.path);
-        
+
         // Format file info as response
         std::ostringstream response;
         response << "@RSYNCD: OK\n";
@@ -290,7 +290,7 @@ std::string ProtocolHandler::handleGet(const ProtocolMessage& message) {
         response << "Size: " << info.size << "\n";
         response << "Path: " << info.path << "\n";
         response << "Ready for transfer\n";
-        
+
         return response.str();
     } catch (const std::exception& e) {
         return ProtocolParser().buildErrorResponse(3, "Error getting file: " + std::string(e.what()));
@@ -300,7 +300,7 @@ std::string ProtocolHandler::handleGet(const ProtocolMessage& message) {
 std::string ProtocolHandler::handlePut(const ProtocolMessage& message) {
     std::string module_name = message.module.empty() ? current_module_ : message.module;
     auto module = getModule(module_name);
-    
+
     if (!module) {
         return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
     }
@@ -316,7 +316,7 @@ std::string ProtocolHandler::handlePut(const ProtocolMessage& message) {
         response << "@RSYNCD: OK\n";
         response << "Ready to receive file: " << message.path << "\n";
         response << "Send file data\n";
-        
+
         return response.str();
     } catch (const std::exception& e) {
         return ProtocolParser().buildErrorResponse(3, "Error preparing for upload: " + std::string(e.what()));
@@ -326,7 +326,7 @@ std::string ProtocolHandler::handlePut(const ProtocolMessage& message) {
 std::string ProtocolHandler::handleDelete(const ProtocolMessage& message) {
     std::string module_name = message.module.empty() ? current_module_ : message.module;
     auto module = getModule(module_name);
-    
+
     if (!module) {
         return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
     }
@@ -359,14 +359,14 @@ std::string ProtocolHandler::handleDelete(const ProtocolMessage& message) {
 std::string ProtocolHandler::handleStat(const ProtocolMessage& message) {
     std::string module_name = message.module.empty() ? current_module_ : message.module;
     auto module = getModule(module_name);
-    
+
     if (!module) {
         return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
     }
 
     try {
         FileInfo info = module->getFileInfo(message.path);
-        
+
         if (info.path.empty()) {
             return ProtocolParser().buildErrorResponse(4, "File not found: " + message.path);
         }
@@ -379,7 +379,7 @@ std::string ProtocolHandler::handleStat(const ProtocolMessage& message) {
         response << "Size: " << info.size << "\n";
         response << "Type: " << static_cast<int>(info.type) << "\n";
         response << "Is symlink: " << (info.is_symlink ? "yes" : "no") << "\n";
-        
+
         return response.str();
     } catch (const std::exception& e) {
         return ProtocolParser().buildErrorResponse(3, "Error getting file stats: " + std::string(e.what()));

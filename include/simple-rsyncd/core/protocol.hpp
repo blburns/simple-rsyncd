@@ -101,13 +101,13 @@ public:
 
 private:
     ProtocolVersion version_;
-    
+
     // Parsing helpers
     ProtocolCommand parseCommand(const std::string& command_str);
     std::string parseModule(const std::string& line);
     std::string parsePath(const std::string& line);
     std::map<std::string, std::string> parseArguments(const std::string& line);
-    
+
     // Response building helpers
     std::string formatSuccess(const std::string& message);
     std::string formatError(int code, const std::string& message);
@@ -146,14 +146,14 @@ public:
 private:
     std::string current_module_;
     const std::map<std::string, std::shared_ptr<Module>>& modules_;
-    
+
     // Command handlers
     std::string handleList(const ProtocolMessage& message);
     std::string handleGet(const ProtocolMessage& message);
     std::string handlePut(const ProtocolMessage& message);
     std::string handleDelete(const ProtocolMessage& message);
     std::string handleStat(const ProtocolMessage& message);
-    
+
     // Helper methods
     std::shared_ptr<Module> getModule(const std::string& module_name) const;
 };

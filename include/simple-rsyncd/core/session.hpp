@@ -50,7 +50,7 @@ private:
     std::shared_ptr<Configuration> config_;
     bool active_;
     std::chrono::steady_clock::time_point start_time_;
-    
+
     // Protocol handling
     std::unique_ptr<ProtocolParser> parser_;
     std::unique_ptr<ProtocolHandler> handler_;
