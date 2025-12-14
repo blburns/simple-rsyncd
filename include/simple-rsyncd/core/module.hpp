@@ -57,6 +57,34 @@ struct TransferStats {
     void reset();
 };
 
+// TransferStats implementation
+inline double TransferStats::getDuration() const {
+    if (end_time.time_since_epoch().count() == 0) {
+        auto now = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+        return duration.count() / 1000.0;
+    }
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    return duration.count() / 1000.0;
+}
+
+inline double TransferStats::getTransferRate() const {
+    double duration = getDuration();
+    if (duration <= 0) return 0.0;
+    return static_cast<double>(bytes_transferred) / duration;
+}
+
+inline void TransferStats::reset() {
+    bytes_transferred = 0;
+    files_transferred = 0;
+    directories_created = 0;
+    symlinks_created = 0;
+    hardlinks_created = 0;
+    failed_transfers = 0;
+    start_time = std::chrono::steady_clock::now();
+    end_time = start_time;
+}
+
 /**
  * @brief File information for rsync operations
  */
@@ -216,14 +244,31 @@ struct ModuleConfig {
      * @param filename File name to check
      * @return true if excluded, false otherwise
      */
-    bool isExcluded(const std::string& filename) const;
+    bool isExcluded(const std::string& filename) const {
+        for (const auto& pattern : exclude_patterns) {
+            if (matchesPattern(filename, pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     /**
      * @brief Check if file should be included
      * @param filename File name to check
      * @return true if included, false otherwise
      */
-    bool isIncluded(const std::string& filename) const;
+    bool isIncluded(const std::string& filename) const {
+        if (include_patterns.empty()) {
+            return true; // No include patterns means include all
+        }
+        for (const auto& pattern : include_patterns) {
+            if (matchesPattern(filename, pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     /**
      * @brief Get environment variable value
@@ -231,7 +276,13 @@ struct ModuleConfig {
      * @param default_value Default value if not found
      * @return Environment variable value
      */
-    std::string getEnvironmentVariable(const std::string& name, const std::string& default_value = "") const;
+    std::string getEnvironmentVariable(const std::string& name, const std::string& default_value = "") const {
+        auto it = environment_variables.find(name);
+        if (it != environment_variables.end()) {
+            return it->second;
+        }
+        return default_value;
+    }
     
     /**
      * @brief Get custom option value
@@ -239,7 +290,37 @@ struct ModuleConfig {
      * @param default_value Default value if not found
      * @return Custom option value
      */
-    std::string getCustomOption(const std::string& name, const std::string& default_value = "") const;
+    std::string getCustomOption(const std::string& name, const std::string& default_value = "") const {
+        auto it = custom_options.find(name);
+        if (it != custom_options.end()) {
+            return it->second;
+        }
+        return default_value;
+    }
+
+private:
+    // Simple pattern matching helper
+    static bool matchesPattern(const std::string& filename, const std::string& pattern) {
+        // Simple glob matching - * matches anything
+        if (pattern == "*") return true;
+        if (pattern == filename) return true;
+        
+        // Check if pattern contains wildcard
+        size_t star_pos = pattern.find('*');
+        if (star_pos != std::string::npos) {
+            std::string prefix = pattern.substr(0, star_pos);
+            std::string suffix = pattern.substr(star_pos + 1);
+            
+            if (filename.length() < prefix.length() + suffix.length()) {
+                return false;
+            }
+            
+            return filename.substr(0, prefix.length()) == prefix &&
+                   filename.substr(filename.length() - suffix.length()) == suffix;
+        }
+        
+        return false;
+    }
 };
 
 /**
@@ -532,5 +613,12 @@ protected:
     std::string exportData(const std::string& format) const;
     bool importData(const std::string& data, const std::string& format) const;
 };
+
+/**
+ * @brief Factory function to create a module instance
+ * @param config Module configuration
+ * @return Shared pointer to module instance
+ */
+std::shared_ptr<Module> createModule(const ModuleConfig& config);
 
 } // namespace simple_rsyncd

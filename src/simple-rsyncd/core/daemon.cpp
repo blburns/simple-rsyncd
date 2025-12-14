@@ -188,7 +188,7 @@ time_t RSyncDaemon::getUptime() const {
 }
 
 std::string RSyncDaemon::getVersion() const {
-    return "0.1.0";
+    return "0.2.0";
 }
 
 // Private methods implementation
@@ -207,14 +207,27 @@ bool RSyncDaemon::loadModules() {
     }
 
     std::lock_guard<std::mutex> lock(modules_mutex_);
+    modules_.clear();
 
     for (const auto& [name, module_config] : config_->modules) {
-        // Module loading would go here
-        // For now, just create placeholder modules
-        logger_->info("Loaded module: " + name);
+        try {
+            auto module = createModule(module_config);
+            if (module && module->validate()) {
+                modules_[name] = module;
+                logger_->info("Loaded module: " + name + " at " + module_config.path);
+            } else {
+                logger_->warn("Failed to load module: " + name);
+                auto errors = module->getErrors();
+                for (const auto& error : errors) {
+                    logger_->warn("  " + error);
+                }
+            }
+        } catch (const std::exception& e) {
+            logger_->error("Exception loading module " + name + ": " + e.what());
+        }
     }
 
-    return true;
+    return !modules_.empty();
 }
 
 bool RSyncDaemon::unloadModules() {

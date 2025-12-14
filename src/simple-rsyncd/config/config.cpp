@@ -45,7 +45,7 @@ bool Configuration::loadFromFile(const std::string& filename) {
     }
 
     config_file_path = filename;
-    
+
     std::string line;
     std::string current_section;
     int line_number = 0;
@@ -54,7 +54,7 @@ bool Configuration::loadFromFile(const std::string& filename) {
 
     while (std::getline(file, line)) {
         line_number++;
-        
+
         // Remove leading/trailing whitespace
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);
@@ -78,7 +78,7 @@ bool Configuration::loadFromFile(const std::string& filename) {
                 current_module = section.substr(7);
                 current_section = "module";
                 in_module = true;
-                
+
                 // Create module config if it doesn't exist
                 if (modules.find(current_module) == modules.end()) {
                     modules[current_module] = ModuleConfig();
@@ -276,7 +276,7 @@ bool Configuration::validate() const {
 
 bool Configuration::validateNetwork() const {
     bool valid = true;
-    
+
     if (network.bind_port == 0 || network.bind_port > 65535) {
         errors_.push_back("Invalid bind_port: " + std::to_string(network.bind_port));
         valid = false;
@@ -507,7 +507,7 @@ bool Configuration::checkFileChanged() const {
     if (config_file_path.empty()) {
         return false;
     }
-    
+
     try {
         auto current_time = std::filesystem::last_write_time(config_file_path);
         return current_time > last_modified;

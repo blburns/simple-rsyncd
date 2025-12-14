@@ -293,7 +293,7 @@ private:
     // Configuration parsing helpers
     void parseGlobalConfig(const std::string& key, const std::string& value);
     void parseModuleConfig(const std::string& module_name, const std::string& key, const std::string& value);
-    
+
     // JSON parsing helpers
     bool parseJSONValue(const std::string& key, const std::string& value);
 
