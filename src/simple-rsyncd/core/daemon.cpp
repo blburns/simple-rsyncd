@@ -430,7 +430,7 @@ bool RSyncDaemon::checkAuthentication(const std::string& username, const std::st
         return false;
     }
 
-    bool authenticated = auth_manager_->authenticate(username, password);
+    bool authenticated = auth_manager_->authenticateUser(username, password);
 
     if (!authenticated) {
         std::lock_guard<std::mutex> lock(stats_mutex_);

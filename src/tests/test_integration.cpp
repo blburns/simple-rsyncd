@@ -223,12 +223,12 @@ TEST_F(IntegrationTest, AuthenticationFlow) {
     AuthenticationManager auth_mgr(auth);
 
     // Test successful authentication
-    EXPECT_TRUE(auth_mgr.authenticate("testuser", "testpass"));
-    EXPECT_TRUE(auth_mgr.authenticate("admin", "admin123"));
+    EXPECT_TRUE(auth_mgr.authenticateUser("testuser", "testpass"));
+    EXPECT_TRUE(auth_mgr.authenticateUser("admin", "admin123"));
 
     // Test failed authentication
-    EXPECT_FALSE(auth_mgr.authenticate("testuser", "wrongpass"));
-    EXPECT_FALSE(auth_mgr.authenticate("nonexistent", "password"));
+    EXPECT_FALSE(auth_mgr.authenticateUser("testuser", "wrongpass"));
+    EXPECT_FALSE(auth_mgr.authenticateUser("nonexistent", "password"));
 }
 
 TEST_F(IntegrationTest, AuthenticationWithAllowDenyLists) {
@@ -252,13 +252,13 @@ TEST_F(IntegrationTest, AuthenticationWithAllowDenyLists) {
     AuthenticationManager auth_mgr(auth);
 
     // Test allowed user
-    EXPECT_TRUE(auth_mgr.authenticate("user1", "pass1"));
+    EXPECT_TRUE(auth_mgr.authenticateUser("user1", "pass1"));
 
     // Test denied user (even with correct password)
-    EXPECT_FALSE(auth_mgr.authenticate("user2", "pass2"));
+    EXPECT_FALSE(auth_mgr.authenticateUser("user2", "pass2"));
 
     // Test user not in allowed list
-    EXPECT_FALSE(auth_mgr.authenticate("user3", "pass3"));
+    EXPECT_FALSE(auth_mgr.authenticateUser("user3", "pass3"));
 }
 
 // Error scenario tests

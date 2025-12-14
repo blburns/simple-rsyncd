@@ -90,8 +90,8 @@ TEST_F(AuthTest, AuthenticationManager) {
 
     EXPECT_TRUE(auth_mgr.isEnabled());
     EXPECT_FALSE(auth_mgr.allowsAnonymous());
-    EXPECT_TRUE(auth_mgr.authenticate("user1", "password1"));
-    EXPECT_FALSE(auth_mgr.authenticate("user1", "wrongpassword"));
+    EXPECT_TRUE(auth_mgr.authenticateUser("user1", "password1"));
+    EXPECT_FALSE(auth_mgr.authenticateUser("user1", "wrongpassword"));
 }
 
 TEST_F(AuthTest, AllowDenyLists) {
@@ -104,9 +104,9 @@ TEST_F(AuthTest, AllowDenyLists) {
 
     AuthenticationManager auth_mgr(auth_config);
 
-    EXPECT_TRUE(auth_mgr.authenticate("user1", "password1"));
-    EXPECT_FALSE(auth_mgr.authenticate("user2", "password2")); // Denied
-    EXPECT_FALSE(auth_mgr.authenticate("admin", "admin123")); // Not in allowed list
+    EXPECT_TRUE(auth_mgr.authenticateUser("user1", "password1"));
+    EXPECT_FALSE(auth_mgr.authenticateUser("user2", "password2")); // Denied
+    EXPECT_FALSE(auth_mgr.authenticateUser("admin", "admin123")); // Not in allowed list
 }
 
 } // namespace simple_rsyncd
