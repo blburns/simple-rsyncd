@@ -18,6 +18,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
 
 namespace simple_rsyncd {
 
@@ -26,20 +29,193 @@ Configuration::Configuration() : is_valid_(false), has_changed_(false) {
 }
 
 bool Configuration::loadFromFile(const std::string& filename) {
-    // Basic file loading implementation
+    errors_.clear();
+    is_valid_ = false;
+
+    // Check if file exists
+    if (!std::filesystem::exists(filename)) {
+        errors_.push_back("Configuration file does not exist: " + filename);
+        return false;
+    }
+
     std::ifstream file(filename);
     if (!file.is_open()) {
+        errors_.push_back("Failed to open configuration file: " + filename);
         return false;
     }
 
     config_file_path = filename;
+    
+    std::string line;
+    std::string current_section;
+    int line_number = 0;
+    bool in_module = false;
+    std::string current_module;
+
+    while (std::getline(file, line)) {
+        line_number++;
+        
+        // Remove leading/trailing whitespace
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
+
+        // Skip empty lines and comments
+        if (line.empty() || line[0] == '#' || line[0] == ';') {
+            continue;
+        }
+
+        // Check for section header [section]
+        if (line[0] == '[' && line.back() == ']') {
+            std::string section = line.substr(1, line.length() - 2);
+            // Remove whitespace from section name
+            section.erase(0, section.find_first_not_of(" \t"));
+            section.erase(section.find_last_not_of(" \t") + 1);
+
+            if (section == "global") {
+                current_section = "global";
+                in_module = false;
+            } else if (section.find("module:") == 0) {
+                current_module = section.substr(7);
+                current_section = "module";
+                in_module = true;
+                
+                // Create module config if it doesn't exist
+                if (modules.find(current_module) == modules.end()) {
+                    modules[current_module] = ModuleConfig();
+                }
+            } else {
+                current_section = section;
+                in_module = false;
+            }
+            continue;
+        }
+
+        // Parse key=value pairs
+        size_t eq_pos = line.find('=');
+        if (eq_pos == std::string::npos) {
+            errors_.push_back("Invalid line " + std::to_string(line_number) + ": " + line);
+            continue;
+        }
+
+        std::string key = line.substr(0, eq_pos);
+        std::string value = line.substr(eq_pos + 1);
+
+        // Trim whitespace
+        key.erase(0, key.find_first_not_of(" \t"));
+        key.erase(key.find_last_not_of(" \t") + 1);
+        value.erase(0, value.find_first_not_of(" \t"));
+        value.erase(value.find_last_not_of(" \t") + 1);
+
+        // Remove quotes if present
+        if (!value.empty() && ((value[0] == '"' && value.back() == '"') ||
+                               (value[0] == '\'' && value.back() == '\''))) {
+            value = value.substr(1, value.length() - 2);
+        }
+
+        // Parse based on section
+        if (current_section == "global" || current_section.empty()) {
+            parseGlobalConfig(key, value);
+        } else if (in_module && current_section == "module") {
+            parseModuleConfig(current_module, key, value);
+        }
+    }
+
+    file.close();
     updateLastModified();
 
-    // For now, just mark as loaded
+    // Validate configuration
+    if (!validate()) {
+        return false;
+    }
+
     is_valid_ = true;
     has_changed_ = false;
-
     return true;
+}
+
+void Configuration::parseGlobalConfig(const std::string& key, const std::string& value) {
+    // Network settings
+    if (key == "bind_address" || key == "address") {
+        network.bind_address = value;
+    } else if (key == "bind_port" || key == "port") {
+        try {
+            network.bind_port = static_cast<uint16_t>(std::stoul(value));
+        } catch (...) {
+            errors_.push_back("Invalid port value: " + value);
+        }
+    } else if (key == "max_connections") {
+        try {
+            network.max_connections = std::stoul(value);
+        } catch (...) {
+            errors_.push_back("Invalid max_connections value: " + value);
+        }
+    }
+    // SSL settings
+    else if (key == "ssl_enabled") {
+        ssl.enabled = (value == "true" || value == "1" || value == "yes");
+    } else if (key == "ssl_certificate_file" || key == "ssl_cert") {
+        ssl.certificate_file = value;
+    } else if (key == "ssl_private_key_file" || key == "ssl_key") {
+        ssl.private_key_file = value;
+    } else if (key == "ssl_ca_file" || key == "ssl_ca") {
+        ssl.ca_file = value;
+    }
+    // Auth settings
+    else if (key == "auth_enabled") {
+        auth.enabled = (value == "true" || value == "1" || value == "yes");
+    } else if (key == "auth_method") {
+        auth.method = value;
+    } else if (key == "auth_password_file" || key == "password_file") {
+        auth.password_file = value;
+    } else if (key == "auth_realm") {
+        auth.realm = value;
+    }
+    // Log settings
+    else if (key == "log_level" || key == "log") {
+        log.level = value;
+    } else if (key == "log_file") {
+        log.file = value;
+        log.file_output = true;
+    }
+    // Other settings
+    else if (key == "pid_file") {
+        pid_file = value;
+    } else if (key == "user") {
+        user = value;
+        security.user = value;
+    } else if (key == "group") {
+        group = value;
+        security.group = value;
+    }
+}
+
+void Configuration::parseModuleConfig(const std::string& module_name, const std::string& key, const std::string& value) {
+    if (modules.find(module_name) == modules.end()) {
+        modules[module_name] = ModuleConfig();
+    }
+
+    auto& module = modules[module_name];
+
+    if (key == "path") {
+        module.path = value;
+    } else if (key == "comment") {
+        module.comment = value;
+    } else if (key == "read_only" || key == "read only") {
+        module.read_only = (value == "true" || value == "1" || value == "yes");
+    } else if (key == "list") {
+        module.list = (value == "true" || value == "1" || value == "yes");
+    } else if (key == "delete") {
+        module.allow_delete = (value == "true" || value == "1" || value == "yes");
+    } else if (key == "overwrite") {
+        module.overwrite = (value == "true" || value == "1" || value == "yes");
+    } else if (key == "exclude") {
+        module.exclude_patterns.push_back(value);
+    } else if (key == "include") {
+        module.include_patterns.push_back(value);
+    } else {
+        // Store unknown keys as custom options
+        module.custom_options[key] = value;
+    }
 }
 
 bool Configuration::loadFromJSON(const std::string& json) {
@@ -68,11 +244,105 @@ bool Configuration::saveToFile(const std::string& filename) const {
 
 std::string Configuration::saveToJSON() const {
     // Basic JSON saving implementation
-    return "{\"version\": \"0.1.0\"}";
+    return "{\"version\": \"0.2.0\"}";
 }
 
 bool Configuration::validate() const {
-    return is_valid_;
+    errors_.clear();
+    bool valid = true;
+
+    // Validate network settings
+    if (!validateNetwork()) {
+        valid = false;
+    }
+
+    // Validate SSL settings if enabled
+    if (ssl.enabled && !validateSSL()) {
+        valid = false;
+    }
+
+    // Validate auth settings if enabled
+    if (auth.enabled && !validateAuth()) {
+        valid = false;
+    }
+
+    // Validate modules
+    if (!validateModules()) {
+        valid = false;
+    }
+
+    return valid;
+}
+
+bool Configuration::validateNetwork() const {
+    bool valid = true;
+    
+    if (network.bind_port == 0 || network.bind_port > 65535) {
+        errors_.push_back("Invalid bind_port: " + std::to_string(network.bind_port));
+        valid = false;
+    }
+
+    if (network.max_connections == 0) {
+        errors_.push_back("max_connections must be greater than 0");
+        valid = false;
+    }
+
+    return valid;
+}
+
+bool Configuration::validateSSL() const {
+    bool valid = true;
+
+    if (ssl.certificate_file.empty()) {
+        errors_.push_back("SSL enabled but certificate_file not specified");
+        valid = false;
+    } else if (!std::filesystem::exists(ssl.certificate_file)) {
+        errors_.push_back("SSL certificate file does not exist: " + ssl.certificate_file);
+        valid = false;
+    }
+
+    if (ssl.private_key_file.empty()) {
+        errors_.push_back("SSL enabled but private_key_file not specified");
+        valid = false;
+    } else if (!std::filesystem::exists(ssl.private_key_file)) {
+        errors_.push_back("SSL private key file does not exist: " + ssl.private_key_file);
+        valid = false;
+    }
+
+    return valid;
+}
+
+bool Configuration::validateAuth() const {
+    bool valid = true;
+
+    if (auth.method == "password" && auth.password_file.empty()) {
+        errors_.push_back("Password authentication enabled but password_file not specified");
+        valid = false;
+    } else if (auth.method == "password" && !std::filesystem::exists(auth.password_file)) {
+        errors_.push_back("Password file does not exist: " + auth.password_file);
+        valid = false;
+    }
+
+    return valid;
+}
+
+bool Configuration::validateModules() const {
+    bool valid = true;
+
+    for (const auto& [name, module] : modules) {
+        if (module.path.empty()) {
+            errors_.push_back("Module '" + name + "' has no path specified");
+            valid = false;
+        } else if (!std::filesystem::exists(module.path)) {
+            errors_.push_back("Module '" + name + "' path does not exist: " + module.path);
+            // Warning, not error - path might be created later
+        } else if (!std::filesystem::is_directory(module.path)) {
+            errors_.push_back("Module '" + name + "' path is not a directory: " + module.path);
+            valid = false;
+        }
+    }
+
+    return valid;
 }
 
 std::vector<std::string> Configuration::getErrors() const {
@@ -221,13 +491,53 @@ void Configuration::setDefaultMonitoring() {
 }
 
 void Configuration::updateLastModified() {
-    // Update last modified time
+    if (!config_file_path.empty()) {
+        try {
+            last_modified = std::filesystem::last_write_time(config_file_path);
+        } catch (...) {
+            last_modified = std::chrono::system_clock::now();
+        }
+    } else {
+        last_modified = std::chrono::system_clock::now();
+    }
     has_changed_ = false;
 }
 
 bool Configuration::checkFileChanged() const {
-    // Check if configuration file has changed
-    return false;
+    if (config_file_path.empty()) {
+        return false;
+    }
+    
+    try {
+        auto current_time = std::filesystem::last_write_time(config_file_path);
+        return current_time > last_modified;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool Configuration::validateAccess() const {
+    return true; // Basic validation - can be enhanced
+}
+
+bool Configuration::validateRateLimit() const {
+    return true; // Basic validation - can be enhanced
+}
+
+bool Configuration::validateLog() const {
+    return true; // Basic validation - can be enhanced
+}
+
+bool Configuration::validateSecurity() const {
+    return true; // Basic validation - can be enhanced
+}
+
+bool Configuration::validatePerformance() const {
+    return true; // Basic validation - can be enhanced
+}
+
+bool Configuration::validateMonitoring() const {
+    return true; // Basic validation - can be enhanced
 }
 
 } // namespace simple_rsyncd

@@ -264,7 +264,7 @@ public:
     std::string umask;
     bool verbose = false;
     bool debug = false;
-    std::string version = "0.1.0";
+    std::string version = "0.2.0";
 
     // Configuration file monitoring
     std::string config_file_path;
@@ -290,9 +290,12 @@ private:
     bool validateMonitoring() const;
     bool validateModules() const;
 
+    // Configuration parsing helpers
+    void parseGlobalConfig(const std::string& key, const std::string& value);
+    void parseModuleConfig(const std::string& module_name, const std::string& key, const std::string& value);
+    
     // JSON parsing helpers
     bool parseJSONValue(const std::string& key, const std::string& value);
-    bool parseModuleConfig(const std::string& module_name, const std::map<std::string, std::string>& config);
 
     // Configuration file monitoring
     void updateLastModified();
