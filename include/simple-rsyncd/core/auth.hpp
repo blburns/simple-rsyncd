@@ -103,7 +103,7 @@ public:
      * @param policy Password policy
      * @return Pair of (is_valid, error_message)
      */
-    static std::pair<bool, std::string> validatePassword(const std::string& password, 
+    static std::pair<bool, std::string> validatePassword(const std::string& password,
                                                           const PasswordPolicy& policy);
 
     /**
@@ -112,7 +112,7 @@ public:
      * @param policy Password policy
      * @return true if meets requirements, false otherwise
      */
-    static bool meetsComplexityRequirements(const std::string& password, 
+    static bool meetsComplexityRequirements(const std::string& password,
                                             const PasswordPolicy& policy);
 };
 
@@ -198,7 +198,7 @@ public:
      * @param permissions User permissions
      * @return true if created successfully, false otherwise
      */
-    bool createUser(const std::string& username, const std::string& password, 
+    bool createUser(const std::string& username, const std::string& password,
                     const std::vector<std::string>& permissions = {});
 
     /**
@@ -356,7 +356,7 @@ public:
      * @param password Password
      * @return Session ID if authenticated, empty string otherwise
      */
-    std::string authenticate(const std::string& username, const std::string& password, 
+    std::string authenticate(const std::string& username, const std::string& password,
                             const std::string& client_address = "");
 
     /**

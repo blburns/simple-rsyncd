@@ -48,7 +48,7 @@ struct LogEntry {
     std::string message;
     std::string component;
     std::map<std::string, std::string> fields;
-    
+
     std::string toJSON() const;
     std::string toText() const;
 };
@@ -79,7 +79,7 @@ public:
     void fatal(const std::string& message);
 
     // Structured logging methods
-    void log(LogLevel level, const std::string& message, 
+    void log(LogLevel level, const std::string& message,
              const std::string& component = "",
              const std::map<std::string, std::string>& fields = {});
 

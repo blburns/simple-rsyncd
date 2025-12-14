@@ -7,12 +7,18 @@ A lightweight, secure, and feature-rich rsync daemon implementation in C++ desig
 - **Multi-Platform Support**: Linux, macOS, and Windows
 - **SSL/TLS Encryption**: Secure file transfers with modern cryptography
 - **Authentication**: Multiple authentication methods (password, public key, OAuth2)
+  - **v0.3.0**: Password hashing (SHA-256), password policies, user database, session management
 - **Access Control**: IP-based and network-based access restrictions
 - **Module System**: Flexible module configuration with path-based access control
-- **Configuration Overlays**: Support for configuration inheritance and hot-reloading
+  - **v0.3.0**: Pattern matching (include/exclude), script hooks (pre/post operations)
+- **Configuration**: Support for INI and JSON formats
+  - **v0.3.0**: Environment variable substitution, automatic hot-reload
 - **Rate Limiting**: Configurable connection and bandwidth limits
 - **Monitoring**: Built-in metrics, health checks, and Prometheus integration
 - **Logging**: Comprehensive logging with rotation and multiple outputs
+  - **v0.3.0**: Structured JSON logging, log rotation, filtering
+- **Error Handling**: Comprehensive error system with codes and context
+  - **v0.3.0**: Error categories, recovery suggestions, structured error reporting
 - **Performance**: Optimized for high-throughput file transfers
 - **Security**: Chroot support, privilege dropping, and path validation
 
@@ -105,8 +111,10 @@ The daemon uses a hierarchical configuration system with support for:
 
 - **Global settings**: Network, SSL, authentication, logging
 - **Module definitions**: Path-based access control and permissions
-- **Configuration overlays**: Environment-specific customizations
-- **Hot-reloading**: Configuration changes without restart
+- **Configuration formats**: INI and JSON (v0.3.0)
+- **Environment variables**: Variable substitution in config files (v0.3.0)
+- **Hot-reloading**: Automatic configuration reload on file changes (v0.3.0)
+- **Configuration validation**: Comprehensive validation with detailed errors
 
 Example configuration:
 
@@ -265,7 +273,7 @@ ssl_cipher_suite = ECDHE-RSA-AES256-GCM-SHA384
 ssl_tls_version = 1.2
 ```
 
-### Authentication
+### Authentication (v0.3.0 Enhanced)
 
 ```ini
 [global]
@@ -273,7 +281,25 @@ auth_enabled = true
 auth_method = password
 auth_password_file = /etc/simple-rsyncd/users
 auth_realm = simple-rsyncd
+
+# Password policies (v0.3.0)
+password_policy_min_length = 8
+password_policy_require_uppercase = true
+password_policy_require_lowercase = true
+password_policy_require_digits = true
+password_policy_expiration_hours = 2160  # 90 days
+
+# Session management (v0.3.0)
+session_timeout = 3600
+enable_session_management = true
 ```
+
+**Password Security:**
+- Passwords are automatically hashed using SHA-256 with salt
+- Supports both plain text (backward compatible) and pre-hashed passwords
+- Password policies enforce complexity requirements
+- Password expiration and account lockout support
+- User database with CRUD operations
 
 ### Access Control
 
@@ -398,12 +424,21 @@ brew install \
 
 - **[Installation Guide](docs/installation/README.md)**: Platform-specific installation instructions
 - **[User Guide](docs/user-guide/README.md)**: Complete usage documentation
-- **[Configuration Guide](docs/configuration/README.md)**: Configuration reference
+- **[Configuration Guide](docs/configuration/README.md)**: Configuration reference (v0.3.0: JSON format, env vars, hot-reload)
+- **[Error Handling Guide](docs/error-handling.md)**: Comprehensive error handling system (v0.3.0)
 - **[Development Guide](docs/development/README.md)**: Contributing and development
 - **[API Reference](docs/api/README.md)**: Developer API documentation
 - **[Troubleshooting Guide](docs/troubleshooting/README.md)**: Common issues and solutions
 
 **📖 [Start with the Installation Guide](docs/installation/README.md) for first-time setup**
+
+**🆕 v0.3.0 Features:**
+- Password hashing and policies
+- User database and session management
+- Configuration hot-reload
+- Environment variable substitution
+- Enhanced logging with rotation
+- Comprehensive error handling
 
 ## 🤝 Contributing
 

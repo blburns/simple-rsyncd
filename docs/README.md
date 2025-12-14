@@ -57,6 +57,14 @@ Common issues and solutions:
 - **Performance**: Optimization and tuning
 - **Security**: SSL certificate and authentication issues
 
+### ⚠️ [Error Handling Guide](error-handling.md) (v0.3.0)
+Comprehensive error handling documentation:
+- **Error Categories**: Organized error types by domain
+- **Error Codes**: Numeric codes for programmatic handling
+- **Error Context**: Rich contextual information
+- **Error Recovery**: Suggestions for resolving errors
+- **Structured Error Reporting**: JSON and text formats
+
 ## 🎯 Quick Navigation
 
 | Task | Documentation |
@@ -64,6 +72,7 @@ Common issues and solutions:
 | **First Time Setup** | [Installation Guide](installation/README.md) |
 | **Basic Usage** | [User Guide](user-guide/README.md) |
 | **Configuration** | [Configuration Guide](configuration/README.md) |
+| **Error Handling** | [Error Handling Guide](error-handling.md) |
 | **Development** | [Development Guide](development/README.md) |
 | **API Reference** | [API Reference](api/README.md) |
 | **Problem Solving** | [Troubleshooting Guide](troubleshooting/README.md) |

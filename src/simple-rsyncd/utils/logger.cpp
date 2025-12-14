@@ -30,10 +30,10 @@ std::string LogEntry::toJSON() const {
     std::stringstream ss;
     auto time_t = std::chrono::system_clock::to_time_t(timestamp);
     auto tm = *std::localtime(&time_t);
-    
+
     ss << "{";
     ss << "\"timestamp\":\"" << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << "\",";
-    
+
     std::string level_str;
     switch (level) {
         case LogLevel::DEBUG: level_str = "DEBUG"; break;
@@ -44,11 +44,11 @@ std::string LogEntry::toJSON() const {
     }
     ss << "\"level\":\"" << level_str << "\",";
     ss << "\"message\":\"" << message << "\"";
-    
+
     if (!component.empty()) {
         ss << ",\"component\":\"" << component << "\"";
     }
-    
+
     if (!fields.empty()) {
         ss << ",\"fields\":{";
         bool first = true;
@@ -59,7 +59,7 @@ std::string LogEntry::toJSON() const {
         }
         ss << "}";
     }
-    
+
     ss << "}";
     return ss.str();
 }
@@ -68,9 +68,9 @@ std::string LogEntry::toText() const {
     std::stringstream ss;
     auto time_t = std::chrono::system_clock::to_time_t(timestamp);
     auto tm = *std::localtime(&time_t);
-    
+
     ss << "[" << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << "]";
-    
+
     std::string level_str;
     switch (level) {
         case LogLevel::DEBUG: level_str = "DEBUG"; break;
@@ -80,13 +80,13 @@ std::string LogEntry::toText() const {
         case LogLevel::FATAL: level_str = "FATAL"; break;
     }
     ss << " [" << level_str << "]";
-    
+
     if (!component.empty()) {
         ss << " [" << component << "]";
     }
-    
+
     ss << " " << message;
-    
+
     if (!fields.empty()) {
         ss << " {";
         bool first = true;
@@ -97,12 +97,12 @@ std::string LogEntry::toText() const {
         }
         ss << "}";
     }
-    
+
     return ss.str();
 }
 
 // Logger implementation
-Logger::Logger() 
+Logger::Logger()
     : level_(LogLevel::INFO)
     , format_(LogFormat::TEXT)
     , max_file_size_(10 * 1024 * 1024) // 10MB
@@ -192,18 +192,18 @@ void Logger::log(LogLevel level, const std::string& message,
     if (level < level_) {
         return;
     }
-    
+
     if (!shouldLog(message)) {
         return;
     }
-    
+
     LogEntry entry;
     entry.timestamp = std::chrono::system_clock::now();
     entry.level = level;
     entry.message = message;
     entry.component = component;
     entry.fields = fields;
-    
+
     logEntry(entry);
 }
 
@@ -227,14 +227,14 @@ void Logger::rotateLog() {
     if (log_file_.empty() || !log_stream_ || !log_stream_->is_open()) {
         return;
     }
-    
+
     log_stream_->close();
-    
+
     // Rotate existing logs
     for (size_t i = max_files_ - 1; i > 0; i--) {
         std::string old_file = getLogFilename(i - 1);
         std::string new_file = getLogFilename(i);
-        
+
         if (std::filesystem::exists(old_file)) {
             if (i == max_files_ - 1 && compress_old_logs_) {
                 compressLog(old_file);
@@ -243,13 +243,13 @@ void Logger::rotateLog() {
             }
         }
     }
-    
+
     // Rename current log
     std::string current_log = getLogFilename(0);
     if (std::filesystem::exists(log_file_)) {
         std::filesystem::rename(log_file_, current_log);
     }
-    
+
     // Open new log file
     log_stream_ = std::make_unique<std::ofstream>(log_file_, std::ios::trunc);
     current_file_size_ = 0;
@@ -257,7 +257,7 @@ void Logger::rotateLog() {
 
 void Logger::logEntry(const LogEntry& entry) {
     std::lock_guard<std::mutex> lock(log_mutex_);
-    
+
     std::string log_line;
     if (format_ == LogFormat::JSON) {
         log_line = entry.toJSON();
@@ -265,18 +265,18 @@ void Logger::logEntry(const LogEntry& entry) {
         log_line = entry.toText();
     }
     log_line += "\n";
-    
+
     // Console output
     if (console_output_) {
         std::cout << log_line;
     }
-    
+
     // File output
     if (log_stream_ && log_stream_->is_open()) {
         *log_stream_ << log_line;
         log_stream_->flush();
         current_file_size_ += log_line.length();
-        
+
         // Check if rotation is needed
         if (current_file_size_ >= max_file_size_) {
             checkRotation();
@@ -294,12 +294,12 @@ std::string Logger::getLogFilename(size_t index) const {
     if (log_file_.empty()) {
         return "";
     }
-    
+
     std::filesystem::path path(log_file_);
     std::string stem = path.stem().string();
     std::string ext = path.extension().string();
     std::string dir = path.parent_path().string();
-    
+
     std::string rotated_file = stem + "." + std::to_string(index) + ext;
     if (!dir.empty()) {
         return dir + "/" + rotated_file;
@@ -323,7 +323,7 @@ bool Logger::shouldLog(const std::string& message) const {
     if (filters_.empty()) {
         return true;
     }
-    
+
     for (const auto& pattern : filters_) {
         try {
             std::regex re(pattern);
@@ -334,7 +334,7 @@ bool Logger::shouldLog(const std::string& message) const {
             // Invalid regex, skip this filter
         }
     }
-    
+
     return true;
 }
 

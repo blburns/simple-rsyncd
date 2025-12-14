@@ -2,6 +2,18 @@
 
 This guide covers all configuration options for Simple RSync Daemon, from basic setup to advanced features.
 
+**Version**: v0.3.0
+
+**New in v0.3.0:**
+- Environment variable substitution in configuration files
+- Automatic configuration hot-reload
+- JSON configuration format support
+- Password hashing and policies
+- User database management
+- Session management
+- Enhanced logging with rotation
+- Structured JSON logging
+
 ## 📁 Configuration Files
 
 ### File Locations
@@ -17,7 +29,8 @@ This guide covers all configuration options for Simple RSync Daemon, from basic 
 
 ```
 /etc/simple-rsyncd/
-├── rsyncd.conf              # Main configuration file
+├── rsyncd.conf              # Main configuration file (INI format)
+├── rsyncd.json              # Alternative JSON configuration (v0.3.0)
 ├── modules.d/               # Module configuration files
 │   ├── 01-public.conf      # Public module
 │   ├── 02-backup.conf      # Backup module
@@ -26,9 +39,19 @@ This guide covers all configuration options for Simple RSync Daemon, from basic 
 │   ├── server.crt          # Server certificate
 │   ├── server.key          # Server private key
 │   └── ca.crt              # CA certificate
-├── users                    # User database
+├── users                    # Password file (plain text or hashed)
+├── userdb                   # User database (v0.3.0)
 └── templates/               # Configuration templates
 ```
+
+### Configuration File Formats (v0.3.0)
+
+The daemon supports two configuration formats:
+
+1. **INI Format** (traditional): `.conf` files
+2. **JSON Format** (v0.3.0): `.json` files
+
+The format is automatically detected by file extension. Both formats support the same configuration options.
 
 ## ⚙️ Global Configuration
 
@@ -51,11 +74,19 @@ ssl_private_key_file = /etc/simple-rsyncd/ssl/server.key
 auth_enabled = true
 auth_method = password
 auth_realm = simple-rsyncd
+auth_password_file = /etc/simple-rsyncd/users
+
+# Configuration hot-reload (v0.3.0)
+auto_reload = true
+reload_interval = 30
 
 # Logging
 log_level = info
 log_file = /var/log/simple-rsyncd.log
 log_format = json
+log_max_size = 10MB
+log_max_files = 5
+log_compress_old_logs = true
 
 # Performance
 max_transfer_rate = 0
@@ -96,17 +127,68 @@ buffer_size = 8192
 | `auth_oauth2_client_id` | OAuth2 client ID | - | `your_client_id` |
 | `auth_oauth2_client_secret` | OAuth2 client secret | - | `your_secret` |
 | `auth_oauth2_issuer` | OAuth2 issuer URL | - | `https://accounts.google.com` |
+| `session_timeout` | Session timeout in seconds | `3600` | `7200` |
+| `enable_session_management` | Enable session tracking | `true` | `false` |
 
-### Logging Configuration
+### Password Policies (v0.3.0)
+
+Password policies can be configured to enforce security requirements:
+
+```ini
+[global]
+# Password policy settings
+password_policy_min_length = 8
+password_policy_require_uppercase = true
+password_policy_require_lowercase = true
+password_policy_require_digits = true
+password_policy_require_special = false
+password_policy_expiration_hours = 2160  # 90 days
+password_policy_max_failed_attempts = 5
+password_policy_lockout_duration = 30  # minutes
+```
+
+| Option | Description | Default | Example |
+|--------|-------------|---------|---------|
+| `password_policy_min_length` | Minimum password length | `8` | `12` |
+| `password_policy_require_uppercase` | Require uppercase letters | `false` | `true` |
+| `password_policy_require_lowercase` | Require lowercase letters | `false` | `true` |
+| `password_policy_require_digits` | Require digits | `false` | `true` |
+| `password_policy_require_special` | Require special characters | `false` | `true` |
+| `password_policy_expiration_hours` | Password expiration (0 = no expiration) | `0` | `2160` (90 days) |
+| `password_policy_max_failed_attempts` | Max failed login attempts before lockout | `5` | `10` |
+| `password_policy_lockout_duration` | Account lockout duration in minutes | `30` | `60` |
+
+### Logging Configuration (v0.3.0 Enhanced)
 
 | Option | Description | Default | Example |
 |--------|-------------|---------|---------|
 | `log_level` | Log level | `info` | `debug` |
 | `log_file` | Log file path | - | `/var/log/simple-rsyncd.log` |
-| `log_format` | Log format | `text` | `json` |
-| `log_max_size` | Max log file size | `100MB` | `500MB` |
-| `log_max_files` | Max log files to keep | `5` | `10` |
-| `log_output` | Log destinations | `file` | `file,syslog` |
+| `log_format` | Log format (`text` or `json`) | `text` | `json` |
+| `log_max_size` | Max log file size before rotation | `10MB` | `100MB` |
+| `log_max_files` | Max rotated log files to keep | `5` | `10` |
+| `log_compress_old_logs` | Compress old log files | `true` | `false` |
+| `log_output` | Log destinations | `console` | `file,console` |
+
+**Structured Logging (JSON Format):**
+```json
+{
+  "timestamp": "2024-12-14 10:30:45",
+  "level": "INFO",
+  "message": "Configuration reloaded successfully",
+  "component": "Configuration",
+  "fields": {
+    "config_file": "/etc/simple-rsyncd/rsyncd.conf",
+    "modules_reloaded": "3"
+  }
+}
+```
+
+**Log Rotation:**
+- Logs are automatically rotated when they reach `log_max_size`
+- Old logs are renamed with numeric suffixes (`.1`, `.2`, etc.)
+- When `log_max_files` is reached, oldest logs are compressed or deleted
+- Compression creates `.gz` files for old logs
 
 ### Performance Configuration
 
@@ -238,20 +320,104 @@ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 openssl req -new -x509 -days 365 -key ca.key -out ca.crt
 ```
 
-### User Database
+### User Database (v0.3.0 Enhanced)
+
+#### Password File Format
+
+The password file supports both plain text (for backward compatibility) and hashed passwords:
 
 ```bash
 # Create user database
 sudo touch /etc/simple-rsyncd/users
 sudo chmod 600 /etc/simple-rsyncd/users
 
-# Add users (username:password)
-echo "admin:$(openssl passwd -1 'secure_password')" | sudo tee -a /etc/simple-rsyncd/users
-echo "user1:$(openssl passwd -1 'user_password')" | sudo tee -a /etc/simple-rsyncd/users
+# Add users with plain text passwords (automatically hashed on first use)
+echo "admin:secure_password" | sudo tee -a /etc/simple-rsyncd/users
+echo "user1:user_password" | sudo tee -a /etc/simple-rsyncd/users
+
+# Add users with pre-hashed passwords (SHA-256 format)
+# Format: sha256:salt:hash
+echo "admin:sha256:abc123...:def456..." | sudo tee -a /etc/simple-rsyncd/users
 
 # Set permissions
 sudo chown rsync:rsync /etc/simple-rsyncd/users
 ```
+
+#### Password Hashing
+
+Passwords are automatically hashed using SHA-256 with salt:
+- **Format**: `sha256:salt:hash`
+- **Salt**: Random 16-byte hex string
+- **Hash**: SHA-256 hash of salt + password
+
+**Example:**
+```
+admin:sha256:a1b2c3d4e5f6g7h8:9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1e2f3
+```
+
+#### User Database Management (v0.3.0)
+
+The daemon now supports a user database with CRUD operations:
+
+```ini
+[global]
+# Use user database instead of password file
+auth_user_database = /etc/simple-rsyncd/userdb
+auth_password_file =  # Leave empty to use database
+```
+
+**User Database Features:**
+- User creation with password policy validation
+- Password updates with re-hashing
+- User deletion
+- Permission management
+- Account locking/unlocking
+- Password expiration tracking
+- Failed login attempt tracking
+
+## 🌍 Environment Variables (v0.3.0)
+
+### Variable Substitution
+
+Configuration files support environment variable substitution:
+
+```ini
+[global]
+# Use environment variables in configuration
+bind_address = ${BIND_ADDRESS:0.0.0.0}  # Use BIND_ADDRESS env var, default to 0.0.0.0
+bind_port = ${BIND_PORT:873}             # Use BIND_PORT env var, default to 873
+log_file = ${LOG_DIR}/simple-rsyncd.log  # Use LOG_DIR env var
+
+[module:backup]
+path = ${BACKUP_ROOT}/data               # Use BACKUP_ROOT env var
+```
+
+**Supported Syntax:**
+- `${VAR}` - Use environment variable `VAR`
+- `${VAR:default}` - Use `VAR` if set, otherwise use `default`
+- `$VAR` - Simple form (no default value)
+
+**Examples:**
+```bash
+# Set environment variables
+export BIND_ADDRESS=192.168.1.100
+export BIND_PORT=1873
+export LOG_DIR=/var/log
+export BACKUP_ROOT=/mnt/backup
+
+# Start daemon (will use environment variables)
+simple-rsyncd start
+```
+
+### Predefined Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SIMPLE_RSYNCD_CONFIG` | Configuration file path | `/etc/simple-rsyncd/rsyncd.conf` |
+| `SIMPLE_RSYNCD_DEBUG` | Enable debug mode | `0` |
+| `SIMPLE_RSYNCD_LOG_LEVEL` | Log level | `info` |
+| `SIMPLE_RSYNCD_BIND_ADDRESS` | Bind address | `0.0.0.0` |
+| `SIMPLE_RSYNCD_BIND_PORT` | Bind port | `873` |
 
 ## 🌍 Environment-Specific Configuration
 
@@ -456,25 +622,120 @@ config_validation_enabled = true
 config_validation_strict = false
 ```
 
-### Script Integration
+### Script Integration (v0.3.0)
+
+Module script hooks are executed before and after operations:
 
 ```ini
 [module:backup]
-# Script hooks
+# Pre-operation scripts
 pre_transfer_script = /usr/local/bin/pre-backup.sh
+pre_delete_script = /usr/local/bin/pre-delete.sh
+pre_list_script = /usr/local/bin/pre-list.sh
+
+# Post-operation scripts
 post_transfer_script = /usr/local/bin/post-backup.sh
-delete_script = /usr/local/bin/pre-delete.sh
-list_script = /usr/local/bin/pre-list.sh
+post_delete_script = /usr/local/bin/post-delete.sh
+post_list_script = /usr/local/bin/post-list.sh
 
-# Script environment
-script_timeout = 30
-script_user = rsync
-script_group = rsync
-
-# Script logging
-script_log_enabled = true
-script_log_file = /var/log/simple-rsyncd-scripts.log
+# Script environment variables (passed to scripts)
+# Available variables:
+# - RSYNC_MODULE: Module name
+# - RSYNC_OPERATION: Operation type (transfer, delete, list)
+# - RSYNC_PATH: File/directory path
+# - RSYNC_USER: Authenticated username
+# - RSYNC_CLIENT: Client IP address
 ```
+
+**Script Execution:**
+- Scripts receive environment variables with operation context
+- Scripts can prevent operations by returning non-zero exit code
+- Script output is logged for debugging
+- Script failures are logged but don't necessarily stop operations (configurable)
+
+**Example Script:**
+```bash
+#!/bin/bash
+# pre_transfer_script example
+
+echo "Pre-transfer hook for module: $RSYNC_MODULE"
+echo "Operation: $RSYNC_OPERATION"
+echo "Path: $RSYNC_PATH"
+echo "User: $RSYNC_USER"
+
+# Perform pre-transfer checks
+if [ ! -d "/backup/staging" ]; then
+    echo "Error: Staging directory not available"
+    exit 1
+fi
+
+exit 0
+```
+
+## 📝 JSON Configuration Format (v0.3.0)
+
+The daemon supports JSON configuration files as an alternative to INI format:
+
+```json
+{
+  "global": {
+    "bind_address": "0.0.0.0",
+    "bind_port": 873,
+    "max_connections": 100,
+    "ssl": {
+      "enabled": true,
+      "certificate_file": "/etc/simple-rsyncd/ssl/server.crt",
+      "private_key_file": "/etc/simple-rsyncd/ssl/server.key"
+    },
+    "auth": {
+      "enabled": true,
+      "method": "password",
+      "password_file": "/etc/simple-rsyncd/users",
+      "password_policy": {
+        "min_length": 8,
+        "require_uppercase": true,
+        "require_lowercase": true,
+        "require_digits": true,
+        "expiration_hours": 2160
+      }
+    },
+    "log": {
+      "level": "info",
+      "file": "/var/log/simple-rsyncd.log",
+      "format": "json",
+      "max_size": 10485760,
+      "max_files": 5
+    },
+    "auto_reload": true,
+    "reload_interval": 30
+  },
+  "modules": {
+    "public": {
+      "path": "/var/public",
+      "comment": "Public files",
+      "read_only": true,
+      "list": true,
+      "include_patterns": ["*.txt", "*.pdf"],
+      "exclude_patterns": ["*.tmp"]
+    },
+    "backup": {
+      "path": "/var/backup",
+      "comment": "Backup storage",
+      "read_only": false,
+      "list": true,
+      "delete": true,
+      "pre_transfer_script": "/usr/local/bin/pre-backup.sh",
+      "post_transfer_script": "/usr/local/bin/post-backup.sh"
+    }
+  }
+}
+```
+
+**JSON Configuration Benefits:**
+- Structured and hierarchical
+- Better for programmatic generation
+- Supports nested objects and arrays
+- Easier to validate with JSON schema
 
 ## 📝 Configuration Examples
 
@@ -570,9 +831,29 @@ simple-rsyncd validate --config /etc/simple-rsyncd/rsyncd.conf --module backup
 | `Permission denied` | Insufficient permissions | Check file and directory permissions |
 | `Port already in use` | Port 873 occupied | Change port or stop conflicting service |
 
-## 🔄 Configuration Reloading
+## 🔄 Configuration Reloading (v0.3.0 Enhanced)
 
-### Reload Commands
+### Automatic Hot-Reload
+
+The daemon can automatically monitor and reload configuration files when they change:
+
+```ini
+[global]
+# Enable automatic configuration reloading
+auto_reload = true
+
+# Check for changes every 30 seconds
+reload_interval = 30
+```
+
+**How it works:**
+- The daemon monitors the configuration file for changes
+- When a change is detected, it validates the new configuration
+- If valid, the configuration is reloaded without restarting the daemon
+- If invalid, the old configuration is kept and an error is logged
+- Modules are automatically reloaded when configuration changes
+
+### Manual Reload Commands
 
 ```bash
 # Reload all configuration
@@ -600,6 +881,14 @@ kill -USR1 $(cat /var/run/simple-rsyncd.pid)
 # Send SIGUSR2 to reload SSL certificates
 kill -USR2 $(cat /var/run/simple-rsyncd.pid)
 ```
+
+### Reload Behavior
+
+- **Network settings**: Require daemon restart (bind address/port changes)
+- **SSL certificates**: Can be reloaded without restart
+- **Authentication**: Can be reloaded without restart
+- **Module configuration**: Can be reloaded without restart
+- **Logging settings**: Can be reloaded without restart
 
 ## 📚 Next Steps
 

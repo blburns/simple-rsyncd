@@ -29,17 +29,17 @@ namespace simple_rsyncd {
 // Password hashing implementation
 std::string PasswordHasher::hashPassword(const std::string& password, const std::string& salt) {
     std::string actual_salt = salt.empty() ? generateSalt() : salt;
-    
+
     // Create SHA-256 hash using EVP interface (OpenSSL 3.0 compatible)
     EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
     if (!mdctx) {
         return ""; // Error creating context
     }
-    
+
     const EVP_MD* md = EVP_sha256();
     unsigned char hash[EVP_MAX_MD_SIZE];
     unsigned int hash_len;
-    
+
     if (EVP_DigestInit_ex(mdctx, md, nullptr) != 1 ||
         EVP_DigestUpdate(mdctx, actual_salt.c_str(), actual_salt.length()) != 1 ||
         EVP_DigestUpdate(mdctx, password.c_str(), password.length()) != 1 ||
@@ -47,16 +47,16 @@ std::string PasswordHasher::hashPassword(const std::string& password, const std:
         EVP_MD_CTX_free(mdctx);
         return ""; // Error hashing
     }
-    
+
     EVP_MD_CTX_free(mdctx);
-    
+
     // Convert hash to hex string
     std::stringstream ss;
     for (unsigned int i = 0; i < hash_len; i++) {
         ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
     }
     std::string hash_str = ss.str();
-    
+
     // Format: sha256:salt:hash
     return "sha256:" + actual_salt + ":" + hash_str;
 }
@@ -66,31 +66,31 @@ bool PasswordHasher::verifyPassword(const std::string& password, const std::stri
         // Plain text comparison (for backward compatibility)
         return password == hash;
     }
-    
+
     // Parse hash format: sha256:salt:hash
     size_t colon1 = hash.find(':');
     if (colon1 == std::string::npos) {
         return false;
     }
-    
+
     size_t colon2 = hash.find(':', colon1 + 1);
     if (colon2 == std::string::npos) {
         return false;
     }
-    
+
     std::string algorithm = hash.substr(0, colon1);
     std::string salt = hash.substr(colon1 + 1, colon2 - colon1 - 1);
     std::string stored_hash = hash.substr(colon2 + 1);
-    
+
     if (algorithm != "sha256") {
         return false;
     }
-    
+
     // Compute hash with same salt
     std::string computed_hash = hashPassword(password, salt);
     size_t computed_colon = computed_hash.find(':', computed_hash.find(':') + 1);
     std::string computed_hash_part = computed_hash.substr(computed_colon + 1);
-    
+
     return stored_hash == computed_hash_part;
 }
 
@@ -109,7 +109,7 @@ std::string PasswordHasher::generateSalt(size_t length) {
             salt_bytes[i] = static_cast<unsigned char>(dis(gen));
         }
     }
-    
+
     // Convert to hex string
     std::stringstream ss;
     for (size_t i = 0; i < length; i++) {
@@ -126,7 +126,7 @@ std::pair<bool, std::string> PasswordPolicyValidator::validatePassword(const std
     if (password.length() < policy.min_length) {
         return {false, "Password must be at least " + std::to_string(policy.min_length) + " characters long"};
     }
-    
+
     // Check complexity requirements
     if (!meetsComplexityRequirements(password, policy)) {
         std::string requirements;
@@ -139,7 +139,7 @@ std::pair<bool, std::string> PasswordPolicyValidator::validatePassword(const std
             return {false, "Password must contain: " + requirements};
         }
     }
-    
+
     return {true, ""};
 }
 
@@ -149,19 +149,19 @@ bool PasswordPolicyValidator::meetsComplexityRequirements(const std::string& pas
     bool has_lowercase = false;
     bool has_digit = false;
     bool has_special = false;
-    
+
     for (char c : password) {
         if (std::isupper(c)) has_uppercase = true;
         else if (std::islower(c)) has_lowercase = true;
         else if (std::isdigit(c)) has_digit = true;
         else if (!std::isalnum(c)) has_special = true;
     }
-    
+
     if (policy.require_uppercase && !has_uppercase) return false;
     if (policy.require_lowercase && !has_lowercase) return false;
     if (policy.require_digits && !has_digit) return false;
     if (policy.require_special && !has_special) return false;
-    
+
     return true;
 }
 
@@ -213,7 +213,7 @@ bool PasswordFile::load() {
 
         // Store password (supports both plain text and hashed)
         users_[username] = password;
-        
+
         // Create user info
         UserInfo user_info;
         user_info.username = username;
@@ -249,12 +249,12 @@ std::optional<UserInfo> PasswordFile::getUserInfo(const std::string& username) c
     if (!loaded_) {
         return std::nullopt;
     }
-    
+
     auto it = user_info_.find(username);
     if (it == user_info_.end()) {
         return std::nullopt;
     }
-    
+
     return it->second;
 }
 
@@ -293,7 +293,7 @@ bool UserDatabase::createUser(const std::string& username, const std::string& pa
     if (userExists(username)) {
         return false;
     }
-    
+
     UserInfo user_info;
     user_info.username = username;
     user_info.password_hash = PasswordHasher::hashPassword(password);
@@ -303,13 +303,13 @@ bool UserDatabase::createUser(const std::string& username, const std::string& pa
     user_info.account_locked = false;
     user_info.failed_login_attempts = 0;
     user_info.permissions = permissions;
-    
+
     users_[username] = user_info;
-    
+
     if (!database_file_.empty()) {
         save();
     }
-    
+
     return true;
 }
 
@@ -319,36 +319,36 @@ bool UserDatabase::createUserWithPolicy(const std::string& username, const std::
     if (userExists(username)) {
         return false;
     }
-    
+
     // Validate password against policy
     auto [valid, error] = PasswordPolicyValidator::validatePassword(password, policy);
     if (!valid) {
         return false; // Password doesn't meet policy requirements
     }
-    
+
     UserInfo user_info;
     user_info.username = username;
     user_info.password_hash = PasswordHasher::hashPassword(password);
     user_info.password_hashed = true;
-    
+
     // Set password expiration if policy requires it
     if (policy.expiration_hours.count() > 0) {
         user_info.password_expires = std::chrono::system_clock::now() + policy.expiration_hours;
     } else {
         user_info.password_expires = std::chrono::system_clock::time_point::max();
     }
-    
+
     user_info.account_expires = std::chrono::system_clock::time_point::max();
     user_info.account_locked = false;
     user_info.failed_login_attempts = 0;
     user_info.permissions = permissions;
-    
+
     users_[username] = user_info;
-    
+
     if (!database_file_.empty()) {
         save();
     }
-    
+
     return true;
 }
 
@@ -357,15 +357,15 @@ bool UserDatabase::updatePassword(const std::string& username, const std::string
     if (it == users_.end()) {
         return false;
     }
-    
+
     it->second.password_hash = PasswordHasher::hashPassword(new_password);
     it->second.password_hashed = true;
     it->second.failed_login_attempts = 0; // Reset failed attempts on password change
-    
+
     if (!database_file_.empty()) {
         save();
     }
-    
+
     return true;
 }
 
@@ -374,13 +374,13 @@ bool UserDatabase::deleteUser(const std::string& username) {
     if (it == users_.end()) {
         return false;
     }
-    
+
     users_.erase(it);
-    
+
     if (!database_file_.empty()) {
         save();
     }
-    
+
     return true;
 }
 
@@ -408,18 +408,18 @@ bool UserDatabase::save() {
     if (database_file_.empty()) {
         return false;
     }
-    
+
     std::ofstream file(database_file_);
     if (!file.is_open()) {
         return false;
     }
-    
+
     file << "# User database file\n";
     file << "# Format: username:password_hash:permissions:metadata\n";
-    
+
     for (const auto& [username, user_info] : users_) {
         file << username << ":" << user_info.password_hash;
-        
+
         // Write permissions
         if (!user_info.permissions.empty()) {
             file << ":";
@@ -428,10 +428,10 @@ bool UserDatabase::save() {
                 file << user_info.permissions[i];
             }
         }
-        
+
         file << "\n";
     }
-    
+
     file.close();
     return true;
 }
@@ -440,32 +440,32 @@ bool UserDatabase::load() {
     if (database_file_.empty()) {
         return false;
     }
-    
+
     users_.clear();
-    
+
     std::ifstream file(database_file_);
     if (!file.is_open()) {
         return false;
     }
-    
+
     std::string line;
     while (std::getline(file, line)) {
         // Skip comments and empty lines
         if (line.empty() || line[0] == '#' || line[0] == ';') {
             continue;
         }
-        
+
         // Parse: username:password_hash:permissions
         size_t colon1 = line.find(':');
         if (colon1 == std::string::npos) continue;
-        
+
         size_t colon2 = line.find(':', colon1 + 1);
         if (colon2 == std::string::npos) continue;
-        
+
         std::string username = line.substr(0, colon1);
         std::string password_hash = line.substr(colon1 + 1, colon2 - colon1 - 1);
         std::string permissions_str = line.substr(colon2 + 1);
-        
+
         UserInfo user_info;
         user_info.username = username;
         user_info.password_hash = password_hash;
@@ -474,7 +474,7 @@ bool UserDatabase::load() {
         user_info.account_expires = std::chrono::system_clock::time_point::max();
         user_info.account_locked = false;
         user_info.failed_login_attempts = 0;
-        
+
         // Parse permissions
         if (!permissions_str.empty()) {
             std::istringstream iss(permissions_str);
@@ -483,16 +483,16 @@ bool UserDatabase::load() {
                 user_info.permissions.push_back(perm);
             }
         }
-        
+
         users_[username] = user_info;
     }
-    
+
     file.close();
     return true;
 }
 
 // SessionManager implementation
-SessionManager::SessionManager(std::chrono::seconds default_timeout) 
+SessionManager::SessionManager(std::chrono::seconds default_timeout)
     : default_timeout_(default_timeout) {
 }
 
@@ -501,10 +501,10 @@ std::string SessionManager::createSession(const std::string& username, const std
     if (timeout.count() == 0) {
         timeout = default_timeout_;
     }
-    
+
     std::string session_id = generateSessionId();
     auto now = std::chrono::system_clock::now();
-    
+
     SessionInfo session;
     session.session_id = session_id;
     session.username = username;
@@ -513,10 +513,10 @@ std::string SessionManager::createSession(const std::string& username, const std
     session.last_activity = now;
     session.timeout = timeout;
     session.active = true;
-    
+
     std::lock_guard<std::mutex> lock(sessions_mutex_);
     sessions_[session_id] = session;
-    
+
     return session_id;
 }
 
@@ -545,14 +545,14 @@ bool SessionManager::isValidSession(const std::string& session_id) const {
     if (it == sessions_.end() || !it->second.active) {
         return false;
     }
-    
+
     // Check if session has expired
     auto now = std::chrono::system_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second.last_activity);
     if (elapsed > it->second.timeout) {
         return false;
     }
-    
+
     return true;
 }
 
@@ -570,7 +570,7 @@ size_t SessionManager::cleanupExpiredSessions() {
     std::lock_guard<std::mutex> lock(sessions_mutex_);
     size_t cleaned = 0;
     auto now = std::chrono::system_clock::now();
-    
+
     for (auto it = sessions_.begin(); it != sessions_.end();) {
         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second.last_activity);
         if (elapsed > it->second.timeout || !it->second.active) {
@@ -580,7 +580,7 @@ size_t SessionManager::cleanupExpiredSessions() {
             ++it;
         }
     }
-    
+
     return cleaned;
 }
 
@@ -588,7 +588,7 @@ std::vector<std::string> SessionManager::getActiveSessions() const {
     std::lock_guard<std::mutex> lock(sessions_mutex_);
     std::vector<std::string> active;
     auto now = std::chrono::system_clock::now();
-    
+
     for (const auto& [session_id, session] : sessions_) {
         if (session.active) {
             auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - session.last_activity);
@@ -597,7 +597,7 @@ std::vector<std::string> SessionManager::getActiveSessions() const {
             }
         }
     }
-    
+
     return active;
 }
 
@@ -618,7 +618,7 @@ std::string SessionManager::generateSessionId() const {
             bytes[i] = static_cast<unsigned char>(dis(gen));
         }
     }
-    
+
     std::stringstream ss;
     for (int i = 0; i < 16; i++) {
         ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(bytes[i]);
@@ -636,7 +636,7 @@ AuthenticationManager::AuthenticationManager(const AuthConfig& config) : config_
         user_database_ = std::make_unique<UserDatabase>();
         use_user_database_ = false; // Use password file by default
     }
-    
+
     // Initialize session manager with default timeout (1 hour)
     session_manager_ = std::make_unique<SessionManager>(std::chrono::seconds(3600));
 }
@@ -653,7 +653,7 @@ std::string AuthenticationManager::authenticate(const std::string& username, con
 
     if (config_.method == "password") {
         bool authenticated = false;
-        
+
         // Check if user is explicitly denied
         if (std::find(config_.denied_users.begin(), config_.denied_users.end(), username) != config_.denied_users.end()) {
             return "";

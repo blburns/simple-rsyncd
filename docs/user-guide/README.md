@@ -2,6 +2,19 @@
 
 This guide covers everything you need to know to use Simple RSync Daemon effectively.
 
+**Version**: v0.3.0
+
+**New Features in v0.3.0:**
+- Password hashing with SHA-256
+- Password policies and expiration
+- User database management
+- Session management
+- Configuration hot-reload
+- Environment variable substitution
+- Enhanced logging with rotation
+- Structured JSON logging
+- Comprehensive error handling
+
 ## 🚀 Quick Start
 
 ### First Run
@@ -177,7 +190,29 @@ list = true
 delete = true
 ```
 
-### Environment Variables
+### Environment Variables (v0.3.0 Enhanced)
+
+#### Using Environment Variables in Configuration
+
+Configuration files support environment variable substitution:
+
+```ini
+[global]
+# Use environment variables with defaults
+bind_address = ${BIND_ADDRESS:0.0.0.0}
+bind_port = ${BIND_PORT:873}
+log_file = ${LOG_DIR}/simple-rsyncd.log
+
+[module:backup]
+path = ${BACKUP_ROOT}/data
+```
+
+**Syntax:**
+- `${VAR}` - Use environment variable `VAR`
+- `${VAR:default}` - Use `VAR` if set, otherwise `default`
+- `$VAR` - Simple form (no default)
+
+#### Predefined Environment Variables
 
 ```bash
 # Override configuration file location
@@ -194,6 +229,10 @@ export SIMPLE_RSYNCD_BIND_ADDRESS=127.0.0.1
 
 # Override bind port
 export SIMPLE_RSYNCD_BIND_PORT=1873
+
+# Custom variables for substitution
+export BACKUP_ROOT=/mnt/backup
+export LOG_DIR=/var/log
 ```
 
 ### Configuration Inheritance
@@ -258,23 +297,36 @@ overwrite = true
 | `overwrite` | Allow file overwriting | `false` |
 | `create` | Allow file creation | `true` |
 
-### Module Patterns
+### Module Patterns (v0.3.0)
+
+Pattern matching allows filtering files in modules:
 
 ```ini
 [module:backup]
 path = /var/backup
 comment = Backup storage
 
-# Include patterns
+# Include patterns (files matching these will be included)
 include = *.tar.gz
 include = *.sql
 include = */backup/*
 
-# Exclude patterns
+# Exclude patterns (files matching these will be excluded)
 exclude = *.tmp
 exclude = */temp/*
 exclude = .DS_Store
 ```
+
+**Pattern Syntax:**
+- `*` matches any characters
+- `?` matches a single character
+- Patterns can include directory separators
+- Exclude patterns take precedence over include patterns
+
+**Examples:**
+- `*.txt` - All `.txt` files
+- `data/*` - All files in `data/` directory
+- `*/backup/*` - Files in any `backup/` subdirectory
 
 ## 🔒 Security Configuration
 
@@ -291,7 +343,9 @@ ssl_tls_version = 1.2
 ssl_require_client_cert = false
 ```
 
-### Authentication
+### Authentication (v0.3.0 Enhanced)
+
+#### Password Authentication with Hashing
 
 ```ini
 [global]
@@ -300,7 +354,52 @@ auth_method = password
 auth_password_file = /etc/simple-rsyncd/users
 auth_realm = simple-rsyncd
 
-# OAuth2 authentication
+# Password policies (v0.3.0)
+password_policy_min_length = 8
+password_policy_require_uppercase = true
+password_policy_require_lowercase = true
+password_policy_require_digits = true
+password_policy_expiration_hours = 2160  # 90 days
+password_policy_max_failed_attempts = 5
+
+# Session management (v0.3.0)
+session_timeout = 3600  # 1 hour
+enable_session_management = true
+```
+
+**Password File Format:**
+- **Plain text**: `username:password` (automatically hashed on first use)
+- **Hashed**: `username:sha256:salt:hash` (pre-hashed passwords)
+
+**Creating Users with Hashed Passwords:**
+```bash
+# Passwords are automatically hashed when stored
+# Format: username:sha256:salt:hash
+admin:sha256:a1b2c3d4e5f6:9i0j1k2l3m4n5o6...
+```
+
+#### User Database (v0.3.0)
+
+The daemon supports a user database for advanced user management:
+
+```ini
+[global]
+# Use user database instead of password file
+auth_user_database = /etc/simple-rsyncd/userdb
+```
+
+**User Database Features:**
+- User creation with password policy validation
+- Password updates with automatic re-hashing
+- User deletion
+- Permission management per user
+- Account locking after failed attempts
+- Password expiration tracking
+
+#### OAuth2 Authentication
+
+```ini
+[global]
 auth_method = oauth2
 auth_oauth2_client_id = your_client_id
 auth_oauth2_client_secret = your_client_secret
@@ -328,7 +427,7 @@ access_allowed_hours = 09:00-17:00
 
 ## 📊 Monitoring and Logging
 
-### Logging Configuration
+### Logging Configuration (v0.3.0 Enhanced)
 
 ```ini
 [global]
@@ -338,16 +437,37 @@ log_level = info
 # Log file
 log_file = /var/log/simple-rsyncd.log
 
-# Log rotation
-log_max_size = 100MB
-log_max_files = 5
-
-# Log format
+# Log format (text or json)
 log_format = json
 
+# Log rotation (v0.3.0)
+log_max_size = 10MB
+log_max_files = 5
+log_compress_old_logs = true
+
 # Log destinations
-log_output = file,syslog
+log_output = file,console
 ```
+
+**Structured JSON Logging:**
+```json
+{
+  "timestamp": "2024-12-14 10:30:45",
+  "level": "INFO",
+  "message": "Configuration reloaded successfully",
+  "component": "Configuration",
+  "fields": {
+    "config_file": "/etc/simple-rsyncd/rsyncd.conf",
+    "modules_reloaded": "3"
+  }
+}
+```
+
+**Log Rotation:**
+- Logs automatically rotate when they reach `log_max_size`
+- Old logs are renamed with numeric suffixes
+- When `log_max_files` is reached, oldest logs are compressed
+- Compressed logs are saved as `.gz` files
 
 ### Metrics and Health Checks
 
@@ -605,21 +725,93 @@ netstat -tlnp | grep simple-rsyncd
 # Check user database
 cat /etc/simple-rsyncd/users
 
+# Check if password is hashed
+grep sha256 /etc/simple-rsyncd/users
+
 # Check authentication method
 grep auth_method /etc/simple-rsyncd/rsyncd.conf
 
+# Check password policies
+grep password_policy /etc/simple-rsyncd/rsyncd.conf
+
 # Check logs for auth errors
 grep -i auth /var/log/simple-rsyncd.log
+
+# Check for account lockout
+grep -i "account locked" /var/log/simple-rsyncd.log
+
+# Check for password expiration
+grep -i "password expired" /var/log/simple-rsyncd.log
 ```
+
+**Session Issues (v0.3.0)**
+```bash
+# Check session timeout settings
+grep session_timeout /etc/simple-rsyncd/rsyncd.conf
+
+# Check session management status
+grep enable_session_management /etc/simple-rsyncd/rsyncd.conf
+
+# View active sessions in logs
+grep -i session /var/log/simple-rsyncd.log
+```
+
+## 🔍 Error Handling (v0.3.0)
+
+The daemon provides comprehensive error handling with detailed error codes and context:
+
+### Error Categories
+
+- **CONFIGURATION** (1000-1999): Configuration errors
+- **AUTHENTICATION** (2000-2999): Authentication failures
+- **AUTHORIZATION** (3000-3999): Access control errors
+- **NETWORK** (4000-4999): Network errors
+- **FILE_SYSTEM** (5000-5999): File operation errors
+- **PROTOCOL** (6000-6999): Protocol errors
+- **MODULE** (7000-7999): Module errors
+- **INTERNAL** (8000-8999): Internal errors
+- **EXTERNAL** (9000-9999): External dependency errors
+
+### Viewing Errors
+
+Errors are logged with full context:
+
+```bash
+# View errors in log file
+grep ERROR /var/log/simple-rsyncd.log
+
+# View errors in JSON format
+grep ERROR /var/log/simple-rsyncd.log | jq .
+
+# View specific error category
+grep "\[AUTHENTICATION\]" /var/log/simple-rsyncd.log
+```
+
+### Error Recovery
+
+Some errors are recoverable and include recovery suggestions:
+
+```json
+{
+  "code": 4005,
+  "code_string": "NETWORK_TIMEOUT",
+  "message": "Connection timed out",
+  "recoverable": true,
+  "recovery_suggestion": "Retry the operation"
+}
+```
+
+For detailed error handling information, see the [Error Handling Guide](../error-handling.md).
 
 ## 📖 Next Steps
 
 After mastering basic usage:
 
 1. **Advanced Configuration**: See [Configuration Guide](../configuration/README.md)
-2. **Security Hardening**: See [Security Configuration](../configuration/README.md#security)
-3. **Performance Tuning**: See [Performance Guide](../configuration/README.md#performance)
-4. **API Development**: See [API Reference](../api/README.md)
+2. **Error Handling**: See [Error Handling Guide](../error-handling.md)
+3. **Security Hardening**: See [Security Configuration](../configuration/README.md#security)
+4. **Performance Tuning**: See [Performance Guide](../configuration/README.md#performance)
+5. **API Development**: See [API Reference](../api/README.md)
 
 ---
 
