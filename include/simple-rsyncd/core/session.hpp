@@ -21,6 +21,7 @@
 #include <chrono>
 
 #include "simple-rsyncd/config/config.hpp"
+#include "simple-rsyncd/core/protocol.hpp"
 
 namespace simple_rsyncd {
 
@@ -45,10 +46,16 @@ private:
     std::shared_ptr<Configuration> config_;
     bool active_;
     std::chrono::steady_clock::time_point start_time_;
+    
+    // Protocol handling
+    std::unique_ptr<ProtocolParser> parser_;
+    std::unique_ptr<ProtocolHandler> handler_;
+    std::string authenticated_user_;
 
     bool readRequest();
     bool writeResponse(const std::string& response);
     bool parseRequest(const std::string& request);
+    bool handleProtocolMessage(const ProtocolMessage& message);
 };
 
 } // namespace simple_rsyncd
