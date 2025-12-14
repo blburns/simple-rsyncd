@@ -94,90 +94,91 @@ bool Configuration::loadFromFile(const std::string& filename) {
         }
 
         std::string line;
-    std::string current_section;
-    int line_number = 0;
-    bool in_module = false;
-    std::string current_module;
+        std::string current_section;
+        int line_number = 0;
+        bool in_module = false;
+        std::string current_module;
 
-    while (std::getline(file, line)) {
-        line_number++;
+        while (std::getline(file, line)) {
+            line_number++;
 
-        // Remove leading/trailing whitespace
-        line.erase(0, line.find_first_not_of(" \t"));
-        line.erase(line.find_last_not_of(" \t") + 1);
+            // Remove leading/trailing whitespace
+            line.erase(0, line.find_first_not_of(" \t"));
+            line.erase(line.find_last_not_of(" \t") + 1);
 
-        // Skip empty lines and comments
-        if (line.empty() || line[0] == '#' || line[0] == ';') {
-            continue;
-        }
-
-        // Check for section header [section]
-        if (line[0] == '[' && line.back() == ']') {
-            std::string section = line.substr(1, line.length() - 2);
-            // Remove whitespace from section name
-            section.erase(0, section.find_first_not_of(" \t"));
-            section.erase(section.find_last_not_of(" \t") + 1);
-
-            if (section == "global") {
-                current_section = "global";
-                in_module = false;
-            } else if (section.find("module:") == 0) {
-                current_module = section.substr(7);
-                current_section = "module";
-                in_module = true;
-
-                // Create module config if it doesn't exist
-                if (modules.find(current_module) == modules.end()) {
-                    modules[current_module] = ModuleConfig();
-                }
-            } else {
-                current_section = section;
-                in_module = false;
+            // Skip empty lines and comments
+            if (line.empty() || line[0] == '#' || line[0] == ';') {
+                continue;
             }
-            continue;
+
+            // Check for section header [section]
+            if (line[0] == '[' && line.back() == ']') {
+                std::string section = line.substr(1, line.length() - 2);
+                // Remove whitespace from section name
+                section.erase(0, section.find_first_not_of(" \t"));
+                section.erase(section.find_last_not_of(" \t") + 1);
+
+                if (section == "global") {
+                    current_section = "global";
+                    in_module = false;
+                } else if (section.find("module:") == 0) {
+                    current_module = section.substr(7);
+                    current_section = "module";
+                    in_module = true;
+
+                    // Create module config if it doesn't exist
+                    if (modules.find(current_module) == modules.end()) {
+                        modules[current_module] = ModuleConfig();
+                    }
+                } else {
+                    current_section = section;
+                    in_module = false;
+                }
+                continue;
+            }
+
+            // Parse key=value pairs
+            size_t eq_pos = line.find('=');
+            if (eq_pos == std::string::npos) {
+                errors_.push_back("Invalid line " + std::to_string(line_number) + ": " + line);
+                continue;
+            }
+
+            std::string key = line.substr(0, eq_pos);
+            std::string value = line.substr(eq_pos + 1);
+
+            // Trim whitespace
+            key.erase(0, key.find_first_not_of(" \t"));
+            key.erase(key.find_last_not_of(" \t") + 1);
+            value.erase(0, value.find_first_not_of(" \t"));
+            value.erase(value.find_last_not_of(" \t") + 1);
+
+            // Remove quotes if present
+            if (!value.empty() && ((value[0] == '"' && value.back() == '"') ||
+                                   (value[0] == '\'' && value.back() == '\''))) {
+                value = value.substr(1, value.length() - 2);
+            }
+
+            // Parse based on section
+            if (current_section == "global" || current_section.empty()) {
+                parseGlobalConfig(key, value);
+            } else if (in_module && current_section == "module") {
+                parseModuleConfig(current_module, key, value);
+            }
         }
 
-        // Parse key=value pairs
-        size_t eq_pos = line.find('=');
-        if (eq_pos == std::string::npos) {
-            errors_.push_back("Invalid line " + std::to_string(line_number) + ": " + line);
-            continue;
+        file.close();
+        updateLastModified();
+
+        // Validate configuration
+        if (!validate()) {
+            return false;
         }
 
-        std::string key = line.substr(0, eq_pos);
-        std::string value = line.substr(eq_pos + 1);
-
-        // Trim whitespace
-        key.erase(0, key.find_first_not_of(" \t"));
-        key.erase(key.find_last_not_of(" \t") + 1);
-        value.erase(0, value.find_first_not_of(" \t"));
-        value.erase(value.find_last_not_of(" \t") + 1);
-
-        // Remove quotes if present
-        if (!value.empty() && ((value[0] == '"' && value.back() == '"') ||
-                               (value[0] == '\'' && value.back() == '\''))) {
-            value = value.substr(1, value.length() - 2);
-        }
-
-        // Parse based on section
-        if (current_section == "global" || current_section.empty()) {
-            parseGlobalConfig(key, value);
-        } else if (in_module && current_section == "module") {
-            parseModuleConfig(current_module, key, value);
-        }
+        is_valid_ = true;
+        has_changed_ = false;
+        return true;
     }
-
-    file.close();
-    updateLastModified();
-
-    // Validate configuration
-    if (!validate()) {
-        return false;
-    }
-
-    is_valid_ = true;
-    has_changed_ = false;
-    return true;
 }
 
 void Configuration::parseGlobalConfig(const std::string& key, const std::string& value) {

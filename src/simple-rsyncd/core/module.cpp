@@ -606,7 +606,7 @@ bool Module::checkDeletePermission(const std::string& path) const {
     if (resolved.empty()) {
         return false;
     }
-    
+
     if (!std::filesystem::exists(resolved)) {
         return false;
     }
