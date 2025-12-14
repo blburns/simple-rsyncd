@@ -283,7 +283,7 @@ std::string ProtocolHandler::handleGet(const ProtocolMessage& message) {
     try {
         FileInfo info = module->getFileInfo(message.path);
 
-        // Format file info as response
+        // Format file info as response - this signals ready for transfer
         std::ostringstream response;
         response << "@RSYNCD: OK\n";
         response << "File: " << info.name << "\n";

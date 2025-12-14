@@ -290,7 +290,7 @@ void RSyncDaemon::workerLoop() {
     while (running_ && !shutdown_requested_) {
         // Process sessions
         std::vector<std::unique_ptr<RSyncSession>> sessions_to_process;
-        
+
         {
             std::lock_guard<std::mutex> lock(sessions_mutex_);
             // Move active sessions to processing list

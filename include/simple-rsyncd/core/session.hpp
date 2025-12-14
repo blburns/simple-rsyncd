@@ -56,10 +56,30 @@ private:
     std::unique_ptr<ProtocolHandler> handler_;
     std::string authenticated_user_;
 
+    // File transfer state
+    enum class TransferState {
+        IDLE,
+        RECEIVING_FILE,  // Receiving file data (PUT)
+        SENDING_FILE     // Sending file data (GET)
+    };
+    TransferState transfer_state_;
+    std::string transfer_module_;
+    std::string transfer_path_;
+    std::ofstream upload_file_;
+    std::ifstream download_file_;
+    size_t transfer_bytes_remaining_;
+    size_t transfer_bytes_sent_;
+
     bool readRequest();
     bool writeResponse(const std::string& response);
     bool parseRequest(const std::string& request);
     std::string handleProtocolMessage(const ProtocolMessage& message);
+    
+    // File transfer methods
+    bool startFileUpload(const std::string& module_name, const std::string& path);
+    bool startFileDownload(const std::string& module_name, const std::string& path);
+    bool continueFileTransfer();
+    void endFileTransfer();
 };
 
 } // namespace simple_rsyncd
