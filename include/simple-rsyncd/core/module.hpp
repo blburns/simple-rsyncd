@@ -538,6 +538,9 @@ protected:
 
     // Security
     bool checkFilePermissions(const std::string& path, const std::string& operation) const;
+    bool checkReadPermission(const std::string& path) const;
+    bool checkWritePermission(const std::string& path) const;
+    bool checkDeletePermission(const std::string& path) const;
     bool validateFileType(const std::string& path) const;
     bool isExecutableFile(const std::string& path) const;
     bool isSymbolicLink(const std::string& path) const;

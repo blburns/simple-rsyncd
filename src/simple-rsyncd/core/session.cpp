@@ -191,8 +191,8 @@ bool RSyncSession::startFileUpload(const std::string& module_name, const std::st
     transfer_module_ = module_name;
     transfer_path_ = path;
 
-    // Get module using handler's getModule method
-    std::string module_name_to_use = module_name.empty() ? handler_->getModule() : module_name;
+    // Get module using handler's getCurrentModule method
+    std::string module_name_to_use = module_name.empty() ? handler_->getCurrentModule() : module_name;
     auto module = handler_->getModule(module_name_to_use);
     if (!module) {
         return false;
@@ -234,7 +234,7 @@ bool RSyncSession::startFileDownload(const std::string& module_name, const std::
     transfer_path_ = path;
 
     // Get module
-    std::string module_name_to_use = module_name.empty() ? handler_->getModule() : module_name;
+    std::string module_name_to_use = module_name.empty() ? handler_->getCurrentModule() : module_name;
     auto module = handler_->getModule(module_name_to_use);
     if (!module) {
         return false;

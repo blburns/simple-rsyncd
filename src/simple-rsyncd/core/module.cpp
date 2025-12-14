@@ -77,7 +77,7 @@ public:
         FileInfo info;
 
         // Check read permission
-        if (!checkReadPermission(path)) {
+        if (!this->checkReadPermission(path)) {
             return info;
         }
 
@@ -145,7 +145,7 @@ public:
         }
 
         // Check write permission
-        if (!checkWritePermission(path)) {
+        if (!this->checkWritePermission(path)) {
             return false;
         }
 
@@ -176,7 +176,7 @@ public:
         }
 
         // Check delete permission
-        if (!checkDeletePermission(path)) {
+        if (!this->checkDeletePermission(path)) {
             return false;
         }
 
@@ -207,7 +207,7 @@ public:
         }
 
         // Check delete permission
-        if (!checkDeletePermission(path)) {
+        if (!this->checkDeletePermission(path)) {
             return false;
         }
 
@@ -242,7 +242,7 @@ public:
         }
 
         // Check write permission
-        if (!checkWritePermission(remote_path)) {
+        if (!this->checkWritePermission(remote_path)) {
             result.error_message = "Write permission denied";
             return result;
         }
@@ -288,7 +288,7 @@ public:
         result.stats.start_time = std::chrono::steady_clock::now();
 
         // Check read permission
-        if (!checkReadPermission(remote_path)) {
+        if (!this->checkReadPermission(remote_path)) {
             result.error_message = "Read permission denied";
             return result;
         }
@@ -545,19 +545,15 @@ bool Module::checkFilePermissions(const std::string& path, const std::string& op
 }
 
 bool Module::checkReadPermission(const std::string& path) const {
-    // Check if file exists
-    if (!fileExists(path)) {
-        return false;
-    }
-
-    // Check if file is readable
+    // Check if file exists (need to use const_cast or make fileExists const)
     std::string resolved = resolvePath(path);
     if (resolved.empty()) {
         return false;
     }
-    
+
+    // Check if file is readable
     std::filesystem::path file_path(resolved);
-    if (std::filesystem::exists(file_path)) {
+    if (std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path)) {
         std::ifstream test_file(file_path);
         return test_file.good();
     }
@@ -576,10 +572,10 @@ bool Module::checkWritePermission(const std::string& path) const {
     if (resolved.empty()) {
         return false;
     }
-    
+
     std::filesystem::path file_path(resolved);
     std::filesystem::path parent_dir = file_path.parent_path();
-    
+
     if (!parent_dir.empty() && std::filesystem::exists(parent_dir)) {
         // Check if we can write to parent directory
         std::filesystem::path test_file = parent_dir / ".rsyncd_write_test";
@@ -606,7 +602,12 @@ bool Module::checkDeletePermission(const std::string& path) const {
     }
 
     // Check if file exists and is deletable
-    if (!fileExists(path) && !directoryExists(path)) {
+    std::string resolved = resolvePath(path);
+    if (resolved.empty()) {
+        return false;
+    }
+    
+    if (!std::filesystem::exists(resolved)) {
         return false;
     }
 
