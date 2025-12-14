@@ -94,7 +94,7 @@ void printUsage() {
  * @brief Print version information
  */
 void printVersion() {
-    std::cout << "simple-rsyncd v0.2.0" << std::endl;
+    std::cout << "simple-rsyncd v0.3.0" << std::endl;
     std::cout << "Simple RSync Daemon - A lightweight and secure rsync server" << std::endl;
     std::cout << "Copyright (c) 2024 simple-rsyncd contributors" << std::endl;
     std::cout << "License: Apache 2.0" << std::endl;

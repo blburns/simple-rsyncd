@@ -269,7 +269,7 @@ public:
     std::string umask;
     bool verbose = false;
     bool debug = false;
-    std::string version = "0.2.0";
+    std::string version = "0.3.0";
 
     // Configuration file monitoring
     std::string config_file_path;

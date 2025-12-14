@@ -489,7 +489,7 @@ bool Configuration::saveToFile(const std::string& filename) const {
 
 std::string Configuration::saveToJSON() const {
     // Basic JSON saving implementation
-    return "{\"version\": \"0.2.0\"}";
+    return "{\"version\": \"0.3.0\"}";
 }
 
 bool Configuration::validate() const {

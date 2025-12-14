@@ -227,7 +227,7 @@ time_t RSyncDaemon::getUptime() const {
 }
 
 std::string RSyncDaemon::getVersion() const {
-    return "0.2.0";
+    return "0.3.0";
 }
 
 // Private methods implementation
