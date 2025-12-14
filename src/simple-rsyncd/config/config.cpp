@@ -22,11 +22,16 @@
 #include <cctype>
 #include <filesystem>
 
-// JSON support
-#ifdef JSONCPP_FOUND
+// JSON support - try to include jsoncpp
+#if __has_include(<json/json.h>)
 #include <json/json.h>
+#define JSONCPP_AVAILABLE 1
+#elif defined(JSONCPP_FOUND)
+#include <json/json.h>
+#define JSONCPP_AVAILABLE 1
 #else
-// Fallback if jsoncpp not found - will need to implement basic JSON parsing
+// Fallback if jsoncpp not found
+#define JSONCPP_AVAILABLE 0
 namespace Json {
     class Value {
     public:
@@ -274,6 +279,7 @@ bool Configuration::loadFromJSON(const std::string& json) {
         return false;
     }
 
+#if JSONCPP_AVAILABLE
     Json::Value root;
     Json::Reader reader;
 
@@ -281,6 +287,12 @@ bool Configuration::loadFromJSON(const std::string& json) {
         errors_.push_back("Failed to parse JSON: " + reader.getFormattedErrorMessages());
         return false;
     }
+#else
+    errors_.push_back("JSON parsing not available - jsoncpp library not found");
+    return false;
+#endif
+
+#if JSONCPP_AVAILABLE
 
     // Parse global configuration
     if (root.isMember("global")) {
@@ -385,9 +397,13 @@ bool Configuration::loadFromJSON(const std::string& json) {
     is_valid_ = true;
     has_changed_ = false;
     return true;
+#else
+    return false;
+#endif
 }
 
 void Configuration::parseJSONGlobal(const Json::Value& global) {
+#if JSONCPP_AVAILABLE
     // Parse global settings that might be at root or in "global" object
     if (global.isMember("bind_address") || global.isMember("address")) {
         network.bind_address = global.isMember("bind_address") 
