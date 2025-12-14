@@ -32,7 +32,7 @@ protected:
 TEST_F(ProtocolTest, ParseCommand) {
     std::string data = "LIST test /path\n";
     ProtocolMessage msg = parser_->parse(data);
-    
+
     EXPECT_TRUE(msg.valid);
     EXPECT_EQ(msg.command, ProtocolCommand::LIST);
     EXPECT_EQ(msg.module, "test");
@@ -42,7 +42,7 @@ TEST_F(ProtocolTest, ParseCommand) {
 TEST_F(ProtocolTest, ParseGet) {
     std::string data = "GET test /file.txt\n";
     ProtocolMessage msg = parser_->parse(data);
-    
+
     EXPECT_TRUE(msg.valid);
     EXPECT_EQ(msg.command, ProtocolCommand::GET);
     EXPECT_EQ(msg.module, "test");
@@ -52,7 +52,7 @@ TEST_F(ProtocolTest, ParseGet) {
 TEST_F(ProtocolTest, ParsePut) {
     std::string data = "PUT test /file.txt\n";
     ProtocolMessage msg = parser_->parse(data);
-    
+
     EXPECT_TRUE(msg.valid);
     EXPECT_EQ(msg.command, ProtocolCommand::PUT);
     EXPECT_EQ(msg.module, "test");
@@ -62,7 +62,7 @@ TEST_F(ProtocolTest, ParsePut) {
 TEST_F(ProtocolTest, ParseDelete) {
     std::string data = "DELETE test /file.txt\n";
     ProtocolMessage msg = parser_->parse(data);
-    
+
     EXPECT_TRUE(msg.valid);
     EXPECT_EQ(msg.command, ProtocolCommand::DELETE);
     EXPECT_EQ(msg.module, "test");
@@ -72,7 +72,7 @@ TEST_F(ProtocolTest, ParseDelete) {
 TEST_F(ProtocolTest, ParseWithHeader) {
     std::string data = "@RSYNCD: 30\nLIST test /path\n";
     ProtocolMessage msg = parser_->parse(data);
-    
+
     EXPECT_TRUE(msg.valid);
     EXPECT_EQ(msg.command, ProtocolCommand::LIST);
 }
@@ -92,7 +92,7 @@ TEST_F(ProtocolTest, BuildErrorResponse) {
 TEST_F(ProtocolTest, InvalidMessage) {
     std::string data = "INVALID COMMAND\n";
     ProtocolMessage msg = parser_->parse(data);
-    
+
     EXPECT_FALSE(msg.valid);
     EXPECT_EQ(msg.command, ProtocolCommand::UNKNOWN);
 }

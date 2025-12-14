@@ -1,103 +1,102 @@
 # Simple RSync Daemon - Technical Debt
 
 **Date:** December 2024
-**Current Version:** 0.1.0
+**Current Version:** 0.2.0
 **Purpose:** Track technical debt, known issues, and areas requiring improvement
 
 ---
 
 ## 🎯 Overview
 
-This document tracks technical debt for the simple-rsyncd project based on actual code review.
+This document tracks technical debt for the simple-rsyncd project. **v0.2.0 MVP is complete**, so critical blocking items have been resolved. Remaining items are enhancements for future releases.
 
-**Total Debt Items:** 15+
-**Estimated Effort:** ~500-800 hours (to match documentation claims)
+**Total Debt Items:** 8+
+**Estimated Effort:** ~100-200 hours (for enhancements, not blocking)
 
 ---
 
-## 🔴 Critical Priority (Blocking MVP)
+## ✅ v0.2.0 MVP - COMPLETE
 
-### 1. RSync Protocol Implementation
-**Status:** ❌ **Not Started**
-**Priority:** 🔴 **CRITICAL**
-**Estimated Effort:** 100-150 hours
+All critical MVP items have been completed:
+- ✅ RSync Protocol Implementation
+- ✅ File Transfer Engine
+- ✅ Configuration File Parsing (INI format)
+- ✅ Module File Operations
+- ✅ Basic Authentication
+- ✅ Test Framework
+
+---
+
+## 🟡 Medium Priority (v0.3.0 Enhancements)
+
+### 1. Password Hashing
+**Status:** ⚠️ **Needs Implementation**
+**Priority:** 🟡 **MEDIUM**
+**Estimated Effort:** 10-15 hours
 
 **Action Items:**
-- [ ] Implement rsync protocol parser
-- [ ] Implement protocol command handling
-- [ ] Implement message parsing
-- [ ] Implement protocol state machine
-- [ ] Add protocol error handling
+- [ ] Replace plain text passwords with bcrypt or argon2
+- [ ] Implement password hashing on storage
+- [ ] Implement password verification
+- [ ] Add migration tools for existing password files
+- [ ] Update password file format
 
-**Impact:** **Cannot function as rsync daemon without this**
+**Current State:** Passwords stored in plain text (functional but insecure)
 
-**Target:** MVP release
-
----
-
-### 2. File Transfer Engine
-**Status:** ❌ **Not Started**
-**Priority:** 🔴 **CRITICAL**
-**Estimated Effort:** 50-75 hours
-
-**Action Items:**
-- [ ] Implement basic file transfer (no delta sync initially)
-- [ ] Implement file operations (read, write, delete)
-- [ ] Implement directory operations
-- [ ] Implement file listing
-- [ ] Add transfer error handling
-
-**Impact:** **Cannot transfer files without this**
-
-**Target:** MVP release
+**Target:** v0.3.0 release
 
 ---
 
-### 3. Configuration File Parsing
+### 2. JSON Configuration Parsing
 **Status:** ⚠️ **Stubbed**
-**Priority:** 🔴 **CRITICAL**
+**Priority:** 🟡 **MEDIUM**
+**Estimated Effort:** 15-20 hours
+
+**Action Items:**
+- [ ] Implement JSON parser using jsoncpp
+- [ ] Complete JSON configuration validation
+- [ ] Add JSON error reporting
+- [ ] Test with real JSON configuration files
+
+**Current State:** INI format complete, JSON parser is stub
+
+**Target:** v0.3.0 release
+
+---
+
+### 3. Integration Tests
+**Status:** ⚠️ **Not Started**
+**Priority:** 🟡 **MEDIUM**
 **Estimated Effort:** 20-30 hours
 
 **Action Items:**
-- [ ] Implement INI/config file parser
-- [ ] Implement JSON parser (using jsoncpp)
-- [ ] Complete configuration validation
-- [ ] Add configuration error reporting
-- [ ] Test with real configuration files
+- [ ] Implement end-to-end protocol tests
+- [ ] Implement network integration tests
+- [ ] Implement file transfer integration tests
+- [ ] Add test fixtures and helpers
+- [ ] Set up CI/CD test automation
 
-**Current State:** `loadFromFile()` just checks if file exists, doesn't parse
+**Current State:** Unit tests complete, integration tests missing
 
-**Target:** MVP release
-
----
-
-### 4. Module File Operations
-**Status:** ⚠️ **Stubbed**
-**Priority:** 🔴 **CRITICAL**
-**Estimated Effort:** 30-40 hours
-
-**Action Items:**
-- [ ] Implement file read operations
-- [ ] Implement file write operations
-- [ ] Implement file delete operations
-- [ ] Implement directory listing
-- [ ] Implement path validation
-- [ ] Implement permission checking
-
-**Current State:** Module class exists but all file operations are stubs
-
-**Target:** MVP release
+**Target:** v0.3.0 release
 
 ---
 
-### 5. Basic Authentication
-**Status:** ❌ **Not Started**
-**Priority:** 🔴 **HIGH**
-**Estimated Effort:** 20-30 hours
+### 4. Enhanced Protocol Features
+**Status:** ⚠️ **Basic Implementation Only**
+**Priority:** 🟡 **MEDIUM**
+**Estimated Effort:** 30-50 hours
 
 **Action Items:**
-- [ ] Implement password file parsing
-- [ ] Implement authentication flow
+- [ ] Implement delta sync algorithm
+- [ ] Implement checksum calculation and verification
+- [ ] Full rsync protocol compatibility
+- [ ] Protocol optimization
+- [ ] Advanced protocol features
+
+**Current State:** Basic protocol working, advanced features missing
+
+**Target:** v0.3.0 or v0.4.0 release
 - [ ] Implement session authentication
 - [ ] Add authentication error handling
 

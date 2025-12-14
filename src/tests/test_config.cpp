@@ -28,7 +28,7 @@ protected:
         // Create temporary config file
         config_file_ = std::tmpnam(nullptr);
         config_file_ += ".conf";
-        
+
         std::ofstream file(config_file_);
         file << "[global]\n";
         file << "bind_address = 0.0.0.0\n";
@@ -62,7 +62,7 @@ TEST_F(ConfigTest, LoadFromFile) {
 TEST_F(ConfigTest, NetworkConfig) {
     Configuration config;
     config.loadFromFile(config_file_);
-    
+
     EXPECT_EQ(config.network.bind_address, "0.0.0.0");
     EXPECT_EQ(config.network.bind_port, 873);
     EXPECT_EQ(config.network.max_connections, 100);
@@ -71,9 +71,9 @@ TEST_F(ConfigTest, NetworkConfig) {
 TEST_F(ConfigTest, ModuleConfig) {
     Configuration config;
     config.loadFromFile(config_file_);
-    
+
     EXPECT_NE(config.modules.find("test"), config.modules.end());
-    
+
     const auto& module = config.modules.at("test");
     EXPECT_EQ(module.path, "/tmp/test");
     EXPECT_EQ(module.comment, "Test module");

@@ -98,7 +98,7 @@ bool RSyncSession::processRequest() {
 
     // Handle protocol message
     std::string response = handleProtocolMessage(message);
-    
+
     // If response indicates file transfer, handle it
     if (response.find("Ready for transfer") != std::string::npos && message.command == ProtocolCommand::GET) {
         // Start file download
@@ -115,7 +115,7 @@ bool RSyncSession::processRequest() {
             }
         }
     }
-    
+
     return writeResponse(response);
 }
 
@@ -190,7 +190,7 @@ std::string RSyncSession::handleProtocolMessage(const ProtocolMessage& message) 
 bool RSyncSession::startFileUpload(const std::string& module_name, const std::string& path) {
     transfer_module_ = module_name;
     transfer_path_ = path;
-    
+
     // Get module using handler's getModule method
     std::string module_name_to_use = module_name.empty() ? handler_->getModule() : module_name;
     auto module = handler_->getModule(module_name_to_use);
@@ -200,7 +200,7 @@ bool RSyncSession::startFileUpload(const std::string& module_name, const std::st
 
     // Create temporary file for upload
     std::string temp_path = path + ".tmp";
-    
+
     // Resolve path manually since resolvePath is protected
     std::string module_base = module->getPath();
     std::filesystem::path base_path(module_base);
@@ -208,7 +208,7 @@ bool RSyncSession::startFileUpload(const std::string& module_name, const std::st
     std::filesystem::path resolved = base_path / relative_path;
     resolved = resolved.lexically_normal();
     std::string full_path = std::filesystem::absolute(resolved).string();
-    
+
     if (full_path.empty()) {
         return false;
     }
@@ -232,7 +232,7 @@ bool RSyncSession::startFileUpload(const std::string& module_name, const std::st
 bool RSyncSession::startFileDownload(const std::string& module_name, const std::string& path) {
     transfer_module_ = module_name;
     transfer_path_ = path;
-    
+
     // Get module
     std::string module_name_to_use = module_name.empty() ? handler_->getModule() : module_name;
     auto module = handler_->getModule(module_name_to_use);
@@ -263,20 +263,20 @@ bool RSyncSession::continueFileTransfer() {
         // Send file data
         std::vector<uint8_t> buffer(8192); // 8KB chunks
         size_t chunk_size = std::min(buffer.size(), transfer_bytes_remaining_);
-        
+
         download_file_.read(reinterpret_cast<char*>(buffer.data()), chunk_size);
         size_t bytes_read = download_file_.gcount();
-        
+
         if (bytes_read > 0) {
             ssize_t bytes_sent = send(client_socket_, buffer.data(), bytes_read, 0);
             if (bytes_sent < 0) {
                 endFileTransfer();
                 return false;
             }
-            
+
             transfer_bytes_sent_ += bytes_sent;
             transfer_bytes_remaining_ -= bytes_sent;
-            
+
             if (transfer_bytes_remaining_ == 0) {
                 // Transfer complete
                 endFileTransfer();
@@ -289,46 +289,46 @@ bool RSyncSession::continueFileTransfer() {
             endFileTransfer();
             return false;
         }
-        
+
         return true;
     } else if (transfer_state_ == TransferState::RECEIVING_FILE) {
         // Receive file data
         std::vector<uint8_t> buffer(8192); // 8KB chunks
         ssize_t bytes_received = recv(client_socket_, buffer.data(), buffer.size(), 0);
-        
+
         if (bytes_received > 0) {
             upload_file_.write(reinterpret_cast<const char*>(buffer.data()), bytes_received);
             upload_file_.flush();
-            
+
             transfer_bytes_sent_ += bytes_received;
-            
+
             // Check if transfer is complete (we don't know size ahead of time, so check for protocol message)
             // For now, continue receiving until connection closes or we get a protocol message
             return true;
         } else if (bytes_received == 0) {
             // Connection closed, transfer complete
             endFileTransfer();
-            
+
             // Move temp file to final location
             if (!transfer_module_.empty() && !transfer_path_.empty()) {
                 auto module = handler_->getModule(transfer_module_);
                 if (module) {
                     std::string module_base = module->getPath();
                     std::string temp_path = transfer_path_ + ".tmp";
-                    
+
                     std::filesystem::path base_path(module_base);
                     std::filesystem::path temp_rel(temp_path);
                     std::filesystem::path final_rel(transfer_path_);
-                    
+
                     std::filesystem::path full_temp = std::filesystem::absolute(base_path / temp_rel);
                     std::filesystem::path full_final = std::filesystem::absolute(base_path / final_rel);
-                    
+
                     if (std::filesystem::exists(full_temp)) {
                         std::filesystem::rename(full_temp, full_final);
                     }
                 }
             }
-            
+
             std::string complete_msg = "@RSYNCD: OK\nFile uploaded successfully\n";
             writeResponse(complete_msg);
             return true;
@@ -338,7 +338,7 @@ bool RSyncSession::continueFileTransfer() {
             return false;
         }
     }
-    
+
     return false;
 }
 
@@ -346,11 +346,11 @@ void RSyncSession::endFileTransfer() {
     if (upload_file_.is_open()) {
         upload_file_.close();
     }
-    
+
     if (download_file_.is_open()) {
         download_file_.close();
     }
-    
+
     transfer_state_ = TransferState::IDLE;
     transfer_module_.clear();
     transfer_path_.clear();

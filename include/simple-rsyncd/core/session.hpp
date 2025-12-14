@@ -74,7 +74,7 @@ private:
     bool writeResponse(const std::string& response);
     bool parseRequest(const std::string& request);
     std::string handleProtocolMessage(const ProtocolMessage& message);
-    
+
     // File transfer methods
     bool startFileUpload(const std::string& module_name, const std::string& path);
     bool startFileDownload(const std::string& module_name, const std::string& path);

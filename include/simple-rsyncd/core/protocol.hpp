@@ -156,7 +156,7 @@ private:
 
     // Helper methods
     std::shared_ptr<Module> getModule(const std::string& module_name) const;
-    
+
     // Expose module getter for session use
     friend class RSyncSession;
 };

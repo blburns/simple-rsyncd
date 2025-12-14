@@ -29,13 +29,13 @@ protected:
         test_dir_ = std::tmpnam(nullptr);
         test_dir_ += "_test";
         std::filesystem::create_directories(test_dir_);
-        
+
         // Create test file
         test_file_ = test_dir_ + "/test.txt";
         std::ofstream file(test_file_);
         file << "test content\n";
         file.close();
-        
+
         // Create module config
         config_.name = "test";
         config_.path = test_dir_;
@@ -44,7 +44,7 @@ protected:
         config_.list = true;
         config_.allow_delete = true;
         config_.overwrite = true;
-        
+
         // Create module
         module_ = createModule(config_);
     }
@@ -104,7 +104,7 @@ TEST_F(ModuleTest, DeleteFile) {
     std::ofstream file(delete_file);
     file << "delete me\n";
     file.close();
-    
+
     EXPECT_TRUE(module_->deleteFile("delete_me.txt"));
     EXPECT_FALSE(module_->fileExists("delete_me.txt"));
 }
@@ -113,7 +113,7 @@ TEST_F(ModuleTest, ReadOnlyModule) {
     ModuleConfig ro_config = config_;
     ro_config.read_only = true;
     auto ro_module = createModule(ro_config);
-    
+
     EXPECT_TRUE(ro_module->isReadOnly());
     EXPECT_FALSE(ro_module->createDirectory("test"));
 }
