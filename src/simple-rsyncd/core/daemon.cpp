@@ -124,6 +124,30 @@ void RSyncDaemon::stop() {
         return;
     }
 
+    shutdown_requested_ = true;
+    running_ = false;
+
+    // Close listen socket
+    if (listen_socket_ >= 0) {
+        close(listen_socket_);
+        listen_socket_ = -1;
+        logger_->info("Listen socket closed");
+    }
+
+    // Close all sessions
+    closeSessions();
+
+    // Join accept thread
+    if (accept_thread_.joinable()) {
+        accept_thread_.join();
+    }
+
+    // Join all threads
+    joinThreads();
+
+    logger_->info("Daemon stopped");
+}
+
     logger_->info("Stopping simple-rsyncd daemon");
 
     shutdown_requested_ = true;
@@ -487,6 +511,149 @@ bool RSyncDaemon::checkPermissions(const std::string& username, const std::strin
     }
 
     return false;
+}
+
+bool RSyncDaemon::initializeNetwork() {
+    if (!config_) {
+        logger_->error("Configuration not set");
+        return false;
+    }
+
+    bind_address_ = config_->network.bind_address;
+    bind_port_ = config_->network.bind_port;
+
+    // Create socket
+    listen_socket_ = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_socket_ < 0) {
+        logger_->error("Failed to create socket: " + std::string(strerror(errno)));
+        return false;
+    }
+
+    // Set socket options
+    int opt = 1;
+    if (setsockopt(listen_socket_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        logger_->error("Failed to set socket options: " + std::string(strerror(errno)));
+        close(listen_socket_);
+        listen_socket_ = -1;
+        return false;
+    }
+
+    // Set non-blocking
+    int flags = fcntl(listen_socket_, F_GETFL, 0);
+    if (flags < 0 || fcntl(listen_socket_, F_SETFL, flags | O_NONBLOCK) < 0) {
+        logger_->error("Failed to set non-blocking mode: " + std::string(strerror(errno)));
+        close(listen_socket_);
+        listen_socket_ = -1;
+        return false;
+    }
+
+    // Bind socket
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(bind_port_);
+
+    if (bind_address_ == "0.0.0.0" || bind_address_.empty()) {
+        addr.sin_addr.s_addr = INADDR_ANY;
+    } else {
+        if (inet_aton(bind_address_.c_str(), &addr.sin_addr) == 0) {
+            logger_->error("Invalid bind address: " + bind_address_);
+            close(listen_socket_);
+            listen_socket_ = -1;
+            return false;
+        }
+    }
+
+    if (bind(listen_socket_, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        logger_->error("Failed to bind socket: " + std::string(strerror(errno)));
+        close(listen_socket_);
+        listen_socket_ = -1;
+        return false;
+    }
+
+    // Listen
+    int backlog = config_->network.backlog > 0 ? config_->network.backlog : 128;
+    if (listen(listen_socket_, backlog) < 0) {
+        logger_->error("Failed to listen on socket: " + std::string(strerror(errno)));
+        close(listen_socket_);
+        listen_socket_ = -1;
+        return false;
+    }
+
+    logger_->info("Network initialized: listening on " + bind_address_ + ":" + std::to_string(bind_port_));
+    return true;
+}
+
+void RSyncDaemon::acceptLoop() {
+    logger_->info("Accept loop started");
+
+    while (running_ && !shutdown_requested_) {
+        struct sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+        memset(&client_addr, 0, client_len);
+
+        int client_socket = accept(listen_socket_, (struct sockaddr*)&client_addr, &client_len);
+
+        if (client_socket < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // No connection available, continue
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            } else if (errno == EINTR) {
+                // Interrupted, continue
+                continue;
+            } else {
+                if (running_ && !shutdown_requested_) {
+                    logger_->error("Accept failed: " + std::string(strerror(errno)));
+                }
+                break;
+            }
+        }
+
+        // Get client address
+        char client_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+        std::string client_address = std::string(client_ip);
+
+        // Check access control
+        if (!checkAccess(client_address, "")) {
+            logger_->warn("Access denied for " + client_address);
+            close(client_socket);
+            continue;
+        }
+
+        // Create session
+        {
+            std::lock_guard<std::mutex> lock(sessions_mutex_);
+            if (active_sessions_.size() >= config_->network.max_connections) {
+                logger_->warn("Max connections reached, rejecting " + client_address);
+                close(client_socket);
+                continue;
+            }
+        }
+
+        // Get modules map (need to lock modules_mutex_)
+        std::map<std::string, std::shared_ptr<Module>> modules_copy;
+        {
+            std::lock_guard<std::mutex> lock(modules_mutex_);
+            modules_copy = modules_;
+        }
+
+        try {
+            auto session = std::make_unique<RSyncSession>(client_socket, client_address, modules_copy);
+            {
+                std::lock_guard<std::mutex> lock(sessions_mutex_);
+                active_sessions_.push_back(std::move(session));
+                total_connections_++;
+            }
+            logger_->info("Accepted connection from " + client_address);
+        } catch (const std::exception& e) {
+            logger_->error("Failed to create session: " + std::string(e.what()));
+            close(client_socket);
+        }
+    }
+
+    logger_->info("Accept loop stopped");
 }
 
 } // namespace simple_rsyncd
