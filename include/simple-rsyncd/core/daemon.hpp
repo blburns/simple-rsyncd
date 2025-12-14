@@ -127,6 +127,7 @@ private:
 
     // Threading
     std::thread accept_thread_;
+    std::thread config_monitor_thread_;
     std::vector<std::thread> worker_threads_;
     std::atomic<bool> running_;
     std::atomic<bool> shutdown_requested_;
@@ -146,6 +147,7 @@ private:
     bool initializeNetwork();
     bool initializeSSL();
     void acceptLoop();
+    void configMonitorLoop();
     void workerLoop();
     void handleConnection(int client_socket, const std::string& client_address);
     void cleanupSessions();

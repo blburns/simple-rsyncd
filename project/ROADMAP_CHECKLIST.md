@@ -366,20 +366,20 @@ This document provides detailed, granular checklists for all development tasks i
   - [ ] Add format conversion utilities
 
 #### Configuration Hot-Reload
-- [ ] **File monitoring**
-  - [ ] Implement file change detection
-  - [ ] Add file watching
-  - [ ] Add change notification
-- [ ] **Hot-reload logic**
-  - [ ] Implement configuration reload
-  - [ ] Add reload validation
-  - [ ] Add reload error handling
-  - [ ] Add reload logging
+- [x] **File monitoring**
+  - [x] Implement file change detection
+  - [x] Add file watching
+  - [x] Add change notification
+- [x] **Hot-reload logic**
+  - [x] Implement configuration reload
+  - [x] Add reload validation
+  - [x] Add reload error handling
+  - [x] Add reload logging
 
 #### Environment Variables
-- [ ] **Environment variable support**
-  - [ ] Implement env var substitution
-  - [ ] Add env var validation
+- [x] **Environment variable support**
+  - [x] Implement env var substitution
+  - [x] Add env var validation
   - [ ] Add env var documentation
 
 ### **Enhanced Module System**

@@ -159,6 +159,9 @@ bool Configuration::loadFromFile(const std::string& filename) {
                 value = value.substr(1, value.length() - 2);
             }
 
+            // Expand environment variables
+            value = substituteEnvironmentVariables(value);
+
             // Parse based on section
             if (current_section == "global" || current_section.empty()) {
                 parseGlobalConfig(key, value);
@@ -260,6 +263,18 @@ void Configuration::parseModuleConfig(const std::string& module_name, const std:
         module.exclude_patterns.push_back(value);
     } else if (key == "include") {
         module.include_patterns.push_back(value);
+    } else if (key == "pre_transfer_script" || key == "pre-transfer-script") {
+        module.pre_transfer_script = value;
+    } else if (key == "post_transfer_script" || key == "post-transfer-script") {
+        module.post_transfer_script = value;
+    } else if (key == "pre_delete_script" || key == "pre-delete-script") {
+        module.pre_delete_script = value;
+    } else if (key == "post_delete_script" || key == "post-delete-script") {
+        module.post_delete_script = value;
+    } else if (key == "pre_list_script" || key == "pre-list-script") {
+        module.pre_list_script = value;
+    } else if (key == "post_list_script" || key == "post-list-script") {
+        module.post_list_script = value;
     } else {
         // Store unknown keys as custom options
         module.custom_options[key] = value;
@@ -790,6 +805,87 @@ bool Configuration::validatePerformance() const {
 
 bool Configuration::validateMonitoring() const {
     return true; // Basic validation - can be enhanced
+}
+
+std::string Configuration::substituteEnvironmentVariables(const std::string& value) const {
+    std::string result = value;
+    size_t start_pos = 0;
+
+    while ((start_pos = result.find("${", start_pos)) != std::string::npos) {
+        size_t end_pos = result.find("}", start_pos + 2);
+        if (end_pos == std::string::npos) {
+            break; // Malformed variable reference
+        }
+
+        std::string var_name = result.substr(start_pos + 2, end_pos - start_pos - 2);
+        std::string var_value;
+
+        // Check if it's a default value syntax: ${VAR:default}
+        size_t colon_pos = var_name.find(':');
+        std::string default_value;
+        if (colon_pos != std::string::npos) {
+            default_value = var_name.substr(colon_pos + 1);
+            var_name = var_name.substr(0, colon_pos);
+        }
+
+        // Get environment variable
+        const char* env_value = std::getenv(var_name.c_str());
+        if (env_value) {
+            var_value = env_value;
+        } else if (!default_value.empty()) {
+            var_value = default_value;
+        } else {
+            // Variable not found and no default - leave as is or remove?
+            // For now, leave as is to indicate missing variable
+            start_pos = end_pos + 1;
+            continue;
+        }
+
+        // Replace the variable reference
+        result.replace(start_pos, end_pos - start_pos + 1, var_value);
+        start_pos += var_value.length();
+    }
+
+    // Also support $VAR syntax (simpler form)
+    start_pos = 0;
+    while ((start_pos = result.find("$", start_pos)) != std::string::npos) {
+        if (start_pos + 1 >= result.length()) {
+            break;
+        }
+
+        // Check if it's ${...} (already handled above) or $VAR
+        if (result[start_pos + 1] == '{') {
+            start_pos += 2;
+            continue;
+        }
+
+        // Extract variable name (alphanumeric and underscore)
+        size_t var_start = start_pos + 1;
+        size_t var_end = var_start;
+        while (var_end < result.length() && 
+               (std::isalnum(result[var_end]) || result[var_end] == '_')) {
+            var_end++;
+        }
+
+        if (var_end > var_start) {
+            std::string var_name = result.substr(var_start, var_end - var_start);
+            const char* env_value = std::getenv(var_name.c_str());
+            if (env_value) {
+                result.replace(start_pos, var_end - start_pos, env_value);
+                start_pos += strlen(env_value);
+            } else {
+                start_pos = var_end;
+            }
+        } else {
+            start_pos++;
+        }
+    }
+
+    return result;
+}
+
+std::string Configuration::expandVariables(const std::string& value) const {
+    return substituteEnvironmentVariables(value);
 }
 
 } // namespace simple_rsyncd

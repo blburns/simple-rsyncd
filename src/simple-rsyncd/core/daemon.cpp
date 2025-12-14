@@ -107,13 +107,11 @@ bool RSyncDaemon::start() {
     // Start worker threads
     startWorkerThreads();
 
-    // Start configuration watcher if enabled
+    // Start configuration monitor thread if enabled
     if (config_ && config_->auto_reload) {
-        startConfigWatcher();
+        config_monitor_thread_ = std::thread(&RSyncDaemon::configMonitorLoop, this);
+        logger_->info("Configuration auto-reload enabled");
     }
-
-    // Start health monitor
-    startHealthMonitor();
 
     logger_->info("Daemon started successfully");
     return true;
@@ -139,6 +137,11 @@ void RSyncDaemon::stop() {
     // Join accept thread
     if (accept_thread_.joinable()) {
         accept_thread_.join();
+    }
+
+    // Join config monitor thread
+    if (config_monitor_thread_.joinable()) {
+        config_monitor_thread_.join();
     }
 
     // Stop all threads
@@ -639,6 +642,35 @@ void RSyncDaemon::acceptLoop() {
     }
 
     logger_->info("Accept loop stopped");
+}
+
+void RSyncDaemon::configMonitorLoop() {
+    if (!config_) {
+        return;
+    }
+
+    logger_->info("Configuration monitor thread started");
+
+    while (running_ && !shutdown_requested_) {
+        std::this_thread::sleep_for(config_->reload_interval);
+
+        if (shutdown_requested_) {
+            break;
+        }
+
+        // Check if configuration file has changed
+        if (config_->hasChanged()) {
+            logger_->info("Configuration file changed, reloading...");
+            
+            if (reloadConfig()) {
+                logger_->info("Configuration reloaded successfully");
+            } else {
+                logger_->error("Failed to reload configuration, keeping existing configuration");
+            }
+        }
+    }
+
+    logger_->info("Configuration monitor thread stopped");
 }
 
 } // namespace simple_rsyncd
