@@ -19,6 +19,8 @@
 #include <filesystem>
 #include <fstream>
 #include <cstdio>
+#include <chrono>
+#include <random>
 
 namespace simple_rsyncd {
 
@@ -26,8 +28,13 @@ class ModuleTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // Create temporary directory for module
-        test_dir_ = std::tmpnam(nullptr);
-        test_dir_ += "_test";
+        auto temp_path = std::filesystem::temp_directory_path();
+        auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(1000, 9999);
+        test_dir_ = (temp_path / ("test_module_" + std::to_string(timestamp) + "_" + std::to_string(dis(gen)))).string();
         std::filesystem::create_directories(test_dir_);
 
         // Create test file

@@ -44,10 +44,8 @@ bool PasswordFile::load() {
     }
 
     std::string line;
-    int line_number = 0;
 
     while (std::getline(file, line)) {
-        line_number++;
 
         // Remove leading/trailing whitespace
         line.erase(0, line.find_first_not_of(" \t"));

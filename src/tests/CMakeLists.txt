@@ -21,38 +21,34 @@ include_directories(
 )
 
 # Test executables - link to library target instead of executable
+# Note: GTest::gtest_main already includes GTest::gtest, so we don't need to link both
 add_executable(test_config test_config.cpp)
 target_link_libraries(test_config
     simple-rsyncd_lib
-    GTest::gtest
     GTest::gtest_main
 )
 
 add_executable(test_module test_module.cpp)
 target_link_libraries(test_module
     simple-rsyncd_lib
-    GTest::gtest
     GTest::gtest_main
 )
 
 add_executable(test_protocol test_protocol.cpp)
 target_link_libraries(test_protocol
     simple-rsyncd_lib
-    GTest::gtest
     GTest::gtest_main
 )
 
 add_executable(test_auth test_auth.cpp)
 target_link_libraries(test_auth
     simple-rsyncd_lib
-    GTest::gtest
     GTest::gtest_main
 )
 
 add_executable(test_integration test_integration.cpp)
 target_link_libraries(test_integration
     simple-rsyncd_lib
-    GTest::gtest
     GTest::gtest_main
 )
 

@@ -20,6 +20,8 @@
 #include <fstream>
 #include <cstdio>
 #include <filesystem>
+#include <chrono>
+#include <random>
 
 namespace simple_rsyncd {
 
@@ -27,8 +29,13 @@ class AuthTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // Create temporary password file
-        password_file_ = std::tmpnam(nullptr);
-        password_file_ += ".passwd";
+        auto temp_path = std::filesystem::temp_directory_path();
+        auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(1000, 9999);
+        password_file_ = (temp_path / ("test_auth_" + std::to_string(timestamp) + "_" + std::to_string(dis(gen)) + ".passwd")).string();
 
         std::ofstream file(password_file_);
         file << "# Password file\n";

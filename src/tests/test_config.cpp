@@ -19,6 +19,8 @@
 #include <fstream>
 #include <filesystem>
 #include <cstdio>
+#include <chrono>
+#include <random>
 
 namespace simple_rsyncd {
 
@@ -26,8 +28,13 @@ class ConfigTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // Create temporary config file
-        config_file_ = std::tmpnam(nullptr);
-        config_file_ += ".conf";
+        auto temp_path = std::filesystem::temp_directory_path();
+        auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(1000, 9999);
+        config_file_ = (temp_path / ("test_config_" + std::to_string(timestamp) + "_" + std::to_string(dis(gen)) + ".conf")).string();
 
         std::ofstream file(config_file_);
         file << "[global]\n";
@@ -94,8 +101,13 @@ TEST_F(ConfigTest, Validation) {
 
 TEST_F(ConfigTest, JSONConfiguration) {
     // Create JSON config file
-    std::string json_file = std::tmpnam(nullptr);
-    json_file += ".json";
+    auto temp_path = std::filesystem::temp_directory_path();
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1000, 9999);
+    std::string json_file = (temp_path / ("test_config_json_" + std::to_string(timestamp) + "_" + std::to_string(dis(gen)) + ".json")).string();
 
     std::ofstream file(json_file);
     file << "{\n";
