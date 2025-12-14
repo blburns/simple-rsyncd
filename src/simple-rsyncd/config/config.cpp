@@ -862,7 +862,7 @@ std::string Configuration::substituteEnvironmentVariables(const std::string& val
         // Extract variable name (alphanumeric and underscore)
         size_t var_start = start_pos + 1;
         size_t var_end = var_start;
-        while (var_end < result.length() && 
+        while (var_end < result.length() &&
                (std::isalnum(result[var_end]) || result[var_end] == '_')) {
             var_end++;
         }

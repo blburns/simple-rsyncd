@@ -661,7 +661,7 @@ void RSyncDaemon::configMonitorLoop() {
         // Check if configuration file has changed
         if (config_->hasChanged()) {
             logger_->info("Configuration file changed, reloading...");
-            
+
             if (reloadConfig()) {
                 logger_->info("Configuration reloaded successfully");
             } else {

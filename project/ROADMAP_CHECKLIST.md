@@ -350,20 +350,20 @@ This document provides detailed, granular checklists for all development tasks i
 
 ### **Complete Configuration System**
 
-#### JSON Configuration
-- [ ] **JSON parser**
-  - [ ] Implement JSON file reader
-  - [ ] Implement JSON parsing
-  - [ ] Add JSON validation
-  - [ ] Add error handling
-- [ ] **JSON structure**
-  - [ ] Define JSON schema
-  - [ ] Implement schema validation
-  - [ ] Add default value handling
-- [ ] **JSON conversion**
-  - [ ] Implement JSON to config conversion
-  - [ ] Implement config to JSON conversion
-  - [ ] Add format conversion utilities
+#### JSON Configuration ✅ (Completed in v0.2.0)
+- [x] **JSON parser**
+  - [x] Implement JSON file reader
+  - [x] Implement JSON parsing
+  - [x] Add JSON validation
+  - [x] Add error handling
+- [x] **JSON structure**
+  - [x] Define JSON schema
+  - [x] Implement schema validation
+  - [x] Add default value handling
+- [x] **JSON conversion**
+  - [x] Implement JSON to config conversion
+  - [x] Implement config to JSON conversion (basic)
+  - [ ] Add format conversion utilities (enhancement)
 
 #### Configuration Hot-Reload
 - [x] **File monitoring**
@@ -385,23 +385,23 @@ This document provides detailed, granular checklists for all development tasks i
 ### **Enhanced Module System**
 
 #### Pattern Matching
-- [ ] **Include patterns**
-  - [ ] Implement include pattern matching
-  - [ ] Add glob pattern support
-  - [ ] Add regex pattern support
-- [ ] **Exclude patterns**
-  - [ ] Implement exclude pattern matching
-  - [ ] Add pattern priority
+- [x] **Include patterns**
+  - [x] Implement include pattern matching
+  - [x] Add glob pattern support
+  - [ ] Add regex pattern support (basic glob implemented)
+- [x] **Exclude patterns**
+  - [x] Implement exclude pattern matching
+  - [x] Add pattern priority
   - [ ] Add pattern caching
 
 #### Script Hooks
-- [ ] **Pre-transfer hooks**
-  - [ ] Implement pre-transfer script execution
-  - [ ] Add script validation
-  - [ ] Add script error handling
-- [ ] **Post-transfer hooks**
-  - [ ] Implement post-transfer script execution
-  - [ ] Add script logging
+- [x] **Pre-transfer hooks**
+  - [x] Implement pre-transfer script execution (infrastructure in place)
+  - [x] Add script validation
+  - [x] Add script error handling
+- [x] **Post-transfer hooks**
+  - [x] Implement post-transfer script execution (infrastructure in place)
+  - [x] Add script logging
   - [ ] Add script timeout
 
 ### **Improved Authentication**
