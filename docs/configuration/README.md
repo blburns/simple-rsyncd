@@ -803,6 +803,105 @@ delete = true
 overwrite = true
 ```
 
+## 📋 JSON Configuration Examples (v0.3.0)
+
+### Minimal JSON Configuration
+
+```json
+{
+  "global": {
+    "bind_address": "0.0.0.0",
+    "bind_port": 873
+  },
+  "modules": {
+    "public": {
+      "path": "/var/public",
+      "comment": "Public files",
+      "read_only": true
+    }
+  }
+}
+```
+
+### Complete JSON Configuration
+
+```json
+{
+  "global": {
+    "bind_address": "0.0.0.0",
+    "bind_port": 873,
+    "max_connections": 100,
+    "auto_reload": true,
+    "reload_interval": 30,
+    "network": {
+      "bind_address": "0.0.0.0",
+      "bind_port": 873,
+      "max_connections": 100
+    },
+    "ssl": {
+      "enabled": true,
+      "certificate_file": "/etc/simple-rsyncd/ssl/server.crt",
+      "private_key_file": "/etc/simple-rsyncd/ssl/server.key"
+    },
+    "auth": {
+      "enabled": true,
+      "method": "password",
+      "password_file": "/etc/simple-rsyncd/users",
+      "password_policy": {
+        "min_length": 8,
+        "require_uppercase": true,
+        "require_lowercase": true,
+        "require_digits": true,
+        "expiration_hours": 2160
+      },
+      "session_timeout": 3600
+    },
+    "log": {
+      "level": "info",
+      "file": "/var/log/simple-rsyncd.log",
+      "format": "json",
+      "max_size": 10485760,
+      "max_files": 5,
+      "compress_old_logs": true
+    }
+  },
+  "modules": {
+    "backup": {
+      "path": "/var/backup",
+      "comment": "Backup storage",
+      "read_only": false,
+      "list": true,
+      "delete": true,
+      "include_patterns": ["*.tar.gz", "*.sql"],
+      "exclude_patterns": ["*.tmp"],
+      "pre_transfer_script": "/usr/local/bin/pre-backup.sh",
+      "post_transfer_script": "/usr/local/bin/post-backup.sh"
+    }
+  }
+}
+```
+
+### Using Environment Variables in JSON
+
+```json
+{
+  "global": {
+    "bind_address": "${BIND_ADDRESS:0.0.0.0}",
+    "bind_port": ${BIND_PORT:873},
+    "log": {
+      "file": "${LOG_DIR}/simple-rsyncd.log"
+    }
+  },
+  "modules": {
+    "backup": {
+      "path": "${BACKUP_ROOT}/data"
+    }
+  }
+}
+```
+
+**Note**: JSON format does not support environment variable substitution in the same way as INI format. For JSON, use environment variables as runtime overrides or pre-process the JSON file.
+
 ## ✅ Configuration Validation
 
 ### Validation Commands
@@ -810,6 +909,9 @@ overwrite = true
 ```bash
 # Test configuration syntax
 simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.conf
+
+# Test JSON configuration
+simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.json
 
 # Validate configuration
 simple-rsyncd validate --config /etc/simple-rsyncd/rsyncd.conf

@@ -2,6 +2,15 @@
 
 This guide helps you resolve common issues with Simple RSync Daemon.
 
+**Version**: v0.3.0
+
+**New Troubleshooting Topics in v0.3.0:**
+- Password hashing and policy issues
+- Session management problems
+- Configuration hot-reload failures
+- Environment variable substitution
+- Enhanced logging and error handling
+
 ## 🚨 Quick Diagnosis
 
 ### Check Daemon Status
@@ -152,7 +161,7 @@ make
 
 ### Daemon Won't Start
 
-#### Configuration Errors
+#### Configuration Errors (v0.3.0 Enhanced)
 
 **Problem**: `Configuration validation failed`
 
@@ -161,11 +170,20 @@ make
 # Test configuration
 simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.conf
 
+# Test JSON configuration (v0.3.0)
+simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.json
+
 # Check configuration syntax
 cat -n /etc/simple-rsyncd/rsyncd.conf
 
+# Validate JSON syntax (v0.3.0)
+cat /etc/simple-rsyncd/rsyncd.json | jq .
+
 # Validate specific sections
 simple-rsyncd validate --config /etc/simple-rsyncd/rsyncd.conf --module public
+
+# Check environment variable substitution (v0.3.0)
+# Ensure all referenced variables are set or have defaults
 ```
 
 **Common Configuration Issues**:
@@ -174,6 +192,47 @@ simple-rsyncd validate --config /etc/simple-rsyncd/rsyncd.conf --module public
 - Invalid IP address format
 - Missing required module configuration
 - Invalid file paths
+- **v0.3.0**: Environment variables not found (check `${VAR}` syntax)
+- **v0.3.0**: Invalid JSON syntax (use `jq` to validate)
+- **v0.3.0**: Configuration hot-reload failures (check reload logs)
+
+#### Configuration Hot-Reload Issues (v0.3.0)
+
+**Problem**: `Configuration reload failed` or hot-reload not working
+
+**Diagnosis**:
+```bash
+# Check if hot-reload is enabled
+grep auto_reload /etc/simple-rsyncd/rsyncd.conf
+
+# Check reload interval
+grep reload_interval /etc/simple-rsyncd/rsyncd.conf
+
+# Check reload logs
+grep -i "reload\|configuration" /var/log/simple-rsyncd.log
+
+# Check file permissions
+ls -la /etc/simple-rsyncd/rsyncd.conf
+```
+
+**Solutions**:
+```bash
+# Enable hot-reload
+auto_reload = true
+reload_interval = 30
+
+# Ensure configuration file is readable
+sudo chmod 644 /etc/simple-rsyncd/rsyncd.conf
+
+# Check for configuration errors that prevent reload
+simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.conf
+
+# Manually trigger reload
+simple-rsyncd reload
+
+# Check reload status in logs
+tail -f /var/log/simple-rsyncd.log | grep -i reload
+```
 
 #### Port Already in Use
 
@@ -315,7 +374,7 @@ simple-rsyncd restart
 
 ### Authentication Issues
 
-#### Password Authentication Failed
+#### Password Authentication Failed (v0.3.0 Enhanced)
 
 **Problem**: `Authentication failed`
 
@@ -326,6 +385,15 @@ grep auth_method /etc/simple-rsyncd/rsyncd.conf
 
 # Check user database
 cat /etc/simple-rsyncd/users
+
+# Check if passwords are hashed (v0.3.0)
+grep sha256 /etc/simple-rsyncd/users
+
+# Check password policies (v0.3.0)
+grep password_policy /etc/simple-rsyncd/rsyncd.conf
+
+# Check for account lockout (v0.3.0)
+grep -i "account locked\|password expired" /var/log/simple-rsyncd.log
 
 # Check file permissions
 ls -la /etc/simple-rsyncd/users
@@ -338,11 +406,75 @@ sudo touch /etc/simple-rsyncd/users
 sudo chmod 600 /etc/simple-rsyncd/users
 sudo chown rsync:rsync /etc/simple-rsyncd/users
 
-# Add user
-echo "username:$(openssl passwd -1 'password')" | sudo tee -a /etc/simple-rsyncd/users
+# Add user with plain text password (will be auto-hashed)
+echo "username:password" | sudo tee -a /etc/simple-rsyncd/users
+
+# Or add user with pre-hashed password (v0.3.0)
+# Format: username:sha256:salt:hash
+echo "username:sha256:abc123...:def456..." | sudo tee -a /etc/simple-rsyncd/users
+
+# Check password policy requirements (v0.3.0)
+# Ensure password meets minimum length and complexity requirements
 
 # Test authentication
 simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.conf
+```
+
+#### Password Policy Issues (v0.3.0)
+
+**Problem**: `Password does not meet policy requirements`
+
+**Diagnosis**:
+```bash
+# Check password policy settings
+grep password_policy /etc/simple-rsyncd/rsyncd.conf
+
+# Check policy requirements
+# - Minimum length
+# - Uppercase/lowercase requirements
+# - Digit requirements
+# - Special character requirements
+```
+
+**Solutions**:
+```bash
+# Adjust password policy or use stronger password
+# Update configuration:
+password_policy_min_length = 8
+password_policy_require_uppercase = true
+password_policy_require_lowercase = true
+password_policy_require_digits = true
+
+# Reload configuration
+simple-rsyncd reload
+```
+
+#### Session Issues (v0.3.0)
+
+**Problem**: `Session expired` or session-related errors
+
+**Diagnosis**:
+```bash
+# Check session timeout settings
+grep session_timeout /etc/simple-rsyncd/rsyncd.conf
+
+# Check session management status
+grep enable_session_management /etc/simple-rsyncd/rsyncd.conf
+
+# View session-related logs
+grep -i session /var/log/simple-rsyncd.log
+```
+
+**Solutions**:
+```bash
+# Increase session timeout
+session_timeout = 7200  # 2 hours
+
+# Or disable session management for testing
+enable_session_management = false
+
+# Reload configuration
+simple-rsyncd reload
 ```
 
 #### OAuth2 Issues
@@ -598,7 +730,7 @@ docker restart simple-rsyncd
 
 ## 🔍 Debugging
 
-### Enable Debug Logging
+### Enable Debug Logging (v0.3.0 Enhanced)
 
 ```bash
 # Set debug level
@@ -607,12 +739,46 @@ export SIMPLE_RSYNCD_LOG_LEVEL=debug
 # Or update configuration
 log_level = debug
 
+# Configure log format (v0.3.0)
+log_format = json  # or text
+
+# Configure log rotation (v0.3.0)
+log_max_size = 10MB
+log_max_files = 5
+
 # Restart daemon
 simple-rsyncd restart
 
 # Watch logs
 tail -f /var/log/simple-rsyncd.log
+
+# View JSON logs with jq (v0.3.0)
+tail -f /var/log/simple-rsyncd.log | jq .
+
+# Filter logs by level (v0.3.0)
+grep '"level":"ERROR"' /var/log/simple-rsyncd.log | jq .
 ```
+
+### Error Handling (v0.3.0)
+
+The daemon now provides comprehensive error codes and context:
+
+```bash
+# View errors with error codes
+grep ERROR /var/log/simple-rsyncd.log
+
+# View errors by category
+grep "\[AUTHENTICATION\]" /var/log/simple-rsyncd.log
+grep "\[CONFIGURATION\]" /var/log/simple-rsyncd.log
+
+# View error recovery suggestions
+grep -A 5 "recovery_suggestion" /var/log/simple-rsyncd.log
+
+# Parse JSON error logs
+cat /var/log/simple-rsyncd.log | jq 'select(.level == "ERROR")'
+```
+
+For detailed error handling information, see the [Error Handling Guide](../error-handling.md).
 
 ### Verbose Output
 
@@ -662,7 +828,7 @@ sudo tcpdump -i lo -n port 873
 | `Connection refused` | Daemon not running or wrong port | Start daemon or check port configuration |
 | `SSL handshake failed` | Certificate issues or SSL misconfiguration | Check SSL certificates and configuration |
 
-### Authentication Errors
+### Authentication Errors (v0.3.0 Enhanced)
 
 | Error Message | Cause | Solution |
 |---------------|-------|----------|
@@ -670,6 +836,19 @@ sudo tcpdump -i lo -n port 873
 | `User not found` | User doesn't exist in database | Add user to authentication database |
 | `Insufficient permissions` | User lacks required permissions | Check module permissions and user access |
 | `Authentication method not supported` | Unsupported auth method configured | Use supported authentication method |
+| `Password does not meet policy requirements` | Password too weak (v0.3.0) | Use stronger password or adjust policy |
+| `Account locked` | Too many failed login attempts (v0.3.0) | Wait for lockout period or reset account |
+| `Password expired` | Password has expired (v0.3.0) | Change password |
+| `Session expired` | Session timeout exceeded (v0.3.0) | Re-authenticate or increase timeout |
+
+### Configuration Errors (v0.3.0 Enhanced)
+
+| Error Message | Cause | Solution |
+|---------------|-------|----------|
+| `Invalid configuration file` | Syntax error in rsyncd.conf or rsyncd.json | Check configuration syntax |
+| `Environment variable not found` | Missing environment variable (v0.3.0) | Set variable or provide default value |
+| `Configuration reload failed` | Invalid configuration during hot-reload (v0.3.0) | Fix configuration errors and try again |
+| `JSON parsing error` | Invalid JSON syntax (v0.3.0) | Validate JSON syntax |
 
 ## 🆘 Getting Help
 
