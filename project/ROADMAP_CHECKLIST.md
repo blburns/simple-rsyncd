@@ -334,15 +334,15 @@ This document provides detailed, granular checklists for all development tasks i
   - [x] Test user management
   - [x] Test allow/deny lists
 
-#### Integration Tests
-- [ ] **End-to-end tests**
-  - [ ] Test full transfer flow
-  - [ ] Test authentication flow
-  - [ ] Test error scenarios
-- [ ] **Protocol tests**
-  - [ ] Test with real rsync client
-  - [ ] Test protocol compatibility
-  - [ ] Test error handling
+#### Integration Tests ✅
+- [x] **End-to-end tests**
+  - [x] Test full transfer flow
+  - [x] Test authentication flow
+  - [x] Test error scenarios
+- [x] **Protocol tests**
+  - [x] Test protocol compatibility
+  - [x] Test error handling
+  - [ ] Test with real rsync client (requires external rsync binary - future enhancement)
 
 ---
 
