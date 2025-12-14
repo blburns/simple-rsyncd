@@ -7,7 +7,7 @@
     "user": "rsync",
     "group": "rsync",
     "umask": "022",
-    
+
     "network": {
       "bind_address": "0.0.0.0",
       "bind_port": 873,
@@ -15,7 +15,7 @@
       "max_connections": 100,
       "worker_threads": 4
     },
-    
+
     "ssl": {
       "enabled": false,
       "certificate_file": "/etc/simple-rsyncd/ssl/server.crt",
@@ -26,7 +26,7 @@
       "tls_version": "1.2",
       "verify_peer": true
     },
-    
+
     "auth": {
       "enabled": false,
       "method": "password",
@@ -35,7 +35,7 @@
       "public_key_file": "/etc/simple-rsyncd/keys",
       "oauth2_config_file": "/etc/simple-rsyncd/oauth2.json",
       "anonymous_access": false,
-      
+
       "password_policy": {
         "min_length": 8,
         "require_uppercase": false,
@@ -48,13 +48,13 @@
         "prevent_reuse": false,
         "password_history_size": 0
       },
-      
+
       "session": {
         "timeout": 3600,
         "enable_management": true
       }
     },
-    
+
     "access_control": {
       "enabled": true,
       "allowed_hosts": ["127.0.0.1", "::1", "192.168.1.0/24"],
@@ -65,7 +65,7 @@
       "log_file": "/var/log/simple-rsyncd/access.log",
       "log_format": "combined"
     },
-    
+
     "rate_limiting": {
       "enabled": true,
       "max_connections_per_minute": 60,
@@ -75,7 +75,7 @@
       "connection_timeout": 300,
       "idle_timeout": 60
     },
-    
+
     "log": {
       "level": "info",
       "file": "/var/log/simple-rsyncd/rsyncd.log",
@@ -88,7 +88,7 @@
       "max_files": 5,
       "compress_old_logs": true
     },
-    
+
     "security": {
       "chroot_enabled": false,
       "chroot_directory": "/var/lib/simple-rsyncd",
@@ -99,7 +99,7 @@
       "allow_devices": false,
       "allow_sockets": false
     },
-    
+
     "performance": {
       "buffer_size": 65536,
       "max_memory_usage": 536870912,
@@ -111,7 +111,7 @@
       "enable_pipelining": true,
       "pipeline_depth": 5
     },
-    
+
     "monitoring": {
       "enabled": true,
       "metrics_file": "/var/lib/simple-rsyncd/metrics.json",
@@ -123,13 +123,13 @@
       "prometheus_port": 9090,
       "prometheus_address": "127.0.0.1"
     },
-    
+
     "config": {
       "auto_reload": false,
       "reload_interval": 30
     }
   },
-  
+
   "modules": {
     "backup": {
       "path": "/var/backup",
@@ -150,7 +150,7 @@
       "pre_list_script": "",
       "post_list_script": ""
     },
-    
+
     "public": {
       "path": "/var/public",
       "comment": "Public file sharing",

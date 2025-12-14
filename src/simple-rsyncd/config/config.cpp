@@ -218,6 +218,8 @@ void Configuration::parseGlobalConfig(const std::string& key, const std::string&
         auth.method = value;
     } else if (key == "auth_password_file" || key == "password_file") {
         auth.password_file = value;
+    } else if (key == "auth_public_key_file" || key == "public_key_file") {
+        auth.public_key_file = value;
     } else if (key == "auth_realm") {
         auth.realm = value;
     }
@@ -362,6 +364,9 @@ bool Configuration::loadFromJSON(const std::string& json) {
         }
         if (auth_config.isMember("password_file")) {
             auth.password_file = auth_config["password_file"].asString();
+        }
+        if (auth_config.isMember("public_key_file")) {
+            auth.public_key_file = auth_config["public_key_file"].asString();
         }
         if (auth_config.isMember("realm")) {
             auth.realm = auth_config["realm"].asString();

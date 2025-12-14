@@ -340,6 +340,148 @@ private:
 };
 
 /**
+ * @brief Public key information
+ */
+struct PublicKeyInfo {
+    std::string key_type;  // ssh-rsa, ssh-dss, ecdsa-sha2-nistp256, ssh-ed25519
+    std::string key_data;  // Base64 encoded key data
+    std::string comment;  // Optional comment
+    std::string username;  // Associated username
+};
+
+/**
+ * @brief Public key parser and verifier
+ */
+class PublicKey {
+public:
+    /**
+     * @brief Parse SSH public key from string
+     * @param key_string SSH public key string (format: "key-type key-data comment")
+     * @return Public key info if parsed successfully, nullopt otherwise
+     */
+    static std::optional<PublicKeyInfo> parse(const std::string& key_string);
+
+    /**
+     * @brief Verify signature using public key
+     * @param key_info Public key information
+     * @param data Data that was signed
+     * @param signature Signature to verify (base64 encoded)
+     * @return true if signature is valid, false otherwise
+     */
+    static bool verifySignature(const PublicKeyInfo& key_info,
+                               const std::string& data,
+                               const std::string& signature);
+
+    /**
+     * @brief Check if key type is supported
+     * @param key_type Key type string
+     * @return true if supported, false otherwise
+     */
+    static bool isSupportedKeyType(const std::string& key_type);
+
+    /**
+     * @brief Get supported key types
+     * @return Vector of supported key type strings
+     */
+    static std::vector<std::string> getSupportedKeyTypes();
+
+private:
+    static bool verifyRSASignature(const std::string& key_data,
+                                  const std::string& data,
+                                  const std::string& signature);
+    static bool verifyECDSASignature(const std::string& key_data,
+                                    const std::string& key_type,
+                                    const std::string& data,
+                                    const std::string& signature);
+    static bool verifyEd25519Signature(const std::string& key_data,
+                                      const std::string& data,
+                                      const std::string& signature);
+    static std::string base64Decode(const std::string& encoded);
+};
+
+/**
+ * @brief Public key database manager
+ */
+class PublicKeyDatabase {
+public:
+    /**
+     * @brief Constructor
+     * @param key_file Public key file path (SSH authorized_keys format)
+     */
+    explicit PublicKeyDatabase(const std::string& key_file = "");
+
+    /**
+     * @brief Load public keys from file
+     * @return true if loaded successfully, false otherwise
+     */
+    bool load();
+
+    /**
+     * @brief Save public keys to file
+     * @return true if saved successfully, false otherwise
+     */
+    bool save();
+
+    /**
+     * @brief Add a public key for a user
+     * @param username Username
+     * @param key_string SSH public key string
+     * @return true if added successfully, false otherwise
+     */
+    bool addKey(const std::string& username, const std::string& key_string);
+
+    /**
+     * @brief Remove a public key for a user
+     * @param username Username
+     * @param key_data Key data to match (base64)
+     * @return true if removed successfully, false otherwise
+     */
+    bool removeKey(const std::string& username, const std::string& key_data);
+
+    /**
+     * @brief Get all public keys for a user
+     * @param username Username
+     * @return Vector of public key info
+     */
+    std::vector<PublicKeyInfo> getUserKeys(const std::string& username) const;
+
+    /**
+     * @brief Check if user has any keys
+     * @param username Username
+     * @return true if user has keys, false otherwise
+     */
+    bool userHasKeys(const std::string& username) const;
+
+    /**
+     * @brief Get all users with keys
+     * @return Vector of usernames
+     */
+    std::vector<std::string> getUsers() const;
+
+    /**
+     * @brief Verify signature for user
+     * @param username Username
+     * @param data Data that was signed
+     * @param signature Signature to verify
+     * @return true if any key verifies the signature, false otherwise
+     */
+    bool verifySignature(const std::string& username,
+                        const std::string& data,
+                        const std::string& signature) const;
+
+    /**
+     * @brief Reload keys from file
+     * @return true if reloaded successfully, false otherwise
+     */
+    bool reload();
+
+private:
+    std::string key_file_;
+    std::map<std::string, std::vector<PublicKeyInfo>> keys_;  // username -> keys
+    bool loaded_;
+};
+
+/**
  * @brief Authentication manager
  */
 class AuthenticationManager {
@@ -351,13 +493,26 @@ public:
     explicit AuthenticationManager(const AuthConfig& config);
 
     /**
-     * @brief Authenticate user
+     * @brief Authenticate user with password
      * @param username Username
      * @param password Password
      * @return Session ID if authenticated, empty string otherwise
      */
     std::string authenticate(const std::string& username, const std::string& password,
                             const std::string& client_address = "");
+
+    /**
+     * @brief Authenticate user with public key
+     * @param username Username
+     * @param data Data that was signed
+     * @param signature Signature to verify
+     * @param client_address Client IP address
+     * @return Session ID if authenticated, empty string otherwise
+     */
+    std::string authenticateWithKey(const std::string& username,
+                                    const std::string& data,
+                                    const std::string& signature,
+                                    const std::string& client_address = "");
 
     /**
      * @brief Authenticate user (legacy method, returns bool)
@@ -403,10 +558,17 @@ public:
      */
     UserDatabase& getUserDatabase();
 
+    /**
+     * @brief Get public key database
+     * @return Reference to public key database
+     */
+    PublicKeyDatabase& getPublicKeyDatabase();
+
 private:
     AuthConfig config_;
     std::unique_ptr<PasswordFile> password_file_;
     std::unique_ptr<UserDatabase> user_database_;
+    std::unique_ptr<PublicKeyDatabase> public_key_database_;
     std::unique_ptr<SessionManager> session_manager_;
     bool use_user_database_ = false;
 };

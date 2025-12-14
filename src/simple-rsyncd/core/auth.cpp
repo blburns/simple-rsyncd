@@ -23,6 +23,14 @@
 #include <random>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
+#include <openssl/rsa.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
+#include <openssl/pem.h>
+#include <openssl/bio.h>
+#include <openssl/buffer.h>
+#include <openssl/sha.h>
+#include <openssl/err.h>
 
 namespace simple_rsyncd {
 
@@ -626,6 +634,285 @@ std::string SessionManager::generateSessionId() const {
     return ss.str();
 }
 
+// PublicKey implementation
+std::optional<PublicKeyInfo> PublicKey::parse(const std::string& key_string) {
+    if (key_string.empty()) {
+        return std::nullopt;
+    }
+
+    // Parse SSH public key format: "key-type key-data [comment]"
+    std::istringstream iss(key_string);
+    std::string key_type, key_data, comment;
+
+    if (!(iss >> key_type >> key_data)) {
+        return std::nullopt;
+    }
+
+    // Read optional comment (rest of the line)
+    std::string rest;
+    std::getline(iss, rest);
+    if (!rest.empty()) {
+        comment = rest.substr(1); // Skip leading space
+    }
+
+    // Validate key type
+    if (!isSupportedKeyType(key_type)) {
+        return std::nullopt;
+    }
+
+    PublicKeyInfo info;
+    info.key_type = key_type;
+    info.key_data = key_data;
+    info.comment = comment;
+
+    return info;
+}
+
+bool PublicKey::verifySignature(const PublicKeyInfo& key_info,
+                                const std::string& data,
+                                const std::string& signature) {
+    if (key_info.key_type == "ssh-rsa") {
+        return verifyRSASignature(key_info.key_data, data, signature);
+    } else if (key_info.key_type.find("ecdsa-sha2-") == 0) {
+        return verifyECDSASignature(key_info.key_data, key_info.key_type, data, signature);
+    } else if (key_info.key_type == "ssh-ed25519") {
+        return verifyEd25519Signature(key_info.key_data, data, signature);
+    }
+    return false;
+}
+
+bool PublicKey::isSupportedKeyType(const std::string& key_type) {
+    return key_type == "ssh-rsa" ||
+           key_type == "ssh-dss" ||
+           key_type.find("ecdsa-sha2-") == 0 ||
+           key_type == "ssh-ed25519";
+}
+
+std::vector<std::string> PublicKey::getSupportedKeyTypes() {
+    return {"ssh-rsa", "ssh-dss", "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384",
+            "ecdsa-sha2-nistp521", "ssh-ed25519"};
+}
+
+bool PublicKey::verifyRSASignature(const std::string& key_data,
+                                   const std::string& data,
+                                   const std::string& signature) {
+    // Decode base64 key data
+    std::string decoded_key = base64Decode(key_data);
+    if (decoded_key.empty()) {
+        return false;
+    }
+
+    // Parse SSH RSA public key format
+    // Format: [4 bytes: key_type_len][key_type][4 bytes: e_len][e][4 bytes: n_len][n]
+    if (decoded_key.length() < 20) {
+        return false;
+    }
+
+    // For now, we'll use a simplified approach
+    // In production, you'd want to properly parse the SSH key format
+    // and use OpenSSL RSA functions to verify
+
+    // Note: Full SSH key parsing is complex. This is a placeholder implementation.
+    // For production use, consider using libssh or similar library.
+    return false; // Placeholder - requires full SSH key format parsing
+}
+
+bool PublicKey::verifyECDSASignature(const std::string& key_data,
+                                     const std::string& key_type,
+                                     const std::string& data,
+                                     const std::string& signature) {
+    // ECDSA signature verification requires parsing SSH key format
+    // This is a placeholder - full implementation requires SSH key format parsing
+    return false;
+}
+
+bool PublicKey::verifyEd25519Signature(const std::string& key_data,
+                                       const std::string& data,
+                                       const std::string& signature) {
+    // Ed25519 signature verification
+    // This is a placeholder - full implementation requires Ed25519 support
+    return false;
+}
+
+std::string PublicKey::base64Decode(const std::string& encoded) {
+    BIO* bio = BIO_new_mem_buf(encoded.c_str(), encoded.length());
+    BIO* b64 = BIO_new(BIO_f_base64());
+    bio = BIO_push(b64, bio);
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+
+    char buffer[1024];
+    std::string decoded;
+    int length;
+    while ((length = BIO_read(bio, buffer, sizeof(buffer))) > 0) {
+        decoded.append(buffer, length);
+    }
+
+    BIO_free_all(bio);
+    return decoded;
+}
+
+// PublicKeyDatabase implementation
+PublicKeyDatabase::PublicKeyDatabase(const std::string& key_file)
+    : key_file_(key_file), loaded_(false) {
+    if (!key_file_.empty()) {
+        load();
+    }
+}
+
+bool PublicKeyDatabase::load() {
+    if (key_file_.empty()) {
+        return false;
+    }
+
+    keys_.clear();
+    std::ifstream file(key_file_);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    std::string line;
+    std::string current_username = "";
+    while (std::getline(file, line)) {
+        // Skip empty lines and comments
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
+
+        // Check for username line (format: "username: key-string")
+        size_t colon_pos = line.find(':');
+        if (colon_pos != std::string::npos) {
+            current_username = line.substr(0, colon_pos);
+            line = line.substr(colon_pos + 1);
+            // Trim leading whitespace
+            line.erase(0, line.find_first_not_of(" \t"));
+        }
+
+        if (current_username.empty()) {
+            continue;
+        }
+
+        // Parse public key
+        auto key_info = PublicKey::parse(line);
+        if (key_info) {
+            key_info->username = current_username;
+            keys_[current_username].push_back(*key_info);
+        }
+    }
+
+    file.close();
+    loaded_ = true;
+    return true;
+}
+
+bool PublicKeyDatabase::save() {
+    if (key_file_.empty()) {
+        return false;
+    }
+
+    std::ofstream file(key_file_);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    file << "# Public key database\n";
+    file << "# Format: username: key-type key-data [comment]\n";
+
+    for (const auto& [username, user_keys] : keys_) {
+        for (const auto& key_info : user_keys) {
+            file << username << ": " << key_info.key_type << " " << key_info.key_data;
+            if (!key_info.comment.empty()) {
+                file << " " << key_info.comment;
+            }
+            file << "\n";
+        }
+    }
+
+    file.close();
+    return true;
+}
+
+bool PublicKeyDatabase::addKey(const std::string& username, const std::string& key_string) {
+    auto key_info = PublicKey::parse(key_string);
+    if (!key_info) {
+        return false;
+    }
+
+    key_info->username = username;
+    keys_[username].push_back(*key_info);
+
+    if (!key_file_.empty()) {
+        return save();
+    }
+    return true;
+}
+
+bool PublicKeyDatabase::removeKey(const std::string& username, const std::string& key_data) {
+    auto it = keys_.find(username);
+    if (it == keys_.end()) {
+        return false;
+    }
+
+    auto& user_keys = it->second;
+    user_keys.erase(
+        std::remove_if(user_keys.begin(), user_keys.end(),
+                      [&key_data](const PublicKeyInfo& key) {
+                          return key.key_data == key_data;
+                      }),
+        user_keys.end()
+    );
+
+    if (user_keys.empty()) {
+        keys_.erase(it);
+    }
+
+    if (!key_file_.empty()) {
+        return save();
+    }
+    return true;
+}
+
+std::vector<PublicKeyInfo> PublicKeyDatabase::getUserKeys(const std::string& username) const {
+    auto it = keys_.find(username);
+    if (it == keys_.end()) {
+        return {};
+    }
+    return it->second;
+}
+
+bool PublicKeyDatabase::userHasKeys(const std::string& username) const {
+    return keys_.find(username) != keys_.end() && !keys_.at(username).empty();
+}
+
+std::vector<std::string> PublicKeyDatabase::getUsers() const {
+    std::vector<std::string> users;
+    for (const auto& [username, _] : keys_) {
+        users.push_back(username);
+    }
+    return users;
+}
+
+bool PublicKeyDatabase::verifySignature(const std::string& username,
+                                        const std::string& data,
+                                        const std::string& signature) const {
+    auto it = keys_.find(username);
+    if (it == keys_.end()) {
+        return false;
+    }
+
+    // Try to verify with any of the user's keys
+    for (const auto& key_info : it->second) {
+        if (PublicKey::verifySignature(key_info, data, signature)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool PublicKeyDatabase::reload() {
+    return load();
+}
+
 // Authentication manager implementation
 AuthenticationManager::AuthenticationManager(const AuthConfig& config) : config_(config) {
     if (config_.method == "password") {
@@ -635,6 +922,10 @@ AuthenticationManager::AuthenticationManager(const AuthConfig& config) : config_
         // Initialize user database if configured (future enhancement)
         user_database_ = std::make_unique<UserDatabase>();
         use_user_database_ = false; // Use password file by default
+    } else if (config_.method == "public_key") {
+        if (!config_.public_key_file.empty()) {
+            public_key_database_ = std::make_unique<PublicKeyDatabase>(config_.public_key_file);
+        }
     }
 
     // Initialize session manager with default timeout (1 hour)
@@ -685,7 +976,49 @@ std::string AuthenticationManager::authenticate(const std::string& username, con
         }
     }
 
+    if (config_.method == "public_key") {
+        // Public key authentication handled separately via authenticateWithKey
+        return "";
+    }
+
     // Other auth methods not implemented yet
+    return "";
+}
+
+std::string AuthenticationManager::authenticateWithKey(const std::string& username,
+                                                       const std::string& data,
+                                                       const std::string& signature,
+                                                       const std::string& client_address) {
+    if (!config_.enabled) {
+        if (config_.anonymous_access) {
+            return session_manager_->createSession("anonymous", client_address);
+        }
+        return "";
+    }
+
+    if (config_.method != "public_key") {
+        return "";
+    }
+
+    // Check if user is explicitly denied
+    if (std::find(config_.denied_users.begin(), config_.denied_users.end(), username) != config_.denied_users.end()) {
+        return "";
+    }
+
+    // Check if user is explicitly allowed (if allowed_users is not empty)
+    if (!config_.allowed_users.empty()) {
+        if (std::find(config_.allowed_users.begin(), config_.allowed_users.end(), username) == config_.allowed_users.end()) {
+            return "";
+        }
+    }
+
+    // Verify signature using public key database
+    if (public_key_database_) {
+        if (public_key_database_->verifySignature(username, data, signature)) {
+            return session_manager_->createSession(username, client_address);
+        }
+    }
+
     return "";
 }
 
@@ -713,6 +1046,9 @@ bool AuthenticationManager::reload() {
     if (user_database_ && !use_user_database_) {
         return user_database_->load();
     }
+    if (public_key_database_) {
+        return public_key_database_->reload();
+    }
     return true;
 }
 
@@ -722,6 +1058,14 @@ SessionManager& AuthenticationManager::getSessionManager() {
 
 UserDatabase& AuthenticationManager::getUserDatabase() {
     return *user_database_;
+}
+
+PublicKeyDatabase& AuthenticationManager::getPublicKeyDatabase() {
+    if (!public_key_database_) {
+        // Initialize if not already initialized
+        public_key_database_ = std::make_unique<PublicKeyDatabase>(config_.public_key_file);
+    }
+    return *public_key_database_;
 }
 
 } // namespace simple_rsyncd

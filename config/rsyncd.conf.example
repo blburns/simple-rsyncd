@@ -58,9 +58,9 @@ enable_session_management = true
 # Access control settings
 access_enabled = true
 access_allowed_hosts = 127.0.0.1, ::1, 192.168.1.0/24
-access_denied_hosts = 
+access_denied_hosts =
 access_allowed_networks = 10.0.0.0/8, 172.16.0.0/12
-access_denied_networks = 
+access_denied_networks =
 access_reverse_dns_lookup = false
 access_log_file = /var/log/simple-rsyncd/access.log
 access_log_format = combined
@@ -127,14 +127,14 @@ list = true
 delete = true
 overwrite = true
 exclude_patterns = *.tmp, *.log, .DS_Store
-include_patterns = 
+include_patterns =
 environment_variables = BACKUP_MODE=incremental
 pre_transfer_script = /usr/local/bin/pre-backup.sh
 post_transfer_script = /usr/local/bin/post-backup.sh
-pre_delete_script = 
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+pre_delete_script =
+post_delete_script =
+pre_list_script =
+post_list_script =
 
 [module:documents]
 path = /var/documents
@@ -146,12 +146,12 @@ overwrite = false
 exclude_patterns = *.tmp, *.bak, ~*
 include_patterns = *.pdf, *.doc, *.docx, *.txt
 environment_variables = DOC_MODE=read_write
-pre_transfer_script = 
-post_transfer_script = 
-pre_delete_script = 
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+pre_transfer_script =
+post_transfer_script =
+pre_delete_script =
+post_delete_script =
+pre_list_script =
+post_list_script =
 
 [module:public]
 path = /var/public
@@ -163,12 +163,12 @@ overwrite = false
 exclude_patterns = *.private, *.conf
 include_patterns = *.txt, *.pdf, *.jpg, *.png
 environment_variables = PUBLIC_MODE=read_only
-pre_transfer_script = 
-post_transfer_script = 
-pre_delete_script = 
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+pre_transfer_script =
+post_transfer_script =
+pre_delete_script =
+post_delete_script =
+pre_list_script =
+post_list_script =
 
 [module:mirror]
 path = /var/mirror
@@ -178,14 +178,14 @@ list = true
 delete = true
 overwrite = true
 exclude_patterns = .git, .svn, .hg
-include_patterns = 
+include_patterns =
 environment_variables = MIRROR_MODE=sync
 pre_transfer_script = /usr/local/bin/pre-mirror.sh
 post_transfer_script = /usr/local/bin/post-mirror.sh
-pre_delete_script = 
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+pre_delete_script =
+post_delete_script =
+pre_list_script =
+post_list_script =
 
 [module:archive]
 path = /var/archive
@@ -200,9 +200,9 @@ environment_variables = ARCHIVE_MODE=append_only
 pre_transfer_script = /usr/local/bin/pre-archive.sh
 post_transfer_script = /usr/local/bin/post-archive.sh
 pre_delete_script = /usr/local/bin/pre-delete-archive.sh
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+post_delete_script =
+pre_list_script =
+post_list_script =
 
 [module:development]
 path = /var/development
@@ -216,10 +216,10 @@ include_patterns = *.cpp, *.hpp, *.py, *.js, *.md
 environment_variables = DEV_MODE=development
 pre_transfer_script = /usr/local/bin/pre-dev.sh
 post_transfer_script = /usr/local/bin/post-dev.sh
-pre_delete_script = 
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+pre_delete_script =
+post_delete_script =
+pre_list_script =
+post_list_script =
 
 [module:media]
 path = /var/media
@@ -231,12 +231,12 @@ overwrite = false
 exclude_patterns = *.tmp, *.temp
 include_patterns = *.mp4, *.avi, *.mkv, *.mp3, *.flac, *.jpg, *.png
 environment_variables = MEDIA_MODE=media
-pre_transfer_script = 
-post_transfer_script = 
-pre_delete_script = 
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+pre_transfer_script =
+post_transfer_script =
+pre_delete_script =
+post_delete_script =
+pre_list_script =
+post_list_script =
 
 [module:logs]
 path = /var/logs
@@ -248,12 +248,12 @@ overwrite = false
 exclude_patterns = *.tmp
 include_patterns = *.log, *.txt
 environment_variables = LOG_MODE=read_only
-pre_transfer_script = 
-post_transfer_script = 
-pre_delete_script = 
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+pre_transfer_script =
+post_transfer_script =
+pre_delete_script =
+post_delete_script =
+pre_list_script =
+post_list_script =
 
 [module:temp]
 path = /var/temp
@@ -262,12 +262,12 @@ read_only = false
 list = true
 delete = true
 overwrite = true
-exclude_patterns = 
-include_patterns = 
+exclude_patterns =
+include_patterns =
 environment_variables = TEMP_MODE=temporary
-pre_transfer_script = 
-post_transfer_script = 
-pre_delete_script = 
-post_delete_script = 
-pre_list_script = 
-post_list_script = 
+pre_transfer_script =
+post_transfer_script =
+pre_delete_script =
+post_delete_script =
+pre_list_script =
+post_list_script =
