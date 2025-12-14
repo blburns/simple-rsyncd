@@ -200,7 +200,14 @@ bool RSyncSession::startFileUpload(const std::string& module_name, const std::st
 
     // Create temporary file for upload
     std::string temp_path = path + ".tmp";
-    std::string full_path = module->resolvePath(temp_path);
+    
+    // Resolve path manually since resolvePath is protected
+    std::string module_base = module->getPath();
+    std::filesystem::path base_path(module_base);
+    std::filesystem::path relative_path(temp_path);
+    std::filesystem::path resolved = base_path / relative_path;
+    resolved = resolved.lexically_normal();
+    std::string full_path = std::filesystem::absolute(resolved).string();
     
     if (full_path.empty()) {
         return false;
@@ -306,11 +313,17 @@ bool RSyncSession::continueFileTransfer() {
             if (!transfer_module_.empty() && !transfer_path_.empty()) {
                 auto module = handler_->getModule(transfer_module_);
                 if (module) {
+                    std::string module_base = module->getPath();
                     std::string temp_path = transfer_path_ + ".tmp";
-                    std::string full_temp = module->resolvePath(temp_path);
-                    std::string full_final = module->resolvePath(transfer_path_);
                     
-                    if (!full_temp.empty() && !full_final.empty()) {
+                    std::filesystem::path base_path(module_base);
+                    std::filesystem::path temp_rel(temp_path);
+                    std::filesystem::path final_rel(transfer_path_);
+                    
+                    std::filesystem::path full_temp = std::filesystem::absolute(base_path / temp_rel);
+                    std::filesystem::path full_final = std::filesystem::absolute(base_path / final_rel);
+                    
+                    if (std::filesystem::exists(full_temp)) {
                         std::filesystem::rename(full_temp, full_final);
                     }
                 }
