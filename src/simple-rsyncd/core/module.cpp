@@ -75,7 +75,7 @@ public:
 
     FileInfo getFileInfo(const std::string& path) override {
         FileInfo info;
-        
+
         // Check read permission
         if (!checkReadPermission(path)) {
             return info;
@@ -512,7 +512,7 @@ bool Module::isPathTraversal(const std::string& path) const {
     if (path.find("../") == 0) {
         return true;
     }
-    
+
     // Check resolved path is within module root
     std::string resolved = resolvePath(path);
     return resolved.empty();

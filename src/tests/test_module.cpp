@@ -127,27 +127,27 @@ TEST_F(ModuleTest, PathValidation) {
 TEST_F(ModuleTest, PermissionChecking) {
     // Test read permission
     EXPECT_TRUE(module_->fileExists("test.txt"));
-    
+
     // Test write permission (module is not read-only)
     EXPECT_FALSE(module_->isReadOnly());
-    
+
     // Test delete permission
     std::string delete_file = test_dir_ + "/delete_test.txt";
     std::ofstream file(delete_file);
     file << "test\n";
     file.close();
-    
+
     EXPECT_TRUE(module_->deleteFile("delete_test.txt"));
 }
 
 TEST_F(ModuleTest, ModuleOperations) {
     // Test path validation
     EXPECT_TRUE(module_->fileExists("test.txt"));
-    
+
     // Test directory operations
     EXPECT_TRUE(module_->createDirectory("testdir"));
     EXPECT_TRUE(module_->directoryExists("testdir"));
-    
+
     // Test file operations
     FileInfo info = module_->getFileInfo("test.txt");
     EXPECT_FALSE(info.path.empty());

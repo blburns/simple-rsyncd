@@ -54,7 +54,7 @@ TEST_F(AuthTest, PasswordFileParsing) {
 
 TEST_F(AuthTest, AuthenticationFlow) {
     PasswordFile pf(password_file_);
-    
+
     EXPECT_TRUE(pf.authenticate("user1", "password1"));
     EXPECT_TRUE(pf.authenticate("user2", "password2"));
     EXPECT_FALSE(pf.authenticate("user1", "wrongpassword"));
@@ -63,11 +63,11 @@ TEST_F(AuthTest, AuthenticationFlow) {
 
 TEST_F(AuthTest, UserManagement) {
     PasswordFile pf(password_file_);
-    
+
     EXPECT_TRUE(pf.userExists("user1"));
     EXPECT_TRUE(pf.userExists("user2"));
     EXPECT_FALSE(pf.userExists("nonexistent"));
-    
+
     auto users = pf.getUsers();
     EXPECT_GE(users.size(), 3);
 }
@@ -80,7 +80,7 @@ TEST_F(AuthTest, AuthenticationManager) {
     auth_config.anonymous_access = false;
 
     AuthenticationManager auth_mgr(auth_config);
-    
+
     EXPECT_TRUE(auth_mgr.isEnabled());
     EXPECT_FALSE(auth_mgr.allowsAnonymous());
     EXPECT_TRUE(auth_mgr.authenticate("user1", "password1"));
@@ -96,7 +96,7 @@ TEST_F(AuthTest, AllowDenyLists) {
     auth_config.denied_users.push_back("user2");
 
     AuthenticationManager auth_mgr(auth_config);
-    
+
     EXPECT_TRUE(auth_mgr.authenticate("user1", "password1"));
     EXPECT_FALSE(auth_mgr.authenticate("user2", "password2")); // Denied
     EXPECT_FALSE(auth_mgr.authenticate("admin", "admin123")); // Not in allowed list

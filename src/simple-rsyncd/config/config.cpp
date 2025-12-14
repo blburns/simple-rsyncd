@@ -401,14 +401,14 @@ void Configuration::parseJSONGlobal(const Json::Value& global) {
 #if JSONCPP_AVAILABLE
     // Parse global settings that might be at root or in "global" object
     if (global.isMember("bind_address") || global.isMember("address")) {
-        network.bind_address = global.isMember("bind_address") 
-            ? global["bind_address"].asString() 
+        network.bind_address = global.isMember("bind_address")
+            ? global["bind_address"].asString()
             : global["address"].asString();
     }
     if (global.isMember("bind_port") || global.isMember("port")) {
         network.bind_port = static_cast<uint16_t>(
-            global.isMember("bind_port") 
-                ? global["bind_port"].asUInt() 
+            global.isMember("bind_port")
+                ? global["bind_port"].asUInt()
                 : global["port"].asUInt());
     }
     if (global.isMember("max_connections")) {

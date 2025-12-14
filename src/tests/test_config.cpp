@@ -96,7 +96,7 @@ TEST_F(ConfigTest, JSONConfiguration) {
     // Create JSON config file
     std::string json_file = std::tmpnam(nullptr);
     json_file += ".json";
-    
+
     std::ofstream file(json_file);
     file << "{\n";
     file << "  \"network\": {\n";
@@ -117,7 +117,7 @@ TEST_F(ConfigTest, JSONConfiguration) {
 
     Configuration config;
     bool loaded = config.loadFromFile(json_file);
-    
+
     // Clean up
     if (std::filesystem::exists(json_file)) {
         std::filesystem::remove(json_file);
@@ -134,7 +134,7 @@ TEST_F(ConfigTest, JSONConfiguration) {
 TEST_F(ConfigTest, ConfigurationParsing) {
     Configuration config;
     EXPECT_TRUE(config.loadFromFile(config_file_));
-    
+
     // Test that values were parsed correctly
     EXPECT_EQ(config.network.bind_address, "0.0.0.0");
     EXPECT_EQ(config.network.bind_port, 873);
