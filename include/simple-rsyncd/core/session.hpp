@@ -25,10 +25,14 @@
 
 namespace simple_rsyncd {
 
+// Forward declaration
+class RSyncDaemon;
+
 class RSyncSession {
 public:
     RSyncSession(int client_socket, const std::string& client_address,
-                 std::shared_ptr<Configuration> config);
+                 std::shared_ptr<Configuration> config,
+                 const std::map<std::string, std::shared_ptr<Module>>& modules);
     ~RSyncSession();
 
     std::string getClientAddress() const;
@@ -55,7 +59,7 @@ private:
     bool readRequest();
     bool writeResponse(const std::string& response);
     bool parseRequest(const std::string& request);
-    bool handleProtocolMessage(const ProtocolMessage& message);
+    std::string handleProtocolMessage(const ProtocolMessage& message);
 };
 
 } // namespace simple_rsyncd

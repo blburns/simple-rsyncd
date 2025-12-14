@@ -25,14 +25,15 @@
 namespace simple_rsyncd {
 
 RSyncSession::RSyncSession(int client_socket, const std::string& client_address,
-                           std::shared_ptr<Configuration> config)
+                           std::shared_ptr<Configuration> config,
+                           const std::map<std::string, std::shared_ptr<Module>>& modules)
     : client_socket_(client_socket)
     , client_address_(client_address)
     , config_(config)
     , active_(true)
     , start_time_(std::chrono::steady_clock::now())
     , parser_(std::make_unique<ProtocolParser>())
-    , handler_(std::make_unique<ProtocolHandler>()) {
+    , handler_(std::make_unique<ProtocolHandler>(modules)) {
 }
 
 RSyncSession::~RSyncSession() {
@@ -65,10 +66,16 @@ bool RSyncSession::processRequest() {
     }
 
     // Read request from socket
-    std::string request;
-    if (!readRequest()) {
+    std::vector<uint8_t> buffer(4096);
+    ssize_t bytes_read = recv(client_socket_, buffer.data(), buffer.size() - 1, 0);
+    
+    if (bytes_read <= 0) {
+        active_ = false;
         return false;
     }
+
+    // Convert to string for parsing
+    std::string request(reinterpret_cast<const char*>(buffer.data()), bytes_read);
 
     // Parse protocol message
     ProtocolMessage message = parser_->parse(request);
@@ -113,24 +120,8 @@ bool RSyncSession::authorize(const std::string& module_name, const std::string& 
 }
 
 bool RSyncSession::readRequest() {
-    if (client_socket_ < 0) {
-        return false;
-    }
-
-    // Read data from socket
-    std::vector<uint8_t> buffer(4096);
-    ssize_t bytes_read = recv(client_socket_, buffer.data(), buffer.size() - 1, 0);
-    
-    if (bytes_read <= 0) {
-        active_ = false;
-        return false;
-    }
-
-    // Convert to string for parsing
-    std::string request(reinterpret_cast<const char*>(buffer.data()), bytes_read);
-    
-    // Store for parsing
-    return parseRequest(request);
+    // Reading is now done in processRequest()
+    return true;
 }
 
 bool RSyncSession::writeResponse(const std::string& response) {
@@ -148,7 +139,7 @@ bool RSyncSession::parseRequest(const std::string& request) {
     return !request.empty();
 }
 
-bool RSyncSession::handleProtocolMessage(const ProtocolMessage& message) {
+std::string RSyncSession::handleProtocolMessage(const ProtocolMessage& message) {
     // Set module for handler
     if (!message.module.empty()) {
         handler_->setModule(message.module);

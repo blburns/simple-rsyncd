@@ -120,8 +120,9 @@ class ProtocolHandler {
 public:
     /**
      * @brief Constructor
+     * @param module_map Map of module names to module instances
      */
-    ProtocolHandler();
+    explicit ProtocolHandler(const std::map<std::string, std::shared_ptr<Module>>& module_map);
 
     /**
      * @brief Handle protocol message
@@ -144,6 +145,7 @@ public:
 
 private:
     std::string current_module_;
+    const std::map<std::string, std::shared_ptr<Module>>& modules_;
     
     // Command handlers
     std::string handleList(const ProtocolMessage& message);
@@ -151,6 +153,9 @@ private:
     std::string handlePut(const ProtocolMessage& message);
     std::string handleDelete(const ProtocolMessage& message);
     std::string handleStat(const ProtocolMessage& message);
+    
+    // Helper methods
+    std::shared_ptr<Module> getModule(const std::string& module_name) const;
 };
 
 } // namespace simple_rsyncd

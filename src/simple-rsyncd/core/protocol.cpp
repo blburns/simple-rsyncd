@@ -15,9 +15,11 @@
  */
 
 #include "simple-rsyncd/core/protocol.hpp"
+#include "simple-rsyncd/core/module.hpp"
 #include <sstream>
 #include <algorithm>
 #include <cstring>
+#include <iomanip>
 
 namespace simple_rsyncd {
 
@@ -185,7 +187,8 @@ std::string ProtocolParser::formatError(int code, const std::string& message) {
 }
 
 // ProtocolHandler implementation
-ProtocolHandler::ProtocolHandler() {
+ProtocolHandler::ProtocolHandler(const std::map<std::string, std::shared_ptr<Module>>& module_map)
+    : modules_(module_map) {
 }
 
 std::string ProtocolHandler::handle(const ProtocolMessage& message) {
@@ -217,34 +220,170 @@ std::string ProtocolHandler::getModule() const {
     return current_module_;
 }
 
+std::shared_ptr<Module> ProtocolHandler::getModule(const std::string& module_name) const {
+    auto it = modules_.find(module_name);
+    if (it != modules_.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 std::string ProtocolHandler::handleList(const ProtocolMessage& message) {
-    // Basic list response
-    // TODO: Integrate with Module class to get actual directory listing
-    return ProtocolParser().buildResponse(true, "Directory listing not yet implemented");
+    std::string module_name = message.module.empty() ? current_module_ : message.module;
+    auto module = getModule(module_name);
+    
+    if (!module) {
+        return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
+    }
+
+    if (!module->allowsListing()) {
+        return ProtocolParser().buildErrorResponse(2, "Listing not allowed for module: " + module_name);
+    }
+
+    try {
+        bool recursive = message.arguments.find("recursive") != message.arguments.end();
+        DirectoryListing listing = module->listDirectory(message.path, recursive);
+        
+        // Format directory listing as response
+        std::ostringstream response;
+        response << "@RSYNCD: OK\n";
+        response << "Path: " << listing.path << "\n";
+        response << "Files: " << listing.total_files << "\n";
+        response << "Directories: " << listing.total_directories << "\n";
+        response << "Total size: " << listing.total_size << "\n";
+        
+        // List files
+        for (const auto& file : listing.files) {
+            response << "F " << file.name << " " << file.size << "\n";
+        }
+        
+        // List directories
+        for (const auto& dir : listing.directories) {
+            response << "D " << dir.name << "\n";
+        }
+        
+        return response.str();
+    } catch (const std::exception& e) {
+        return ProtocolParser().buildErrorResponse(3, "Error listing directory: " + std::string(e.what()));
+    }
 }
 
 std::string ProtocolHandler::handleGet(const ProtocolMessage& message) {
-    // Basic get response
-    // TODO: Integrate with Module class to get actual file
-    return ProtocolParser().buildResponse(true, "File transfer not yet implemented");
+    std::string module_name = message.module.empty() ? current_module_ : message.module;
+    auto module = getModule(module_name);
+    
+    if (!module) {
+        return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
+    }
+
+    if (!module->fileExists(message.path)) {
+        return ProtocolParser().buildErrorResponse(4, "File not found: " + message.path);
+    }
+
+    try {
+        FileInfo info = module->getFileInfo(message.path);
+        
+        // Format file info as response
+        std::ostringstream response;
+        response << "@RSYNCD: OK\n";
+        response << "File: " << info.name << "\n";
+        response << "Size: " << info.size << "\n";
+        response << "Path: " << info.path << "\n";
+        response << "Ready for transfer\n";
+        
+        return response.str();
+    } catch (const std::exception& e) {
+        return ProtocolParser().buildErrorResponse(3, "Error getting file: " + std::string(e.what()));
+    }
 }
 
 std::string ProtocolHandler::handlePut(const ProtocolMessage& message) {
-    // Basic put response
-    // TODO: Integrate with Module class to save file
-    return ProtocolParser().buildResponse(true, "File upload not yet implemented");
+    std::string module_name = message.module.empty() ? current_module_ : message.module;
+    auto module = getModule(module_name);
+    
+    if (!module) {
+        return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
+    }
+
+    if (module->isReadOnly()) {
+        return ProtocolParser().buildErrorResponse(5, "Module is read-only: " + module_name);
+    }
+
+    try {
+        // For PUT, we need to receive the file data
+        // This is a simplified response - actual file transfer would happen in session
+        std::ostringstream response;
+        response << "@RSYNCD: OK\n";
+        response << "Ready to receive file: " << message.path << "\n";
+        response << "Send file data\n";
+        
+        return response.str();
+    } catch (const std::exception& e) {
+        return ProtocolParser().buildErrorResponse(3, "Error preparing for upload: " + std::string(e.what()));
+    }
 }
 
 std::string ProtocolHandler::handleDelete(const ProtocolMessage& message) {
-    // Basic delete response
-    // TODO: Integrate with Module class to delete file
-    return ProtocolParser().buildResponse(true, "File deletion not yet implemented");
+    std::string module_name = message.module.empty() ? current_module_ : message.module;
+    auto module = getModule(module_name);
+    
+    if (!module) {
+        return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
+    }
+
+    if (module->isReadOnly() || !module->allowsDeletion()) {
+        return ProtocolParser().buildErrorResponse(5, "Deletion not allowed for module: " + module_name);
+    }
+
+    try {
+        bool deleted = false;
+        if (module->fileExists(message.path)) {
+            deleted = module->deleteFile(message.path);
+        } else if (module->directoryExists(message.path)) {
+            bool recursive = message.arguments.find("recursive") != message.arguments.end();
+            deleted = module->deleteDirectory(message.path, recursive);
+        } else {
+            return ProtocolParser().buildErrorResponse(4, "Path not found: " + message.path);
+        }
+
+        if (deleted) {
+            return ProtocolParser().buildResponse(true, "Deleted: " + message.path);
+        } else {
+            return ProtocolParser().buildErrorResponse(6, "Failed to delete: " + message.path);
+        }
+    } catch (const std::exception& e) {
+        return ProtocolParser().buildErrorResponse(3, "Error deleting: " + std::string(e.what()));
+    }
 }
 
 std::string ProtocolHandler::handleStat(const ProtocolMessage& message) {
-    // Basic stat response
-    // TODO: Integrate with Module class to get file info
-    return ProtocolParser().buildResponse(true, "File stats not yet implemented");
+    std::string module_name = message.module.empty() ? current_module_ : message.module;
+    auto module = getModule(module_name);
+    
+    if (!module) {
+        return ProtocolParser().buildErrorResponse(1, "Module not found: " + module_name);
+    }
+
+    try {
+        FileInfo info = module->getFileInfo(message.path);
+        
+        if (info.path.empty()) {
+            return ProtocolParser().buildErrorResponse(4, "File not found: " + message.path);
+        }
+
+        // Format file stats as response
+        std::ostringstream response;
+        response << "@RSYNCD: OK\n";
+        response << "Name: " << info.name << "\n";
+        response << "Path: " << info.path << "\n";
+        response << "Size: " << info.size << "\n";
+        response << "Type: " << static_cast<int>(info.type) << "\n";
+        response << "Is symlink: " << (info.is_symlink ? "yes" : "no") << "\n";
+        
+        return response.str();
+    } catch (const std::exception& e) {
+        return ProtocolParser().buildErrorResponse(3, "Error getting file stats: " + std::string(e.what()));
+    }
 }
 
 } // namespace simple_rsyncd
