@@ -424,6 +424,7 @@ void Configuration::parseJSONGlobal(const Json::Value& global) {
         group = global["group"].asString();
         security.group = group;
     }
+#endif
 }
 
 void Configuration::parseJSONModule(const std::string& module_name, const Json::Value& module_json) {
@@ -737,7 +738,11 @@ void Configuration::setDefaultMonitoring() {
 void Configuration::updateLastModified() {
     if (!config_file_path.empty()) {
         try {
-            last_modified = std::filesystem::last_write_time(config_file_path);
+            auto file_time = std::filesystem::last_write_time(config_file_path);
+            // Convert file_time_type to system_clock::time_point
+            auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                file_time - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+            last_modified = sctp;
         } catch (...) {
             last_modified = std::chrono::system_clock::now();
         }
@@ -753,8 +758,11 @@ bool Configuration::checkFileChanged() const {
     }
 
     try {
-        auto current_time = std::filesystem::last_write_time(config_file_path);
-        return current_time > last_modified;
+        auto file_time = std::filesystem::last_write_time(config_file_path);
+        // Convert file_time_type to system_clock::time_point for comparison
+        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            file_time - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+        return sctp > last_modified;
     } catch (...) {
         return false;
     }
