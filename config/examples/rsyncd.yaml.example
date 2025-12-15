@@ -38,7 +38,7 @@ auth:
   anonymous_access: false
   allowed_users: []
   denied_users: []
-  
+
   password_policy:
     min_length: 8
     require_uppercase: false
@@ -50,7 +50,7 @@ auth:
     lockout_duration: 30
     prevent_reuse: false
     password_history_size: 0
-  
+
   session:
     timeout: 3600
     enable_management: true
@@ -146,7 +146,7 @@ modules:
     post_delete_script: ""
     pre_list_script: ""
     post_list_script: ""
-  
+
   public:
     path: /var/public
     comment: Public file sharing

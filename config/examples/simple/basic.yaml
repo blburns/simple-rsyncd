@@ -56,7 +56,7 @@ modules:
       - "*.pdf"
       - "*.jpg"
       - "*.png"
-  
+
   backup:
     path: /var/lib/simple-rsyncd/backup
     comment: Backup storage

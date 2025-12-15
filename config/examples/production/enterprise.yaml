@@ -38,7 +38,7 @@ auth:
     - admin
     - prod_user
   denied_users: []
-  
+
   password_policy:
     min_length: 10
     require_uppercase: true
@@ -50,7 +50,7 @@ auth:
     lockout_duration: 30
     prevent_reuse: true
     password_history_size: 10
-  
+
   session:
     timeout: 7200
     enable_management: true
@@ -156,7 +156,7 @@ modules:
     post_delete_script: /usr/local/bin/post-delete-enterprise.sh
     pre_list_script: /usr/local/bin/pre-list-enterprise.sh
     post_list_script: /usr/local/bin/post-list-enterprise.sh
-  
+
   data-warehouse:
     path: /var/lib/simple-rsyncd/data-warehouse
     comment: Data warehouse synchronization

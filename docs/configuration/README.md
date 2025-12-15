@@ -742,7 +742,7 @@ modules:
     include_patterns: []
     pre_transfer_script: /usr/local/bin/pre-backup.sh
     post_transfer_script: /usr/local/bin/post-backup.sh
-  
+
   public:
     path: /var/public
     comment: Public files
