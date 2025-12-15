@@ -404,16 +404,16 @@ sudo yum install openssl-devel
 brew install openssl@3
 ```
 
-**Problem**: `jsoncpp not found`
+**Problem**: `jsoncpp not found` or `yaml-cpp not found`
 ```bash
 # Ubuntu/Debian
-sudo apt-get install libjsoncpp-dev
+sudo apt-get install libjsoncpp-dev libyaml-cpp-dev
 
 # CentOS/RHEL
-sudo yum install jsoncpp-devel
+sudo yum install jsoncpp-devel yaml-cpp-devel
 
 # macOS
-brew install jsoncpp
+brew install jsoncpp yaml-cpp
 ```
 
 ### Compilation Errors
