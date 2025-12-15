@@ -30,6 +30,7 @@ Comprehensive usage documentation:
 ### ⚙️ [Configuration Guide](configuration/README.md)
 Detailed configuration reference:
 - **Configuration Files**: Main config and module configs
+- **Configuration Formats**: INI, JSON, and YAML support (v0.3.0)
 - **Global Settings**: Network, SSL, authentication, logging
 - **Module Configuration**: Paths, permissions, and access control
 - **Environment Variables**: Runtime configuration overrides

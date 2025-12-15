@@ -50,6 +50,47 @@ namespace Json {
 }
 #endif
 
+// YAML support - try to include yaml-cpp
+#if defined(YAMLCPP_AVAILABLE) && YAMLCPP_AVAILABLE == 1
+#include <yaml-cpp/yaml.h>
+#elif __has_include(<yaml-cpp/yaml.h>)
+#include <yaml-cpp/yaml.h>
+#define YAMLCPP_AVAILABLE 1
+#else
+// Fallback if yaml-cpp not found
+#ifndef YAMLCPP_AVAILABLE
+#define YAMLCPP_AVAILABLE 0
+#endif
+namespace YAML {
+    class Node {
+    public:
+        bool IsDefined() const { return false; }
+        bool IsMap() const { return false; }
+        bool IsSequence() const { return false; }
+        bool IsScalar() const { return false; }
+        bool IsNull() const { return false; }
+        template<typename T> T as() const { return T(); }
+        Node operator[](const std::string&) const { return Node(); }
+        Node operator[](size_t) const { return Node(); }
+        size_t size() const { return 0; }
+        std::vector<std::string> keys() const { return {}; }
+        class const_iterator {
+        public:
+            const_iterator& operator++() { return *this; }
+            bool operator!=(const const_iterator&) const { return false; }
+            std::pair<YAML::Node, YAML::Node> operator*() const { return {Node(), Node()}; }
+        };
+        const_iterator begin() const { return const_iterator(); }
+        const_iterator end() const { return const_iterator(); }
+    };
+    class Exception : public std::exception {
+    public:
+        const char* what() const noexcept override { return "YAML parsing not available"; }
+    };
+    Node Load(const std::string&) { return Node(); }
+}
+#endif
+
 namespace simple_rsyncd {
 
 Configuration::Configuration() : is_valid_(false), has_changed_(false) {
@@ -85,6 +126,19 @@ bool Configuration::loadFromFile(const std::string& filename) {
         file.close();
 
         return loadFromJSON(json_content);
+    } else if (ext == ".yml" || ext == ".yaml") {
+        // Load as YAML
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            errors_.push_back("Failed to open configuration file: " + filename);
+            return false;
+        }
+
+        std::string yaml_content((std::istreambuf_iterator<char>(file)),
+                                 std::istreambuf_iterator<char>());
+        file.close();
+
+        return loadFromYAML(yaml_content);
     } else {
         // Load as INI/config file
         std::ifstream file(filename);
@@ -489,6 +543,311 @@ void Configuration::parseJSONModule(const std::string& module_name, const Json::
                 module.include_patterns.push_back(pattern.asString());
             }
         }
+    }
+#endif
+}
+
+bool Configuration::loadFromYAML(const std::string& yaml) {
+    errors_.clear();
+    is_valid_ = false;
+
+    if (yaml.empty()) {
+        errors_.push_back("Empty YAML configuration");
+        return false;
+    }
+
+#if YAMLCPP_AVAILABLE
+    try {
+        YAML::Node root = YAML::Load(yaml);
+
+        if (!root.IsDefined() || root.IsNull()) {
+            errors_.push_back("Invalid YAML configuration");
+            return false;
+        }
+
+        // Parse global configuration
+        if (root["global"].IsDefined()) {
+            parseYAMLGlobal(root["global"]);
+        } else {
+            // If no "global" section, parse root as global
+            parseYAMLGlobal(root);
+        }
+
+        // Parse network configuration
+        if (root["network"].IsDefined()) {
+            const YAML::Node& net = root["network"];
+            if (net["bind_address"].IsDefined()) {
+                network.bind_address = net["bind_address"].as<std::string>();
+            }
+            if (net["bind_port"].IsDefined()) {
+                network.bind_port = static_cast<uint16_t>(net["bind_port"].as<unsigned int>());
+            }
+            if (net["max_connections"].IsDefined()) {
+                network.max_connections = net["max_connections"].as<unsigned int>();
+            }
+            if (net["backlog"].IsDefined()) {
+                network.backlog = net["backlog"].as<unsigned int>();
+            }
+            if (net["worker_threads"].IsDefined()) {
+                network.worker_threads = net["worker_threads"].as<unsigned int>();
+            }
+        }
+
+        // Parse SSL configuration
+        if (root["ssl"].IsDefined()) {
+            const YAML::Node& ssl_config = root["ssl"];
+            if (ssl_config["enabled"].IsDefined()) {
+                ssl.enabled = ssl_config["enabled"].as<bool>();
+            }
+            if (ssl_config["certificate_file"].IsDefined()) {
+                ssl.certificate_file = ssl_config["certificate_file"].as<std::string>();
+            }
+            if (ssl_config["private_key_file"].IsDefined()) {
+                ssl.private_key_file = ssl_config["private_key_file"].as<std::string>();
+            }
+            if (ssl_config["ca_file"].IsDefined()) {
+                ssl.ca_file = ssl_config["ca_file"].as<std::string>();
+            }
+        }
+
+        // Parse authentication configuration
+        if (root["auth"].IsDefined()) {
+            const YAML::Node& auth_config = root["auth"];
+            if (auth_config["enabled"].IsDefined()) {
+                auth.enabled = auth_config["enabled"].as<bool>();
+            }
+            if (auth_config["method"].IsDefined()) {
+                auth.method = auth_config["method"].as<std::string>();
+            }
+            if (auth_config["password_file"].IsDefined()) {
+                auth.password_file = auth_config["password_file"].as<std::string>();
+            }
+            if (auth_config["public_key_file"].IsDefined()) {
+                auth.public_key_file = auth_config["public_key_file"].as<std::string>();
+            }
+            if (auth_config["realm"].IsDefined()) {
+                auth.realm = auth_config["realm"].as<std::string>();
+            }
+            if (auth_config["anonymous_access"].IsDefined()) {
+                auth.anonymous_access = auth_config["anonymous_access"].as<bool>();
+            }
+            if (auth_config["allowed_users"].IsDefined()) {
+                const YAML::Node& users = auth_config["allowed_users"];
+                if (users.IsSequence()) {
+                    for (size_t i = 0; i < users.size(); i++) {
+                        auth.allowed_users.push_back(users[i].as<std::string>());
+                    }
+                }
+            }
+            if (auth_config["denied_users"].IsDefined()) {
+                const YAML::Node& users = auth_config["denied_users"];
+                if (users.IsSequence()) {
+                    for (size_t i = 0; i < users.size(); i++) {
+                        auth.denied_users.push_back(users[i].as<std::string>());
+                    }
+                }
+            }
+
+            // Parse password policy
+            if (auth_config["password_policy"].IsDefined()) {
+                const YAML::Node& policy = auth_config["password_policy"];
+                if (policy["min_length"].IsDefined()) {
+                    auth.password_policy.min_length = policy["min_length"].as<size_t>();
+                }
+                if (policy["require_uppercase"].IsDefined()) {
+                    auth.password_policy.require_uppercase = policy["require_uppercase"].as<bool>();
+                }
+                if (policy["require_lowercase"].IsDefined()) {
+                    auth.password_policy.require_lowercase = policy["require_lowercase"].as<bool>();
+                }
+                if (policy["require_digits"].IsDefined()) {
+                    auth.password_policy.require_digits = policy["require_digits"].as<bool>();
+                }
+                if (policy["require_special"].IsDefined()) {
+                    auth.password_policy.require_special = policy["require_special"].as<bool>();
+                }
+                if (policy["expiration_hours"].IsDefined()) {
+                    auth.password_policy.expiration_hours = std::chrono::hours(policy["expiration_hours"].as<unsigned int>());
+                }
+            }
+
+            // Parse session settings
+            if (auth_config["session"].IsDefined()) {
+                const YAML::Node& session = auth_config["session"];
+                if (session["timeout"].IsDefined()) {
+                    auth.session_timeout = std::chrono::seconds(session["timeout"].as<unsigned int>());
+                }
+            }
+        }
+
+        // Parse logging configuration
+        if (root["log"].IsDefined()) {
+            const YAML::Node& log_config = root["log"];
+            if (log_config["level"].IsDefined()) {
+                log.level = log_config["level"].as<std::string>();
+            }
+            if (log_config["file"].IsDefined()) {
+                log.file = log_config["file"].as<std::string>();
+                log.file_output = true;
+            }
+            if (log_config["format"].IsDefined()) {
+                std::string format = log_config["format"].as<std::string>();
+                if (format == "json") {
+                    log.format = "json";
+                } else {
+                    log.format = "text";
+                }
+            }
+            if (log_config["max_file_size"].IsDefined()) {
+                log.max_file_size = log_config["max_file_size"].as<size_t>();
+            }
+            if (log_config["max_files"].IsDefined()) {
+                log.max_files = log_config["max_files"].as<size_t>();
+            }
+            if (log_config["compress_old_logs"].IsDefined()) {
+                log.compress_old_logs = log_config["compress_old_logs"].as<bool>();
+            }
+        }
+
+        // Parse config settings (hot-reload)
+        if (root["config"].IsDefined()) {
+            const YAML::Node& config_node = root["config"];
+            if (config_node["auto_reload"].IsDefined()) {
+                auto_reload = config_node["auto_reload"].as<bool>();
+            }
+            if (config_node["reload_interval"].IsDefined()) {
+                reload_interval = config_node["reload_interval"].as<unsigned int>();
+            }
+        }
+
+        // Parse modules
+        if (root["modules"].IsDefined()) {
+            const YAML::Node& modules_yaml = root["modules"];
+            if (modules_yaml.IsMap()) {
+                for (YAML::const_iterator it = modules_yaml.begin(); it != modules_yaml.end(); ++it) {
+                    std::string module_name = it->first.as<std::string>();
+                    const YAML::Node& module_yaml = it->second;
+                    parseYAMLModule(module_name, module_yaml);
+                }
+            }
+        }
+
+        updateLastModified();
+
+        // Validate configuration
+        if (!validate()) {
+            return false;
+        }
+
+        is_valid_ = true;
+        has_changed_ = false;
+        return true;
+    } catch (const YAML::Exception& e) {
+        errors_.push_back("Failed to parse YAML: " + std::string(e.what()));
+        return false;
+    }
+#else
+    errors_.push_back("YAML parsing not available - yaml-cpp library not found");
+    return false;
+#endif
+}
+
+void Configuration::parseYAMLGlobal(const YAML::Node& global) {
+#if YAMLCPP_AVAILABLE
+    if (global["bind_address"].IsDefined() || global["address"].IsDefined()) {
+        network.bind_address = global["bind_address"].IsDefined()
+            ? global["bind_address"].as<std::string>()
+            : global["address"].as<std::string>();
+    }
+    if (global["bind_port"].IsDefined() || global["port"].IsDefined()) {
+        network.bind_port = static_cast<uint16_t>(
+            global["bind_port"].IsDefined()
+                ? global["bind_port"].as<unsigned int>()
+                : global["port"].as<unsigned int>());
+    }
+    if (global["max_connections"].IsDefined()) {
+        network.max_connections = global["max_connections"].as<unsigned int>();
+    }
+    if (global["pid_file"].IsDefined()) {
+        pid_file = global["pid_file"].as<std::string>();
+    }
+    if (global["user"].IsDefined()) {
+        user = global["user"].as<std::string>();
+        security.user = user;
+    }
+    if (global["group"].IsDefined()) {
+        group = global["group"].as<std::string>();
+        security.group = group;
+    }
+#endif
+}
+
+void Configuration::parseYAMLModule(const std::string& module_name, const YAML::Node& module_yaml) {
+#if YAMLCPP_AVAILABLE
+    if (modules.find(module_name) == modules.end()) {
+        modules[module_name] = ModuleConfig();
+    }
+
+    auto& module = modules[module_name];
+    module.name = module_name;
+
+    if (module_yaml["path"].IsDefined()) {
+        module.path = module_yaml["path"].as<std::string>();
+    }
+    if (module_yaml["comment"].IsDefined()) {
+        module.comment = module_yaml["comment"].as<std::string>();
+    }
+    if (module_yaml["read_only"].IsDefined()) {
+        module.read_only = module_yaml["read_only"].as<bool>();
+    }
+    if (module_yaml["list"].IsDefined()) {
+        module.list = module_yaml["list"].as<bool>();
+    }
+    if (module_yaml["allow_delete"].IsDefined() || module_yaml["delete"].IsDefined()) {
+        module.allow_delete = module_yaml["allow_delete"].IsDefined()
+            ? module_yaml["allow_delete"].as<bool>()
+            : module_yaml["delete"].as<bool>();
+    }
+    if (module_yaml["overwrite"].IsDefined()) {
+        module.overwrite = module_yaml["overwrite"].as<bool>();
+    }
+    if (module_yaml["exclude"].IsDefined() || module_yaml["exclude_patterns"].IsDefined()) {
+        const YAML::Node& exclude = module_yaml["exclude"].IsDefined()
+            ? module_yaml["exclude"]
+            : module_yaml["exclude_patterns"];
+        if (exclude.IsSequence()) {
+            for (size_t i = 0; i < exclude.size(); i++) {
+                module.exclude_patterns.push_back(exclude[i].as<std::string>());
+            }
+        }
+    }
+    if (module_yaml["include"].IsDefined() || module_yaml["include_patterns"].IsDefined()) {
+        const YAML::Node& include = module_yaml["include"].IsDefined()
+            ? module_yaml["include"]
+            : module_yaml["include_patterns"];
+        if (include.IsSequence()) {
+            for (size_t i = 0; i < include.size(); i++) {
+                module.include_patterns.push_back(include[i].as<std::string>());
+            }
+        }
+    }
+    if (module_yaml["pre_transfer_script"].IsDefined()) {
+        module.pre_transfer_script = module_yaml["pre_transfer_script"].as<std::string>();
+    }
+    if (module_yaml["post_transfer_script"].IsDefined()) {
+        module.post_transfer_script = module_yaml["post_transfer_script"].as<std::string>();
+    }
+    if (module_yaml["pre_delete_script"].IsDefined()) {
+        module.pre_delete_script = module_yaml["pre_delete_script"].as<std::string>();
+    }
+    if (module_yaml["post_delete_script"].IsDefined()) {
+        module.post_delete_script = module_yaml["post_delete_script"].as<std::string>();
+    }
+    if (module_yaml["pre_list_script"].IsDefined()) {
+        module.pre_list_script = module_yaml["pre_list_script"].as<std::string>();
+    }
+    if (module_yaml["post_list_script"].IsDefined()) {
+        module.post_list_script = module_yaml["post_list_script"].as<std::string>();
     }
 #endif
 }

@@ -1,0 +1,171 @@
+# Simple RSync Daemon - YAML Configuration Example
+# This file demonstrates YAML configuration format for simple-rsyncd
+# Supports .yml and .yaml extensions
+
+global:
+  daemonize: false
+  pid_file: /var/run/simple-rsyncd.pid
+  state_file: /var/run/simple-rsyncd.state
+  working_directory: /var/lib/simple-rsyncd
+  user: rsync
+  group: rsync
+  umask: "022"
+
+network:
+  bind_address: 0.0.0.0
+  bind_port: 873
+  backlog: 128
+  max_connections: 100
+  worker_threads: 4
+
+ssl:
+  enabled: false
+  certificate_file: /etc/simple-rsyncd/ssl/server.crt
+  private_key_file: /etc/simple-rsyncd/ssl/server.key
+  ca_file: /etc/simple-rsyncd/ssl/ca.crt
+  cipher_suite: ECDHE-RSA-AES256-GCM-SHA384
+  require_client_cert: false
+  tls_version: "1.2"
+  verify_peer: true
+
+auth:
+  enabled: false
+  method: password
+  realm: simple-rsyncd
+  password_file: /etc/simple-rsyncd/users
+  public_key_file: /etc/simple-rsyncd/keys
+  oauth2_config_file: /etc/simple-rsyncd/oauth2.json
+  anonymous_access: false
+  allowed_users: []
+  denied_users: []
+  
+  password_policy:
+    min_length: 8
+    require_uppercase: false
+    require_lowercase: false
+    require_digits: false
+    require_special: false
+    expiration_hours: 0
+    max_failed_attempts: 5
+    lockout_duration: 30
+    prevent_reuse: false
+    password_history_size: 0
+  
+  session:
+    timeout: 3600
+    enable_management: true
+
+access_control:
+  enabled: true
+  allowed_hosts:
+    - 127.0.0.1
+    - "::1"
+    - 192.168.1.0/24
+  denied_hosts: []
+  allowed_networks:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+  denied_networks: []
+  reverse_dns_lookup: false
+  access_log_file: /var/log/simple-rsyncd/access.log
+  access_log_format: combined
+
+rate_limiting:
+  enabled: true
+  max_connections_per_minute: 60
+  max_connections_per_hour: 1000
+  max_bandwidth_per_connection: 0
+  max_bandwidth_total: 0
+  connection_timeout: 300
+  idle_timeout: 60
+
+log:
+  level: info
+  file: /var/log/simple-rsyncd/rsyncd.log
+  format: text
+  console_output: true
+  file_output: true
+  syslog_output: false
+  syslog_facility: daemon
+  max_file_size: 10485760
+  max_files: 5
+  compress_old_logs: true
+
+security:
+  chroot_enabled: false
+  chroot_directory: /var/lib/simple-rsyncd
+  drop_privileges: true
+  restrict_to_module_path: true
+  allow_symlinks: false
+  allow_hardlinks: false
+  allow_devices: false
+  allow_sockets: false
+
+performance:
+  buffer_size: 65536
+  max_memory_usage: 536870912
+  enable_compression: true
+  compression_level: 6
+  enable_checksum_verification: true
+  checksum_algorithm: md5
+  max_concurrent_transfers: 10
+  enable_pipelining: true
+  pipeline_depth: 5
+
+monitoring:
+  enabled: true
+  metrics_file: /var/lib/simple-rsyncd/metrics.json
+  health_check_file: /var/lib/simple-rsyncd/health.json
+  metrics_interval: 60
+  health_check_interval: 300
+  enable_prometheus_metrics: false
+  prometheus_endpoint: /metrics
+  prometheus_port: 9090
+  prometheus_address: 127.0.0.1
+
+config:
+  auto_reload: false
+  reload_interval: 30
+
+modules:
+  backup:
+    path: /var/backup
+    comment: Backup storage
+    read_only: false
+    list: true
+    allow_delete: true
+    overwrite: true
+    exclude_patterns:
+      - "*.tmp"
+      - "*.log"
+      - ".DS_Store"
+    include_patterns: []
+    pre_transfer_script: /usr/local/bin/pre-backup.sh
+    post_transfer_script: /usr/local/bin/post-backup.sh
+    pre_delete_script: ""
+    post_delete_script: ""
+    pre_list_script: ""
+    post_list_script: ""
+  
+  public:
+    path: /var/public
+    comment: Public file sharing
+    read_only: true
+    list: true
+    allow_delete: false
+    overwrite: false
+    exclude_patterns:
+      - "*.private"
+      - "*.conf"
+      - "*.log"
+    include_patterns:
+      - "*.txt"
+      - "*.pdf"
+      - "*.jpg"
+      - "*.png"
+    pre_transfer_script: ""
+    post_transfer_script: ""
+    pre_delete_script: ""
+    post_delete_script: ""
+    pre_list_script: ""
+    post_list_script: ""

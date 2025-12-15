@@ -11,6 +11,7 @@ This guide covers everything you need to know to use Simple RSync Daemon effecti
 - Session management
 - Configuration hot-reload
 - Environment variable substitution
+- **Multiple configuration formats**: INI, JSON, and YAML
 - Enhanced logging with rotation
 - Structured JSON logging
 - Comprehensive error handling
@@ -164,6 +165,9 @@ simple-rsyncd start --help
 
 ### Configuration File Structure
 
+The daemon supports three configuration formats:
+
+**INI Format** (`.conf`):
 ```ini
 # /etc/simple-rsyncd/rsyncd.conf
 
@@ -180,15 +184,53 @@ path = /var/lib/simple-rsyncd/public
 comment = Public files
 read_only = true
 list = true
-
-[module:backup]
-# Another module
-path = /var/backup
-comment = Backup storage
-read_only = false
-list = true
-delete = true
 ```
+
+**YAML Format** (`.yml` or `.yaml`):
+```yaml
+# /etc/simple-rsyncd/rsyncd.yaml
+
+global:
+  bind_address: 0.0.0.0
+  bind_port: 873
+  ssl:
+    enabled: true
+  auth:
+    enabled: true
+
+modules:
+  public:
+    path: /var/lib/simple-rsyncd/public
+    comment: Public files
+    read_only: true
+    list: true
+```
+
+**JSON Format** (`.json`):
+```json
+{
+  "global": {
+    "bind_address": "0.0.0.0",
+    "bind_port": 873
+  },
+  "ssl": {
+    "enabled": true
+  },
+  "auth": {
+    "enabled": true
+  },
+  "modules": {
+    "public": {
+      "path": "/var/lib/simple-rsyncd/public",
+      "comment": "Public files",
+      "read_only": true,
+      "list": true
+    }
+  }
+}
+```
+
+The format is automatically detected by file extension.
 
 ### Environment Variables (v0.3.0 Enhanced)
 

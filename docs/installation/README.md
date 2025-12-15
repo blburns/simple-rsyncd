@@ -16,7 +16,8 @@ This guide covers the complete installation process for Simple RSync Daemon on a
 - **C++17 Compiler**: GCC 7+, Clang 5+, or MSVC 2017+
 - **CMake**: Version 3.16 or higher
 - **OpenSSL**: Version 1.1.1 or higher
-- **jsoncpp**: JSON parsing library
+- **jsoncpp**: JSON parsing library (for JSON configuration support)
+- **yaml-cpp**: YAML parsing library (optional, for YAML configuration support)
 - **Platform Libraries**: See platform-specific sections below
 
 ## 🐧 Linux Installation
@@ -33,6 +34,7 @@ sudo apt-get install -y \
     cmake \
     libssl-dev \
     libjsoncpp-dev \
+    libyaml-cpp-dev \
     pkg-config \
     git
 
@@ -59,6 +61,7 @@ sudo dnf install -y \
     cmake \
     openssl-devel \
     jsoncpp-devel \
+    yaml-cpp-devel \
     pkgconfig \
     git
 
@@ -80,6 +83,7 @@ sudo dnf install -y \
     cmake \
     openssl-devel \
     jsoncpp-devel \
+    yaml-cpp-devel \
     pkgconfig \
     git
 
@@ -101,6 +105,7 @@ sudo pacman -S \
     cmake \
     openssl \
     jsoncpp \
+    yaml-cpp \
     pkg-config \
     git
 
@@ -126,6 +131,7 @@ brew install \
     cmake \
     openssl@3 \
     jsoncpp \
+    yaml-cpp \
     pkg-config
 
 # Clone repository
@@ -152,7 +158,7 @@ sudo make install
 xcode-select --install
 
 # Install dependencies manually
-brew install cmake jsoncpp pkg-config
+brew install cmake jsoncpp yaml-cpp pkg-config
 
 # Clone and build
 git clone https://github.com/simple-rsyncd/simple-rsyncd.git
@@ -181,7 +187,7 @@ cd vcpkg
 .\vcpkg integrate install
 
 # Install required packages
-.\vcpkg install openssl jsoncpp
+.\vcpkg install openssl jsoncpp yaml-cpp
 
 # Clone repository
 git clone https://github.com/simple-rsyncd/simple-rsyncd.git

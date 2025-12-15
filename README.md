@@ -11,8 +11,8 @@ A lightweight, secure, and feature-rich rsync daemon implementation in C++ desig
 - **Access Control**: IP-based and network-based access restrictions
 - **Module System**: Flexible module configuration with path-based access control
   - **v0.3.0**: Pattern matching (include/exclude), script hooks (pre/post operations)
-- **Configuration**: Support for INI and JSON formats
-  - **v0.3.0**: Environment variable substitution, automatic hot-reload
+- **Configuration**: Support for INI, JSON, and YAML formats
+  - **v0.3.0**: Environment variable substitution, automatic hot-reload, YAML support
 - **Rate Limiting**: Configurable connection and bandwidth limits
 - **Monitoring**: Built-in metrics, health checks, and Prometheus integration
 - **Logging**: Comprehensive logging with rotation and multiple outputs
@@ -28,6 +28,7 @@ A lightweight, secure, and feature-rich rsync daemon implementation in C++ desig
 - **CMake 3.16+**
 - **OpenSSL 1.1.1+**
 - **jsoncpp** (for JSON configuration parsing)
+- **yaml-cpp** (optional, for YAML configuration parsing)
 - **Linux**: glibc 2.17+, pthread, rt
 - **macOS**: macOS 12.0+ (Monterey)
 - **Windows**: Windows 10+ with Visual Studio 2017+
@@ -55,19 +56,19 @@ sudo make install
 #### Ubuntu/Debian
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential cmake libssl-dev libjsoncpp-dev
+sudo apt-get install -y build-essential cmake libssl-dev libjsoncpp-dev libyaml-cpp-dev
 ```
 
 #### CentOS/RHEL/Fedora
 ```bash
-sudo yum install -y gcc-c++ cmake openssl-devel jsoncpp-devel
+sudo yum install -y gcc-c++ cmake openssl-devel jsoncpp-devel yaml-cpp-devel
 # or for newer versions:
-sudo dnf install -y gcc-c++ cmake openssl-devel jsoncpp-devel
+sudo dnf install -y gcc-c++ cmake openssl-devel jsoncpp-devel yaml-cpp-devel
 ```
 
 #### macOS
 ```bash
-brew install openssl jsoncpp cmake
+brew install openssl jsoncpp yaml-cpp cmake
 
 # If you encounter permission issues during installation, run:
 ./scripts/fix-macos-permissions.sh
@@ -111,13 +112,14 @@ The daemon uses a hierarchical configuration system with support for:
 
 - **Global settings**: Network, SSL, authentication, logging
 - **Module definitions**: Path-based access control and permissions
-- **Configuration formats**: INI and JSON (v0.3.0)
+- **Configuration formats**: INI, JSON, and YAML (v0.3.0)
 - **Environment variables**: Variable substitution in config files (v0.3.0)
 - **Hot-reloading**: Automatic configuration reload on file changes (v0.3.0)
 - **Configuration validation**: Comprehensive validation with detailed errors
 
-Example configuration:
+Example configurations:
 
+**INI Format:**
 ```ini
 [global]
 bind_address = 0.0.0.0
@@ -132,14 +134,52 @@ read_only = false
 list = true
 delete = true
 overwrite = true
+```
 
-[module:public]
-path = /var/public
-comment = Public files
-read_only = true
-list = true
-delete = false
-overwrite = false
+**YAML Format:**
+```yaml
+global:
+  bind_address: 0.0.0.0
+  bind_port: 873
+  ssl:
+    enabled: true
+  auth:
+    enabled: true
+
+modules:
+  backup:
+    path: /var/backup
+    comment: Backup storage
+    read_only: false
+    list: true
+    allow_delete: true
+    overwrite: true
+```
+
+**JSON Format:**
+```json
+{
+  "global": {
+    "bind_address": "0.0.0.0",
+    "bind_port": 873
+  },
+  "ssl": {
+    "enabled": true
+  },
+  "auth": {
+    "enabled": true
+  },
+  "modules": {
+    "backup": {
+      "path": "/var/backup",
+      "comment": "Backup storage",
+      "read_only": false,
+      "list": true,
+      "allow_delete": true,
+      "overwrite": true
+    }
+  }
+}
 ```
 
 ### Client Usage

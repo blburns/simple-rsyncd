@@ -1,0 +1,181 @@
+# Simple RSync Daemon - Enterprise Production YAML Configuration
+# Full-featured enterprise production setup
+
+global:
+  daemonize: true
+  pid_file: /var/run/simple-rsyncd.pid
+  state_file: /var/run/simple-rsyncd.state
+  working_directory: /var/lib/simple-rsyncd
+  user: rsync
+  group: rsync
+  umask: "022"
+
+network:
+  bind_address: 0.0.0.0
+  bind_port: 873
+  backlog: 1024
+  max_connections: 2000
+  worker_threads: 32
+
+ssl:
+  enabled: true
+  certificate_file: /etc/simple-rsyncd/ssl/server.crt
+  private_key_file: /etc/simple-rsyncd/ssl/server.key
+  ca_file: /etc/simple-rsyncd/ssl/ca.crt
+  cipher_suite: ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES256-GCM-SHA384
+  require_client_cert: true
+  tls_version: "1.3"
+  verify_peer: true
+
+auth:
+  enabled: true
+  method: password
+  realm: enterprise-rsyncd
+  password_file: /etc/simple-rsyncd/users
+  public_key_file: /etc/simple-rsyncd/keys
+  anonymous_access: false
+  allowed_users:
+    - admin
+    - prod_user
+  denied_users: []
+  
+  password_policy:
+    min_length: 10
+    require_uppercase: true
+    require_lowercase: true
+    require_digits: true
+    require_special: true
+    expiration_hours: 2160
+    max_failed_attempts: 5
+    lockout_duration: 30
+    prevent_reuse: true
+    password_history_size: 10
+  
+  session:
+    timeout: 7200
+    enable_management: true
+
+access_control:
+  enabled: true
+  allowed_hosts:
+    - 127.0.0.1
+    - "::1"
+    - 192.168.1.0/24
+    - 10.0.0.0/8
+  denied_hosts: []
+  allowed_networks:
+    - 172.16.0.0/12
+  denied_networks: []
+  reverse_dns_lookup: true
+  access_log_file: /var/log/simple-rsyncd/access.log
+  access_log_format: combined
+
+rate_limiting:
+  enabled: true
+  max_connections_per_minute: 500
+  max_connections_per_hour: 20000
+  max_bandwidth_per_connection: 100000000
+  max_bandwidth_total: 2000000000
+  connection_timeout: 600
+  idle_timeout: 120
+
+log:
+  level: info
+  file: /var/log/simple-rsyncd/rsyncd.log
+  format: json
+  console_output: false
+  file_output: true
+  syslog_output: true
+  syslog_facility: daemon
+  max_file_size: 209715200
+  max_files: 20
+  compress_old_logs: true
+
+security:
+  chroot_enabled: true
+  chroot_directory: /var/lib/simple-rsyncd
+  drop_privileges: true
+  restrict_to_module_path: true
+  allow_symlinks: false
+  allow_hardlinks: false
+  allow_devices: false
+  allow_sockets: false
+
+performance:
+  buffer_size: 524288
+  max_memory_usage: 4294967296
+  enable_compression: true
+  compression_level: 6
+  enable_checksum_verification: true
+  checksum_algorithm: sha256
+  max_concurrent_transfers: 100
+  enable_pipelining: true
+  pipeline_depth: 10
+
+monitoring:
+  enabled: true
+  metrics_file: /var/lib/simple-rsyncd/metrics.json
+  health_check_file: /var/lib/simple-rsyncd/health.json
+  metrics_interval: 15
+  health_check_interval: 30
+  enable_prometheus_metrics: true
+  prometheus_endpoint: /metrics
+  prometheus_port: 9090
+  prometheus_address: 127.0.0.1
+
+config:
+  auto_reload: true
+  reload_interval: 60
+
+modules:
+  enterprise-documents:
+    path: /var/lib/simple-rsyncd/enterprise-documents
+    comment: Enterprise document management
+    read_only: false
+    list: true
+    allow_delete: true
+    overwrite: true
+    exclude_patterns:
+      - "*.tmp"
+      - "*.log"
+      - ".DS_Store"
+      - "*.bak"
+    include_patterns:
+      - "*.pdf"
+      - "*.doc"
+      - "*.docx"
+      - "*.txt"
+      - "*.rtf"
+      - "*.xls"
+      - "*.xlsx"
+      - "*.ppt"
+      - "*.pptx"
+    pre_transfer_script: /usr/local/bin/pre-enterprise-docs.sh
+    post_transfer_script: /usr/local/bin/post-enterprise-docs.sh
+    pre_delete_script: /usr/local/bin/pre-delete-enterprise.sh
+    post_delete_script: /usr/local/bin/post-delete-enterprise.sh
+    pre_list_script: /usr/local/bin/pre-list-enterprise.sh
+    post_list_script: /usr/local/bin/post-list-enterprise.sh
+  
+  data-warehouse:
+    path: /var/lib/simple-rsyncd/data-warehouse
+    comment: Data warehouse synchronization
+    read_only: false
+    list: true
+    allow_delete: true
+    overwrite: true
+    exclude_patterns:
+      - "*.tmp"
+      - "*.log"
+    include_patterns:
+      - "*.csv"
+      - "*.json"
+      - "*.xml"
+      - "*.parquet"
+      - "*.avro"
+    pre_transfer_script: /usr/local/bin/pre-data-warehouse.sh
+    post_transfer_script: /usr/local/bin/post-data-warehouse.sh
+    pre_delete_script: /usr/local/bin/pre-delete-data.sh
+    post_delete_script: /usr/local/bin/post-delete-data.sh
+    pre_list_script: /usr/local/bin/pre-list-data.sh
+    post_list_script: /usr/local/bin/post-list-data.sh

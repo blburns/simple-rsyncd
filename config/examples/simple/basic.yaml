@@ -1,0 +1,70 @@
+# Simple RSync Daemon - Basic YAML Configuration
+# Minimal setup for development and testing
+
+global:
+  daemonize: false
+  pid_file: /var/run/simple-rsyncd.pid
+  working_directory: /var/lib/simple-rsyncd
+  user: rsync
+  group: rsync
+
+network:
+  bind_address: 0.0.0.0
+  bind_port: 873
+  max_connections: 50
+  worker_threads: 2
+
+ssl:
+  enabled: false
+
+auth:
+  enabled: false
+
+access_control:
+  enabled: true
+  allowed_hosts:
+    - 127.0.0.1
+    - "::1"
+    - 192.168.1.0/24
+
+log:
+  level: info
+  file: /var/log/simple-rsyncd/rsyncd.log
+  format: text
+  max_file_size: 10485760
+  max_files: 3
+  compress_old_logs: true
+
+config:
+  auto_reload: false
+  reload_interval: 30
+
+modules:
+  public:
+    path: /var/lib/simple-rsyncd/public
+    comment: Public file sharing
+    read_only: true
+    list: true
+    allow_delete: false
+    overwrite: false
+    exclude_patterns:
+      - "*.private"
+      - "*.conf"
+      - "*.log"
+    include_patterns:
+      - "*.txt"
+      - "*.pdf"
+      - "*.jpg"
+      - "*.png"
+  
+  backup:
+    path: /var/lib/simple-rsyncd/backup
+    comment: Backup storage
+    read_only: false
+    list: true
+    allow_delete: true
+    overwrite: true
+    exclude_patterns:
+      - "*.tmp"
+      - "*.log"
+      - ".DS_Store"

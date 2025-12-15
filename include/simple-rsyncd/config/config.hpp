@@ -25,10 +25,16 @@
 
 #include "simple-rsyncd/core/module.hpp"
 
-// Forward declaration for JSON
+// Forward declarations
 namespace Json {
     class Value;
 }
+
+#if !defined(YAMLCPP_AVAILABLE) || YAMLCPP_AVAILABLE == 0
+namespace YAML {
+    class Node;
+}
+#endif
 
 namespace simple_rsyncd {
 
@@ -220,6 +226,13 @@ public:
     bool loadFromJSON(const std::string& json);
 
     /**
+     * @brief Load configuration from YAML string
+     * @param yaml YAML configuration string
+     * @return true if loaded successfully, false otherwise
+     */
+    bool loadFromYAML(const std::string& yaml);
+
+    /**
      * @brief Save configuration to file
      * @param filename Output file path
      * @return true if saved successfully, false otherwise
@@ -321,6 +334,10 @@ private:
     // JSON parsing helpers
     void parseJSONGlobal(const Json::Value& global);
     void parseJSONModule(const std::string& module_name, const Json::Value& module_json);
+
+    // YAML parsing helpers
+    void parseYAMLGlobal(const YAML::Node& global);
+    void parseYAMLModule(const std::string& module_name, const YAML::Node& module_yaml);
 
     // Configuration file monitoring
     void updateLastModified();

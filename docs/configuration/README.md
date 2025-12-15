@@ -7,7 +7,7 @@ This guide covers all configuration options for Simple RSync Daemon, from basic 
 **New in v0.3.0:**
 - Environment variable substitution in configuration files
 - Automatic configuration hot-reload
-- JSON configuration format support
+- **Multiple configuration formats**: INI, JSON, and YAML support
 - Password hashing and policies
 - User database management
 - Session management
@@ -31,6 +31,8 @@ This guide covers all configuration options for Simple RSync Daemon, from basic 
 /etc/simple-rsyncd/
 ├── rsyncd.conf              # Main configuration file (INI format)
 ├── rsyncd.json              # Alternative JSON configuration (v0.3.0)
+├── rsyncd.yaml              # Alternative YAML configuration (v0.3.0)
+├── rsyncd.yml               # Alternative YAML configuration (v0.3.0)
 ├── modules.d/               # Module configuration files
 │   ├── 01-public.conf      # Public module
 │   ├── 02-backup.conf      # Backup module
@@ -46,12 +48,18 @@ This guide covers all configuration options for Simple RSync Daemon, from basic 
 
 ### Configuration File Formats (v0.3.0)
 
-The daemon supports two configuration formats:
+The daemon supports three configuration formats:
 
 1. **INI Format** (traditional): `.conf` files
 2. **JSON Format** (v0.3.0): `.json` files
+3. **YAML Format** (v0.3.0): `.yml` or `.yaml` files
 
-The format is automatically detected by file extension. Both formats support the same configuration options.
+The format is automatically detected by file extension. All formats support the same configuration options.
+
+**Format Detection:**
+- `.conf` → INI format
+- `.json` → JSON format
+- `.yml` or `.yaml` → YAML format
 
 ## ⚙️ Global Configuration
 
@@ -672,6 +680,94 @@ fi
 exit 0
 ```
 
+## 📝 YAML Configuration Format (v0.3.0)
+
+The daemon supports YAML configuration files as an alternative to INI and JSON formats:
+
+```yaml
+global:
+  daemonize: false
+  pid_file: /var/run/simple-rsyncd.pid
+  working_directory: /var/lib/simple-rsyncd
+  user: rsync
+  group: rsync
+
+network:
+  bind_address: 0.0.0.0
+  bind_port: 873
+  max_connections: 100
+  worker_threads: 4
+
+ssl:
+  enabled: true
+  certificate_file: /etc/simple-rsyncd/ssl/server.crt
+  private_key_file: /etc/simple-rsyncd/ssl/server.key
+
+auth:
+  enabled: true
+  method: password
+  password_file: /etc/simple-rsyncd/users
+  password_policy:
+    min_length: 8
+    require_uppercase: true
+    require_lowercase: true
+    require_digits: true
+  session:
+    timeout: 3600
+    enable_management: true
+
+log:
+  level: info
+  file: /var/log/simple-rsyncd/rsyncd.log
+  format: json
+  max_file_size: 10485760
+  max_files: 5
+  compress_old_logs: true
+
+config:
+  auto_reload: true
+  reload_interval: 30
+
+modules:
+  backup:
+    path: /var/backup
+    comment: Backup storage
+    read_only: false
+    list: true
+    allow_delete: true
+    overwrite: true
+    exclude_patterns:
+      - "*.tmp"
+      - "*.log"
+    include_patterns: []
+    pre_transfer_script: /usr/local/bin/pre-backup.sh
+    post_transfer_script: /usr/local/bin/post-backup.sh
+  
+  public:
+    path: /var/public
+    comment: Public files
+    read_only: true
+    list: true
+    exclude_patterns:
+      - "*.private"
+      - "*.conf"
+    include_patterns:
+      - "*.txt"
+      - "*.pdf"
+```
+
+**YAML Configuration Benefits:**
+- Human-readable and easy to edit
+- Supports comments (using `#`)
+- Hierarchical structure with indentation
+- Better for complex nested configurations
+- Widely used in modern DevOps tools
+
+**Note:** YAML support requires the `yaml-cpp` library. Install it via:
+- **Ubuntu/Debian**: `sudo apt-get install libyaml-cpp-dev`
+- **CentOS/RHEL/Fedora**: `sudo yum install yaml-cpp-devel` or `sudo dnf install yaml-cpp-devel`
+- **macOS**: `brew install yaml-cpp`
+
 ## 📝 JSON Configuration Format (v0.3.0)
 
 The daemon supports JSON configuration files as an alternative to INI format:
@@ -907,11 +1003,16 @@ overwrite = true
 ### Validation Commands
 
 ```bash
-# Test configuration syntax
+# Test configuration syntax (INI format)
 simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.conf
 
 # Test JSON configuration
 simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.json
+
+# Test YAML configuration
+simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.yaml
+# or
+simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.yml
 
 # Validate configuration
 simple-rsyncd validate --config /etc/simple-rsyncd/rsyncd.conf
