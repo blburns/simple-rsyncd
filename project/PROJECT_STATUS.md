@@ -99,3 +99,25 @@ See [V0.2.0_PROGRESS.md](V0.2.0_PROGRESS.md) for detailed completion report.
 *Last Updated: December 2024*
 *Project Status: v0.2.0 MVP - 100% Complete*
 *See [V0.2.0_PROGRESS.md](V0.2.0_PROGRESS.md) for detailed completion report*
+
+## 📦 Product Versions
+
+The project is organized into three product versions:
+
+### 🏭 Production Version (Apache 2.0)
+- **Status:** ✅ In Development
+- **Target:** Small to medium deployments, single-server installations
+- **Features:** Complete rsync protocol, SSL/TLS, basic security, multi-format configuration
+- **Documentation:** `docs/production/`
+
+### 🏢 Enterprise Version (BSL 1.1)
+- **Status:** 📋 Planned
+- **Target:** Large deployments, multi-server environments, enterprise integrations
+- **Features:** All Production features + Web UI, REST API, SNMP, HA, advanced security
+- **Documentation:** `docs/enterprise/`
+
+### 🏛️ Datacenter Version (BSL 1.1)
+- **Status:** 📋 Planned
+- **Target:** Large-scale datacenter deployments, cloud environments, multi-site operations
+- **Features:** All Enterprise features + Horizontal scaling, multi-site sync, cloud integrations
+- **Documentation:** `docs/datacenter/`
