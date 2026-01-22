@@ -1,117 +1,211 @@
 # Simple RSync Daemon Documentation
 
-Welcome to the comprehensive documentation for Simple RSync Daemon (simple-rsyncd), a lightweight, secure, and feature-rich rsync daemon implementation in C++.
+Welcome to the Simple RSync Daemon documentation. This guide will help you understand, configure, and deploy the Simple RSync Daemon effectively.
 
-## 📚 Documentation Sections
+## Product Versions
 
-### 🚀 [Installation Guide](installation/README.md)
-Complete installation instructions for all supported platforms:
-- **Linux**: Ubuntu/Debian, CentOS/RHEL/Fedora
-- **macOS**: Homebrew and source compilation
-- **Windows**: Visual Studio and vcpkg
-- **Docker**: Container deployment
-- **Dependencies**: Required libraries and tools
+Simple RSync Daemon is available in three versions, each designed for different deployment scenarios:
 
-### 🔧 [Installation Issues Resolved](INSTALLATION_ISSUES_RESOLVED.md)
-Summary of common installation problems and their solutions:
-- **macOS permission issues** and fixes
-- **Permission fix script** for automatic resolution
-- **Alternative installation methods**
-- **Prevention strategies**
+### 🏭 Production Version
+**License:** Apache 2.0  
+**Status:** ✅ In Development  
+**Target:** Small to medium deployments, single-server installations
 
-### 👥 [User Guide](user-guide/README.md)
-Comprehensive usage documentation:
-- **Quick Start**: Get up and running in minutes
-- **Basic Commands**: Start, stop, status, and configuration
-- **Client Usage**: How to connect from rsync clients
-- **Module Management**: Creating and configuring modules
-- **Security**: SSL/TLS, authentication, and access control
+- Complete rsync protocol implementation
+- SSL/TLS encryption
+- Basic security features (authentication, ACLs)
+- Multi-format configuration (JSON, YAML, INI)
+- Hot reload configuration
+- Cross-platform support
 
-### ⚙️ [Configuration Guide](configuration/README.md)
-Detailed configuration reference:
-- **Configuration Files**: Main config and module configs
-- **Configuration Formats**: INI, JSON, and YAML support (v0.3.0)
-- **Global Settings**: Network, SSL, authentication, logging
-- **Module Configuration**: Paths, permissions, and access control
-- **Environment Variables**: Runtime configuration overrides
-- **Configuration Examples**: Production and development setups
+**Documentation:** [Production Version Documentation](production/README.md)
 
-### 🔧 [Development Guide](development/README.md)
-Developer documentation:
-- **Building from Source**: Compilation and development setup
-- **Code Structure**: Architecture and component overview
-- **Testing**: Unit tests and integration testing
-- **Contributing**: Guidelines for contributors
-- **Code Style**: Standards and best practices
+### 🏢 Enterprise Version
+**License:** BSL 1.1 (Business Source License 1.1)  
+**Status:** 📋 Planned  
+**Target:** Large deployments, multi-server environments, enterprise integrations
 
-### 📖 [API Reference](api/README.md)
-Technical API documentation:
-- **Core Classes**: RSyncDaemon, Configuration, Module
-- **Interfaces**: Abstract classes and virtual methods
-- **Error Handling**: Exception types and error codes
-- **Examples**: Code samples and usage patterns
+- All Production Version features included
+- Web management interface
+- REST API for management
+- SNMP integration
+- Advanced authentication and authorization (RBAC, ACLs)
+- Advanced security (rate limiting, DDoS protection)
+- High availability and clustering
+- Advanced monitoring and observability
+- Plugin architecture
 
-### 🐛 [Troubleshooting Guide](troubleshooting/README.md)
-Common issues and solutions:
-- **Build Problems**: Compilation errors and solutions
-- **Runtime Issues**: Daemon startup and operation problems
-- **Performance**: Optimization and tuning
-- **Security**: SSL certificate and authentication issues
+**Documentation:** [Enterprise Version Documentation](enterprise/README.md)
 
-### ⚠️ [Error Handling Guide](error-handling.md) (v0.3.0)
-Comprehensive error handling documentation:
-- **Error Categories**: Organized error types by domain
-- **Error Codes**: Numeric codes for programmatic handling
-- **Error Context**: Rich contextual information
-- **Error Recovery**: Suggestions for resolving errors
-- **Structured Error Reporting**: JSON and text formats
+### 🏛️ Datacenter Version
+**License:** BSL 1.1 (Business Source License 1.1)  
+**Status:** 📋 Planned  
+**Target:** Large-scale datacenter deployments, cloud environments, multi-site operations
 
-## 🎯 Quick Navigation
+- All Enterprise Version features included
+- Horizontal scaling support
+- Multi-site synchronization
+- Cloud service integrations
+- Advanced performance optimizations
+- Multi-tenant support
+- Advanced analytics
 
-| Task | Documentation |
-|------|---------------|
-| **First Time Setup** | [Installation Guide](installation/README.md) |
-| **Basic Usage** | [User Guide](user-guide/README.md) |
-| **Configuration** | [Configuration Guide](configuration/README.md) |
-| **Error Handling** | [Error Handling Guide](error-handling.md) |
-| **Development** | [Development Guide](development/README.md) |
-| **API Reference** | [API Reference](api/README.md) |
-| **Problem Solving** | [Troubleshooting Guide](troubleshooting/README.md) |
-
-## 🔍 Search Documentation
-
-Use the table of contents in each section or search for specific topics:
-
-- **Commands**: `simple-rsyncd start`, `simple-rsyncd stop`, etc.
-- **Configuration**: SSL settings, authentication, modules
-- **Platforms**: Linux, macOS, Windows, Docker
-- **Features**: Security, performance, monitoring
-
-## 📖 Additional Resources
-
-- **[Main README](../README.md)**: Project overview and quick start
-- **[LICENSE](../LICENSE)**: Apache 2.0 license
-- **[CHANGELOG](../CHANGELOG.md)**: Version history and changes
-- **[GitHub Issues](https://github.com/simple-rsyncd/simple-rsyncd/issues)**: Bug reports and feature requests
-
-## 🤝 Getting Help
-
-If you can't find what you're looking for:
-
-1. **Check the troubleshooting guide** for common issues
-2. **Search existing issues** on GitHub
-3. **Create a new issue** with detailed information
-4. **Join discussions** in GitHub Discussions
-
-## 📝 Documentation Updates
-
-This documentation is maintained alongside the codebase. If you find errors or areas for improvement:
-
-1. **Fork the repository**
-2. **Make your changes** to the docs
-3. **Submit a pull request**
-4. **Help improve the documentation** for everyone
+**Documentation:** [Datacenter Version Documentation](datacenter/README.md)
 
 ---
 
-**Need help?** Start with the [Installation Guide](installation/README.md) for first-time setup, or jump to the [User Guide](user-guide/README.md) for usage instructions.
+## Documentation Structure
+
+### 📚 Shared Documentation
+Common documentation applicable to all versions:
+
+- **[Getting Started](shared/getting-started/)** - Installation and quick start guides
+- **[Configuration](shared/configuration/)** - Configuration reference and examples
+- **[Diagrams](shared/diagrams/)** - Architecture and flow diagrams
+- **[Troubleshooting](shared/troubleshooting/)** - Common issues and debugging
+- **[User Guide](shared/user-guide/)** - User documentation
+- **[Examples](shared/examples/)** - Usage examples
+
+### 🏭 Production Version Documentation
+- **[Production Guide](production/README.md)** - Complete Production Version documentation
+- **[Installation](production/installation.md)** - Production installation guide
+- **[Configuration](production/configuration.md)** - Production configuration reference
+- **[Deployment](production/deployment.md)** - Production deployment guide
+- **[Security](production/security.md)** - Production security best practices
+- **[Performance](production/performance.md)** - Production performance tuning
+- **[Operations](production/operations.md)** - Production operations guide
+
+### 🏢 Enterprise Version Documentation
+- **[Enterprise Guide](enterprise/README.md)** - Complete Enterprise Version documentation
+- **[Installation](enterprise/installation.md)** - Enterprise installation guide
+- **[Management Interface](enterprise/management.md)** - Web UI and REST API
+- **[High Availability](enterprise/high-availability.md)** - HA setup and configuration
+- **[Integrations](enterprise/integrations.md)** - SNMP and other integrations
+- **[Security](enterprise/security.md)** - Advanced security features
+- **[Operations](enterprise/operations.md)** - Enterprise operations guide
+
+### 🏛️ Datacenter Version Documentation
+- **[Datacenter Guide](datacenter/README.md)** - Complete Datacenter Version documentation
+- **[Installation](datacenter/installation.md)** - Datacenter installation guide
+- **[Multi-Site Setup](datacenter/multi-site.md)** - Multi-site configuration
+- **[Cloud Deployment](datacenter/cloud.md)** - Cloud deployment guides
+- **[Scaling](datacenter/scaling.md)** - Horizontal scaling and load balancing
+- **[Monitoring](datacenter/monitoring.md)** - Advanced monitoring and analytics
+
+### 👨‍💻 Developer Documentation
+Documentation for developers and contributors:
+
+- **[Developer Guide](development/README.md)** - Complete developer documentation
+- **[Build Guide](development/BUILD_GUIDE.md)** - Build commands and reference
+- **[Setup Guide](development/SETUP.md)** - Development environment setup
+
+---
+
+## Quick Start
+
+### Production Version
+1. [Install Simple RSync Daemon](shared/getting-started/README.md)
+2. [Quick Start Guide](shared/getting-started/quick-start.md)
+3. [Production Configuration](production/configuration.md)
+4. [Production Deployment](production/deployment.md)
+
+### Enterprise Version
+1. [Install Simple RSync Daemon](shared/getting-started/README.md)
+2. [Enterprise Setup](enterprise/README.md)
+3. [Management Interface](enterprise/management.md)
+4. [High Availability](enterprise/high-availability.md)
+
+### Datacenter Version
+1. [Install Simple RSync Daemon](shared/getting-started/README.md)
+2. [Datacenter Setup](datacenter/README.md)
+3. [Multi-Site Configuration](datacenter/multi-site.md)
+4. [Scaling Guide](datacenter/scaling.md)
+
+---
+
+## Version Comparison
+
+| Feature | Production | Enterprise | Datacenter |
+|---------|-----------|------------|------------|
+| **License** | Apache 2.0 | BSL 1.1 | BSL 1.1 |
+| **RSync Protocol** | ✅ Complete | ✅ Complete | ✅ Complete |
+| **SSL/TLS** | ✅ | ✅ | ✅ |
+| **Basic Security** | ✅ | ✅ | ✅ |
+| **Multi-Format Config** | ✅ | ✅ | ✅ |
+| **Hot Reload** | ✅ | ✅ | ✅ |
+| **Web Management** | ❌ | ✅ | ✅ |
+| **REST API** | ❌ | ✅ | ✅ |
+| **SNMP Integration** | ❌ | ✅ | ✅ |
+| **Authentication/RBAC** | ✅ Basic | ✅ Advanced | ✅ Advanced |
+| **Rate Limiting** | ✅ Basic | ✅ Advanced | ✅ Advanced |
+| **High Availability** | ❌ | ✅ | ✅ |
+| **Clustering** | ❌ | ✅ | ✅ |
+| **Horizontal Scaling** | ❌ | ❌ | ✅ |
+| **Multi-Site Sync** | ❌ | ❌ | ✅ |
+| **Cloud Integration** | ❌ | ❌ | ✅ |
+| **Plugin System** | ❌ | ✅ | ✅ |
+| **Multi-Tenant** | ❌ | ❌ | ✅ |
+
+---
+
+## Documentation by Topic
+
+### Getting Started
+- [Installation Guide](shared/getting-started/README.md) - Install on Linux, macOS, Windows
+- [Quick Start](shared/getting-started/quick-start.md) - Get running in minutes
+- [First Steps](shared/getting-started/first-steps.md) - Basic configuration
+
+### Configuration
+- [Configuration Reference](shared/configuration/README.md) - Complete configuration guide
+- [Production Configuration](production/configuration.md) - Production-specific configuration
+- [Enterprise Configuration](enterprise/configuration.md) - Enterprise-specific configuration
+- [Datacenter Configuration](datacenter/configuration.md) - Datacenter-specific configuration
+
+### Deployment
+- [Production Deployment](production/deployment.md) - Production deployment guide
+- [Enterprise Deployment](enterprise/deployment.md) - Enterprise deployment guide
+- [Datacenter Deployment](datacenter/deployment.md) - Datacenter deployment guide
+- [Docker Deployment](shared/deployment/docker.md) - Containerized deployment
+- [High Availability](enterprise/high-availability.md) - HA setup (Enterprise+)
+
+### Operations
+- [Production Operations](production/operations.md) - Production operations guide
+- [Monitoring](shared/deployment/monitoring.md) - Monitoring setup
+- [Backup Procedures](shared/deployment/backup-procedures.md) - Backup and restore
+- [Maintenance](shared/deployment/maintenance-procedures.md) - Maintenance procedures
+
+### Security
+- [Production Security](production/security.md) - Production security best practices
+- [Enterprise Security](enterprise/security.md) - Advanced security features
+- [Security Best Practices](shared/user-guide/security-best-practices.md) - General security guide
+
+### Performance
+- [Production Performance](production/performance.md) - Production performance tuning
+- [Enterprise Performance](enterprise/performance.md) - Enterprise performance optimization
+- [Datacenter Performance](datacenter/performance.md) - Datacenter scaling and optimization
+
+### Troubleshooting
+- [Common Issues](shared/troubleshooting/README.md) - Troubleshooting guide
+- [Debugging](shared/troubleshooting/debugging.md) - Debugging techniques
+- [Performance Issues](shared/troubleshooting/performance.md) - Performance troubleshooting
+
+---
+
+## Contributing to Documentation
+
+We welcome contributions to improve this documentation. Please see our [Contributing Guide](../CONTRIBUTING.md) for details on how to contribute.
+
+## Feedback
+
+If you find any issues with the documentation or have suggestions for improvement, please:
+
+1. Open an issue on [GitHub](https://github.com/SimpleDaemons/simple-rsyncd/issues)
+2. Submit a pull request with your improvements
+3. Contact us at docs@simpledaemons.com
+
+---
+
+**Last Updated:** December 2024  
+**Production Version:** In Development  
+**Enterprise Version:** Planned  
+**Datacenter Version:** Planned
