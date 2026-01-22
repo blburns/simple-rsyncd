@@ -69,7 +69,7 @@ Makefile.cmake
 *.vcxproj.user
 *.vcxproj.filters
 # Allow standardized workspace files (they should be tracked)
-!simple-rsyncd.code-workspace
+!simple-ntpd.code-workspace
 *.code-workspace
 
 # OS generated files
@@ -234,4 +234,3 @@ venv/
 node_modules/
 npm-debug.log*
 *.lock
-
