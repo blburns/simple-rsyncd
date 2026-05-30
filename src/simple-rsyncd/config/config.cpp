@@ -901,7 +901,7 @@ bool Configuration::validate() const {
 bool Configuration::validateNetwork() const {
     bool valid = true;
 
-    if (network.bind_port == 0 || network.bind_port > 65535) {
+    if (network.bind_port == 0) {
         errors_.push_back("Invalid bind_port: " + std::to_string(network.bind_port));
         valid = false;
     }

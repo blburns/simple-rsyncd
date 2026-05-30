@@ -23,6 +23,7 @@
 #include <functional>
 #include <chrono>
 #include <filesystem>
+#include <mutex>
 
 namespace simple_rsyncd {
 

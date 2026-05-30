@@ -31,7 +31,33 @@ option(ENABLE_STATIC_LINKING "Enable static linking for self-contained binaries"
 find_package(Threads REQUIRED)
 
 if(ENABLE_SSL)
-    find_package(OpenSSL REQUIRED)
+    if(APPLE)
+        foreach(_openssl_hint IN ITEMS
+                "/opt/homebrew/opt/openssl@3"
+                "/opt/homebrew/opt/openssl"
+                "/usr/local/opt/openssl@3"
+                "/usr/local/opt/openssl")
+            if(EXISTS "${_openssl_hint}")
+                list(PREPEND CMAKE_PREFIX_PATH "${_openssl_hint}")
+            endif()
+        endforeach()
+    endif()
+    find_package(OpenSSL REQUIRED COMPONENTS SSL Crypto)
+    # Older FindOpenSSL / some macOS setups set OPENSSL_* vars but not imported targets
+    if(NOT TARGET OpenSSL::SSL)
+        add_library(OpenSSL::SSL UNKNOWN IMPORTED)
+        set_target_properties(OpenSSL::SSL PROPERTIES
+            IMPORTED_LINK_INTERFACE_LANGUAGES "C"
+            IMPORTED_LOCATION "${OPENSSL_SSL_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${OPENSSL_INCLUDE_DIR}")
+    endif()
+    if(NOT TARGET OpenSSL::Crypto)
+        add_library(OpenSSL::Crypto UNKNOWN IMPORTED)
+        set_target_properties(OpenSSL::Crypto PROPERTIES
+            IMPORTED_LINK_INTERFACE_LANGUAGES "C"
+            IMPORTED_LOCATION "${OPENSSL_CRYPTO_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${OPENSSL_INCLUDE_DIR}")
+    endif()
 endif()
 
 if(ENABLE_JSON)
@@ -143,9 +169,13 @@ if(MSVC)
         endif()
     endif()
 else()
-    target_compile_options(${PROJECT_NAME}_lib PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-unused-private-field)
+    set(_common_warning_flags -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        list(APPEND _common_warning_flags -Wno-unused-private-field)
+    endif()
+    target_compile_options(${PROJECT_NAME}_lib PRIVATE ${_common_warning_flags})
     if(MAIN_SOURCE)
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-unused-private-field)
+        target_compile_options(${PROJECT_NAME} PRIVATE ${_common_warning_flags})
     endif()
     if(ENABLE_STATIC_LINKING)
         # Only apply static linking flags for GCC, not clang
