@@ -233,8 +233,9 @@ if(UNIX AND NOT APPLE)
         DESTINATION lib/systemd/system
     )
 elseif(APPLE)
-    install(FILES deployment/launchd/com.${PROJECT_NAME}.${PROJECT_NAME}.plist
-        DESTINATION /Library/LaunchDaemons
+    # Relative path so CPack stages under DESTDIR instead of writing to /Library
+    install(FILES deployment/launchd/com.simpledaemons.${PROJECT_NAME}.plist
+        DESTINATION Library/LaunchDaemons
     )
 endif()
 
@@ -282,12 +283,18 @@ if(ENABLE_PACKAGING)
     elseif(APPLE)
         # macOS DMG and PKG packages
         set(CPACK_GENERATOR "DragNDrop;productbuild")
+        set(CPACK_PACKAGING_INSTALL_PREFIX "/")
+        set(CPACK_SET_DESTDIR TRUE)
 
         # DMG settings
         set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME}")
         set(CPACK_DMG_FORMAT "UDBZ")
-        set(CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_CURRENT_SOURCE_DIR}/assets/dmg_background.png")
-        set(CPACK_DMG_DS_STORE "${CMAKE_CURRENT_SOURCE_DIR}/assets/DS_Store")
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets/dmg_background.png")
+            set(CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_CURRENT_SOURCE_DIR}/assets/dmg_background.png")
+        endif()
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets/DS_Store")
+            set(CPACK_DMG_DS_STORE "${CMAKE_CURRENT_SOURCE_DIR}/assets/DS_Store")
+        endif()
 
         # PKG settings
         set(CPACK_PRODUCTBUILD_IDENTIFIER "com.simpledaemons.${PROJECT_NAME}")
