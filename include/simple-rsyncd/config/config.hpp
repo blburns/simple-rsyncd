@@ -30,11 +30,12 @@ namespace Json {
     class Value;
 }
 
-#if !defined(YAMLCPP_AVAILABLE) || YAMLCPP_AVAILABLE == 0
+// Forward declaration only. Compatible with both the real yaml-cpp <yaml-cpp/yaml.h>
+// and the in-source fallback definition in config.cpp, so this header stays
+// self-sufficient regardless of whether a translation unit pulls in yaml-cpp.
 namespace YAML {
     class Node;
 }
-#endif
 
 namespace simple_rsyncd {
 

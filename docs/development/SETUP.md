@@ -47,7 +47,7 @@ cd simple-rsyncd
 
 ```bash
 mkdir build && cd build
-cmake -DBUILD_VERSION=production ..
+cmake ..
 make -j$(nproc)
 ```
 

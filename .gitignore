@@ -187,8 +187,9 @@ packages/
 gmon.out
 callgrind.out.*
 
-# Core dumps
+# Core dumps (do not ignore source directories named "core")
 core
+!**/core/
 core.*
 *.core
 *.dump

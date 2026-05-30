@@ -716,7 +716,7 @@ bool Configuration::loadFromYAML(const std::string& yaml) {
                 auto_reload = config_node["auto_reload"].as<bool>();
             }
             if (config_node["reload_interval"].IsDefined()) {
-                reload_interval = config_node["reload_interval"].as<unsigned int>();
+                reload_interval = std::chrono::seconds(config_node["reload_interval"].as<unsigned int>());
             }
         }
 

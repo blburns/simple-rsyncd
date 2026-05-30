@@ -1,6 +1,6 @@
 # Build Guide
 
-Complete guide to building Simple RSync Daemon for different versions and platforms.
+Complete guide to building Simple RSync Daemon on different platforms.
 
 ## Quick Start
 
@@ -9,9 +9,9 @@ Complete guide to building Simple RSync Daemon for different versions and platfo
 git clone https://github.com/SimpleDaemons/simple-rsyncd.git
 cd simple-rsyncd
 
-# Build Production version
+# Build
 mkdir build && cd build
-cmake -DBUILD_VERSION=production ..
+cmake ..
 make
 
 # Run
@@ -35,24 +35,14 @@ make
 sudo make install
 ```
 
-### Version-Specific Builds
+### Optional CMake Flags
 
-#### Production Version
 ```bash
-cmake -DBUILD_VERSION=production ..
-make
-```
-
-#### Enterprise Version
-```bash
-cmake -DBUILD_VERSION=enterprise ..
-make
-```
-
-#### Datacenter Version
-```bash
-cmake -DBUILD_VERSION=datacenter ..
-make
+cmake -DENABLE_TESTS=ON ..      # Build and register tests (default: ON)
+cmake -DENABLE_SSL=OFF ..       # Disable TLS support
+cmake -DENABLE_JSON=OFF ..      # Disable JSON configuration support
+cmake -DENABLE_YAML=OFF ..      # Disable YAML configuration support
+cmake -DENABLE_PACKAGING=OFF .. # Skip CPack package generation
 ```
 
 ---

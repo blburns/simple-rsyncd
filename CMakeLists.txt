@@ -105,7 +105,10 @@ if(ENABLE_JSON)
 endif()
 
 if(ENABLE_YAML AND yaml-cpp_FOUND)
-    if(TARGET yaml-cpp)
+    if(TARGET yaml-cpp::yaml-cpp)
+        # yaml-cpp >= 0.8 exports a namespaced target
+        target_link_libraries(${PROJECT_NAME}_lib yaml-cpp::yaml-cpp)
+    elseif(TARGET yaml-cpp)
         target_link_libraries(${PROJECT_NAME}_lib yaml-cpp)
     else()
         if(ENABLE_STATIC_LINKING)
@@ -125,10 +128,7 @@ if(ENABLE_YAML AND yaml-cpp_FOUND)
     target_compile_definitions(${PROJECT_NAME}_lib PRIVATE YAMLCPP_AVAILABLE=1)
 endif()
 
-# Link executable to library
-if(MAIN_SOURCE)
-    target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib)
-endif()
+# Note: the executable is already linked to ${PROJECT_NAME}_lib where it is created above.
 
 # Compiler-specific options (apply to both library and executable)
 if(MSVC)
