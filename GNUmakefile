@@ -19,7 +19,7 @@ endif
 
 # Variables
 PROJECT_NAME = simple-rsyncd
-VERSION = 0.1.0
+VERSION = 0.3.0
 BUILD_DIR = build
 DIST_DIR = dist
 PACKAGE_DIR = packaging
@@ -139,12 +139,21 @@ else
 	$(MKDIR) $(BUILD_DIR)
 endif
 
+# CMake configure flags (Linux: FHS prefix /usr for packaging)
+ifeq ($(PLATFORM),linux)
+CMAKE_PREFIX_FLAG = -DCMAKE_INSTALL_PREFIX=/usr
+else ifeq ($(PLATFORM),freebsd)
+CMAKE_PREFIX_FLAG = -DCMAKE_INSTALL_PREFIX=/usr/local
+else
+CMAKE_PREFIX_FLAG =
+endif
+
 # Build using CMake
 build: $(BUILD_DIR)-dir
 ifeq ($(PLATFORM),windows)
 	cd $(BUILD_DIR) && cmake .. -G "Visual Studio 16 2019" -A x64 && cmake --build . --config Release
 else
-	cd $(BUILD_DIR) && cmake .. && cmake --build . -j$(PARALLEL_JOBS)
+	cd $(BUILD_DIR) && cmake .. $(CMAKE_PREFIX_FLAG) && cmake --build . -j$(PARALLEL_JOBS)
 endif
 
 # Clean build
@@ -186,40 +195,71 @@ else
 endif
 
 # Generic package target (platform-specific)
-package: build
+# CPack recipes — ifeq must be at parse time (not inside define/recipe expansion)
 ifeq ($(PLATFORM),macos)
-	@echo "Building macOS packages..."
-	@mkdir -p $(DIST_DIR)
-	cd $(BUILD_DIR) && cpack -G DragNDrop
-	cd $(BUILD_DIR) && cpack -G productbuild
-	mv $(BUILD_DIR)/$(PROJECT_NAME)-$(VERSION)-*.dmg $(DIST_DIR)/ 2>/dev/null || true
-	mv $(BUILD_DIR)/$(PROJECT_NAME)-$(VERSION)-*.pkg $(DIST_DIR)/ 2>/dev/null || true
-	@echo "macOS packages created: DMG and PKG"
+CPACK_PACKAGES_CMD = \
+	@mkdir -p $(DIST_DIR) && \
+	echo "Building macOS packages..." && \
+	( cd $(BUILD_DIR) && cpack -G DragNDrop ) && \
+	( cd $(BUILD_DIR) && cpack -G productbuild ) && \
+	echo "Moving packages to $(DIST_DIR)..." && \
+	( ls $(BUILD_DIR)/$(PROJECT_NAME)-*.dmg 1>/dev/null 2>&1 && \
+	  mv $(BUILD_DIR)/$(PROJECT_NAME)-*.dmg $(DIST_DIR)/ && echo "  DMG package moved" ) || \
+	  echo "  Warning: No DMG package found" && \
+	( ls $(BUILD_DIR)/$(PROJECT_NAME)-*.pkg 1>/dev/null 2>&1 && \
+	  mv $(BUILD_DIR)/$(PROJECT_NAME)-*.pkg $(DIST_DIR)/ && echo "  PKG package moved" ) || \
+	  echo "  Warning: No PKG package found" && \
+	echo "macOS packages created: DMG and PKG" && \
+	( ls -lh $(DIST_DIR)/$(PROJECT_NAME)-*.dmg $(DIST_DIR)/$(PROJECT_NAME)-*.pkg 2>/dev/null || \
+	  echo "  No packages found in $(DIST_DIR)" )
 else ifeq ($(PLATFORM),linux)
-	@echo "Building Linux packages..."
-	@mkdir -p $(DIST_DIR)
-	cd $(BUILD_DIR) && cpack -G RPM
-	cd $(BUILD_DIR) && cpack -G DEB
-	mv $(BUILD_DIR)/$(PROJECT_NAME)-$(VERSION)-*.rpm $(DIST_DIR)/ 2>/dev/null || true
-	mv $(BUILD_DIR)/$(PROJECT_NAME)-$(VERSION)-*.deb $(DIST_DIR)/ 2>/dev/null || true
-	@echo "Linux packages created: RPM and DEB"
+# Build DEB on Debian/Ubuntu and RPM on RHEL/CentOS; skip formats when tools are missing
+CPACK_PACKAGES_CMD = \
+	@mkdir -p $(DIST_DIR) && \
+	echo "Building Linux packages..." && \
+	if command -v rpmbuild >/dev/null 2>&1; then \
+		echo "  Building RPM..." && \
+		( cd $(BUILD_DIR) && cpack -G RPM ) && \
+		mv $(BUILD_DIR)/$(PROJECT_NAME)-*.rpm $(DIST_DIR)/ && \
+		echo "  RPM package created"; \
+	else \
+		echo "  Skipping RPM (rpmbuild not available)"; \
+	fi && \
+	if command -v dpkg-deb >/dev/null 2>&1; then \
+		echo "  Building DEB..." && \
+		( cd $(BUILD_DIR) && cpack -G DEB ) && \
+		mv $(BUILD_DIR)/$(PROJECT_NAME)-*.deb $(DIST_DIR)/ && \
+		echo "  DEB package created"; \
+	else \
+		echo "  Skipping DEB (dpkg-deb not available)"; \
+	fi && \
+	( ls -lh $(DIST_DIR)/$(PROJECT_NAME)-*.deb $(DIST_DIR)/$(PROJECT_NAME)-*.rpm 2>/dev/null || \
+	  echo "  No packages found in $(DIST_DIR)" )
 else ifeq ($(PLATFORM),freebsd)
-	@echo "Building FreeBSD packages..."
-	@mkdir -p $(DIST_DIR)
-	cd $(BUILD_DIR) && cpack -G FREEBSD
-	mv $(BUILD_DIR)/*.pkg $(DIST_DIR)/ 2>/dev/null || true
-	@echo "FreeBSD packages created: PKG"
+CPACK_PACKAGES_CMD = \
+	@mkdir -p $(DIST_DIR) && \
+	echo "Building FreeBSD packages..." && \
+	( cd $(BUILD_DIR) && cpack -G FREEBSD ) && \
+	( ls $(BUILD_DIR)/*.pkg 1>/dev/null 2>&1 && mv $(BUILD_DIR)/*.pkg $(DIST_DIR)/ && \
+	  echo "  FreeBSD package created" ) || echo "  Warning: No FreeBSD package found" && \
+	( ls -lh $(DIST_DIR)/*.pkg 2>/dev/null || echo "  No packages found in $(DIST_DIR)" )
 else ifeq ($(PLATFORM),windows)
-	@echo "Building Windows packages..."
-	@$(MKDIR) $(DIST_DIR)
-	cd $(BUILD_DIR) && cpack -G WIX
-	cd $(BUILD_DIR) && cpack -G ZIP
-	$(CP) $(BUILD_DIR)/$(PROJECT_NAME)-$(VERSION)-*.msi $(DIST_DIR)/ 2>/dev/null || true
-	$(CP) $(BUILD_DIR)/$(PROJECT_NAME)-$(VERSION)-*.zip $(DIST_DIR)/ 2>/dev/null || true
-	@echo "Windows packages created: MSI and ZIP"
+CPACK_PACKAGES_CMD = \
+	@$(MKDIR) $(DIST_DIR) && \
+	echo "Building Windows packages..." && \
+	( cd $(BUILD_DIR) && cpack -G WIX ) && \
+	( cd $(BUILD_DIR) && cpack -G ZIP ) && \
+	$(CP) $(BUILD_DIR)/$(PROJECT_NAME)-*.msi $(DIST_DIR)/ 2>/dev/null || true && \
+	$(CP) $(BUILD_DIR)/$(PROJECT_NAME)-*.zip $(DIST_DIR)/ 2>/dev/null || true && \
+	echo "Windows packages created: MSI and ZIP" && \
+	( ls -lh $(DIST_DIR)/$(PROJECT_NAME)-*.msi $(DIST_DIR)/$(PROJECT_NAME)-*.zip 2>/dev/null || \
+	  echo "  No packages found in $(DIST_DIR)" )
 else
-	@echo "Package generation not supported on this platform"
+CPACK_PACKAGES_CMD = @echo "Package generation not supported on this platform"
 endif
+
+package: build
+	$(CPACK_PACKAGES_CMD)
 
 # Development targets
 dev-build: $(BUILD_DIR)-dir
@@ -242,7 +282,7 @@ static-build: $(BUILD_DIR)-dir
 ifeq ($(PLATFORM),windows)
 	cd $(BUILD_DIR) && cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release -DENABLE_STATIC_LINKING=ON && cmake --build . --config Release
 else
-	cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_STATIC_LINKING=ON && cmake --build . -j$(PARALLEL_JOBS)
+	cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_STATIC_LINKING=ON $(CMAKE_PREFIX_FLAG) && cmake --build . -j$(PARALLEL_JOBS)
 endif
 
 static-test: static-build
@@ -252,53 +292,10 @@ else
 	cd $(BUILD_DIR) && ctest --output-on-failure
 endif
 
-# Create static binary package
+# Create static binary packages (platform installers: deb/rpm, dmg/pkg, freebsd pkg)
 static-package: static-build
-	@echo "Creating static binary package..."
-	@mkdir -p $(DIST_DIR)
-ifeq ($(PLATFORM),windows)
-	@echo "Creating Windows static binary ZIP..."
-	@mkdir -p $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-windows
-	@cp $(BUILD_DIR)/$(PROJECT_NAME).exe $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-windows/
-	@cp README.md $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-windows/
-	@cp LICENSE $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-windows/
-	@cp -r config $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-windows/
-	@cd $(DIST_DIR) && powershell -Command "Compress-Archive -Path '$(PROJECT_NAME)-$(VERSION)-static-windows' -DestinationPath '$(PROJECT_NAME)-$(VERSION)-static-windows.zip' -Force"
-	@rm -rf $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-windows
-	@echo "Windows static binary package created: $(PROJECT_NAME)-$(VERSION)-static-windows.zip"
-else ifeq ($(PLATFORM),macos)
-	@echo "Creating macOS static binary TAR.GZ..."
-	@mkdir -p $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-macos
-	@cp $(BUILD_DIR)/$(PROJECT_NAME) $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-macos/
-	@cp README.md $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-macos/
-	@cp LICENSE $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-macos/
-	@cp -r config $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-macos/
-	@cd $(DIST_DIR) && tar -czf $(PROJECT_NAME)-$(VERSION)-static-macos.tar.gz $(PROJECT_NAME)-$(VERSION)-static-macos/
-	@rm -rf $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-macos
-	@echo "macOS static binary package created: $(PROJECT_NAME)-$(VERSION)-static-macos.tar.gz"
-else ifeq ($(PLATFORM),linux)
-	@echo "Creating Linux static binary TAR.GZ..."
-	@mkdir -p $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-linux
-	@cp $(BUILD_DIR)/$(PROJECT_NAME) $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-linux/
-	@cp README.md $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-linux/
-	@cp LICENSE $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-linux/
-	@cp -r config $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-linux/
-	@cd $(DIST_DIR) && tar -czf $(PROJECT_NAME)-$(VERSION)-static-linux.tar.gz $(PROJECT_NAME)-$(VERSION)-static-linux/
-	@rm -rf $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-linux
-	@echo "Linux static binary package created: $(PROJECT_NAME)-$(VERSION)-static-linux.tar.gz"
-else ifeq ($(PLATFORM),freebsd)
-	@echo "Creating FreeBSD static binary TAR.GZ..."
-	@mkdir -p $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd
-	@cp $(BUILD_DIR)/$(PROJECT_NAME) $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd/
-	@cp README.md $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd/
-	@cp LICENSE $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd/
-	@cp -r config $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd/
-	@cd $(DIST_DIR) && tar -czf $(PROJECT_NAME)-$(VERSION)-static-freebsd.tar.gz $(PROJECT_NAME)-$(VERSION)-static-freebsd/
-	@rm -rf $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd
-	@echo "FreeBSD static binary package created: $(PROJECT_NAME)-$(VERSION)-static-freebsd.tar.gz"
-else
-	@echo "Static binary package generation not supported on this platform"
-endif
+	@echo "Creating static binary packages..."
+	$(CPACK_PACKAGES_CMD)
 
 # Create static binary ZIP (cross-platform)
 static-zip: static-build
@@ -565,7 +562,7 @@ help:
 	@echo "Static binary targets:"
 	@echo "  static-build     - Build static binary (self-contained)"
 	@echo "  static-test      - Run tests on static binary"
-	@echo "  static-package   - Create platform-specific static binary package"
+	@echo "  static-package   - Create platform installer packages (DEB/RPM, DMG/PKG, FreeBSD PKG)"
 	@echo "  static-zip       - Create static binary ZIP package"
 	@echo "  static-all       - Create all static binary formats"
 	@echo ""
@@ -639,7 +636,7 @@ endif
 	@echo "Static binary targets:"
 	@echo "  static-build     - Build static binary (self-contained)"
 	@echo "  static-test      - Run tests on static binary"
-	@echo "  static-package   - Create platform-specific static binary package"
+	@echo "  static-package   - Create platform installer packages (DEB/RPM, DMG/PKG, FreeBSD PKG)"
 	@echo "  static-zip       - Create static binary ZIP package"
 	@echo "  static-all       - Create all static binary formats"
 	@echo "  coverage         - Generate coverage report"

@@ -246,6 +246,10 @@ endif()
 
 # Package generation
 if(ENABLE_PACKAGING)
+    if(NOT PROJECT_DESCRIPTION)
+        set(PROJECT_DESCRIPTION "Simple RSync Daemon - A lightweight and secure rsync server")
+    endif()
+
     # Package information
     set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
     set(CPACK_PACKAGE_VENDOR "SimpleDaemons")
@@ -289,15 +293,35 @@ if(ENABLE_PACKAGING)
         set(CPACK_PRODUCTBUILD_IDENTIFIER "com.simpledaemons.${PROJECT_NAME}")
         set(CPACK_PRODUCTBUILD_PACKAGE_NAME "${PROJECT_NAME}")
 
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+        set(CPACK_GENERATOR "FREEBSD")
+        set(CPACK_PACKAGING_INSTALL_PREFIX "/")
+        set(CPACK_SET_DESTDIR TRUE)
+        set(CPACK_FREEBSD_PACKAGE_MAINTAINER "SimpleDaemons <info@simpledaemons.com>")
+        set(CPACK_FREEBSD_PACKAGE_ORIGIN "net/${PROJECT_NAME}")
+        set(CPACK_FREEBSD_PACKAGE_LICENSE "APACHE20")
+        if(ENABLE_STATIC_LINKING)
+            set(CPACK_FREEBSD_PACKAGE_RUNTIME_DEPENDS "")
+        else()
+            set(CPACK_FREEBSD_PACKAGE_RUNTIME_DEPENDS "openssl jsoncpp")
+        endif()
+
     else()
         # Linux DEB and RPM packages
         set(CPACK_GENERATOR "DEB;RPM")
+        set(CPACK_PACKAGING_INSTALL_PREFIX "/")
+        set(CPACK_SET_DESTDIR TRUE)
 
         # DEB package settings
         set(CPACK_DEBIAN_PACKAGE_MAINTAINER "SimpleDaemons <info@simpledaemons.com>")
         set(CPACK_DEBIAN_PACKAGE_SECTION "net")
         set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libssl1.1, libjsoncpp25")
+        set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+        if(ENABLE_STATIC_LINKING)
+            set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
+        else()
+            set(CPACK_DEBIAN_PACKAGE_DEPENDS "libssl3 (>= 3.0.0), libjsoncpp25 | libjsoncpp24 | libjsoncpp1")
+        endif()
         set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "systemd")
         set(CPACK_DEBIAN_PACKAGE_SUGGESTS "logrotate")
         set(CPACK_DEBIAN_PACKAGE_CONFLICTS "ntp")
@@ -311,7 +335,11 @@ if(ENABLE_PACKAGING)
         set(CPACK_RPM_PACKAGE_GROUP "Applications/System")
         set(CPACK_RPM_PACKAGE_URL "https://github.com/simpledaemons/${PROJECT_NAME}")
         set(CPACK_RPM_PACKAGE_DESCRIPTION "${PROJECT_DESCRIPTION}")
-        set(CPACK_RPM_PACKAGE_REQUIRES "openssl-libs, jsoncpp")
+        if(ENABLE_STATIC_LINKING)
+            set(CPACK_RPM_PACKAGE_REQUIRES "")
+        else()
+            set(CPACK_RPM_PACKAGE_REQUIRES "openssl-libs, jsoncpp")
+        endif()
         set(CPACK_RPM_PACKAGE_SUGGESTS "systemd")
         set(CPACK_RPM_PACKAGE_CONFLICTS "ntp")
         set(CPACK_RPM_PACKAGE_PROVIDES "${PROJECT_NAME}")
@@ -335,15 +363,15 @@ if(ENABLE_PACKAGING)
 
             # Determine distribution/platform identifier for package naming
             if(APPLE)
-        # Detect Intel vs Apple Silicon for macOS
         if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
             set(PLATFORM_ID "macos-apple")
         else()
             set(PLATFORM_ID "macos-intel")
         endif()
+            elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+        set(PLATFORM_ID "freebsd")
             elseif(UNIX)
-        # Try to detect Linux distribution for proper naming
-        set(PLATFORM_ID "linux-generic")  # Default for RPM-based
+        set(PLATFORM_ID "linux-generic")
         if(EXISTS "/etc/os-release")
             file(READ "/etc/os-release" OS_RELEASE)
             if(OS_RELEASE MATCHES "ID=([^\n]+)")
@@ -351,8 +379,6 @@ if(ENABLE_PACKAGING)
                 string(STRIP "${DISTRO_ID}" DISTRO_ID)
                 string(TOLOWER "${DISTRO_ID}" DISTRO_ID)
                 string(REPLACE "\"" "" DISTRO_ID "${DISTRO_ID}")
-
-                # Map common distro IDs to package names
                 if(DISTRO_ID MATCHES "debian|ubuntu")
                     set(PLATFORM_ID "linux-debian")
                 endif()
@@ -364,23 +390,16 @@ if(ENABLE_PACKAGING)
         endif()
 
             # Set package file names with standardized format: {project}-{version}-{platform}-{distro}-{arch}.{ext}
-            # Format matches: simple-tftpd-0.2.1-linux-debian-amd64.deb
             if(APPLE)
-        # macOS packages: simple-tftpd-0.2.1-macos-intel.dmg / .pkg
         set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${PLATFORM_ID}")
-            elseif(UNIX)
-        # Linux packages: simple-tftpd-0.2.1-linux-debian-amd64.deb / .rpm
-        # CPack automatically adds architecture for DEB/RPM, so we set the base name
+            elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
         set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${PLATFORM_ID}-${PACKAGE_ARCH}")
-
-        # Override DEB and RPM file names to match our format
-        # CPack format: {CPACK_PACKAGE_FILE_NAME}_{CPACK_DEBIAN_PACKAGE_ARCHITECTURE}.deb
-        # We want: {name}-{version}-{platform}-{arch}.deb (architecture already in CPACK_PACKAGE_FILE_NAME)
-        # So we remove architecture from CPACK_DEBIAN_FILE_NAME pattern
+        set(CPACK_FREEBSD_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${PLATFORM_ID}-${PACKAGE_ARCH}")
+            elseif(UNIX)
+        set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${PLATFORM_ID}-${PACKAGE_ARCH}")
         set(CPACK_DEBIAN_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${PLATFORM_ID}-${PACKAGE_ARCH}")
         set(CPACK_RPM_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${PLATFORM_ID}-${PACKAGE_ARCH}")
             else()
-        # Windows and others
         set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${PLATFORM_NAME}-${PACKAGE_ARCH}")
             endif()
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")
