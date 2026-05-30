@@ -286,6 +286,16 @@ else ifeq ($(PLATFORM),linux)
 	@cd $(DIST_DIR) && tar -czf $(PROJECT_NAME)-$(VERSION)-static-linux.tar.gz $(PROJECT_NAME)-$(VERSION)-static-linux/
 	@rm -rf $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-linux
 	@echo "Linux static binary package created: $(PROJECT_NAME)-$(VERSION)-static-linux.tar.gz"
+else ifeq ($(PLATFORM),freebsd)
+	@echo "Creating FreeBSD static binary TAR.GZ..."
+	@mkdir -p $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd
+	@cp $(BUILD_DIR)/$(PROJECT_NAME) $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd/
+	@cp README.md $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd/
+	@cp LICENSE $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd/
+	@cp -r config $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd/
+	@cd $(DIST_DIR) && tar -czf $(PROJECT_NAME)-$(VERSION)-static-freebsd.tar.gz $(PROJECT_NAME)-$(VERSION)-static-freebsd/
+	@rm -rf $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-static-freebsd
+	@echo "FreeBSD static binary package created: $(PROJECT_NAME)-$(VERSION)-static-freebsd.tar.gz"
 else
 	@echo "Static binary package generation not supported on this platform"
 endif
