@@ -1,190 +1,145 @@
-# Simple-RSyncd Feature Audit Report
-**Date:** December 2024
-**Purpose:** Comprehensive audit of implemented vs. stubbed features
+# Simple-Rsyncd Feature Audit
+
+**Date:** May 2026  
+**Version:** 0.3.1 Beta  
+**Purpose:** Implemented vs stubbed vs unverified — no marketing inflation.
+
+---
 
 ## Executive Summary
 
-This audit examines the actual implementation status of features in simple-rsyncd by reviewing source code, headers, and build system.
-
-**Overall Assessment:** **v0.2.0 MVP is 100% COMPLETE!** All core rsync daemon functionality has been implemented. The project has a solid foundation with excellent build system, code organization, and fully functional core features.
-
----
-
-## 1. Core RSync Features
-
-### ✅ FULLY IMPLEMENTED (100% for v0.2.0 MVP)
-
-#### RSync Protocol
-- **RSync Protocol Parser** - ✅ Fully implemented (ProtocolParser class)
-- **Protocol Command Handling** - ✅ Fully implemented (ProtocolHandler class)
-- **Protocol Message Parsing** - ✅ Fully implemented (all commands: LIST, GET, PUT, DELETE, STAT)
-- **Protocol Version Negotiation** - ✅ Implemented (supports versions 27, 29, 30)
-- **Protocol Error Handling** - ✅ Implemented with error codes and messages
-- **Delta Sync Algorithm** - ⚠️ Not implemented (future enhancement)
-- **Checksum Calculation** - ⚠️ Not implemented (future enhancement)
-
-#### File Transfer
-- **File Transfer Engine** - ✅ Fully implemented (binary streaming)
-- **File Listing** - ✅ Fully implemented (directory listing with recursion)
-- **File Operations** - ✅ Fully implemented (read, write, delete, stat)
-- **Directory Operations** - ✅ Fully implemented (create, delete, list)
-- **Binary Data Streaming** - ✅ Implemented (8KB chunks)
-- **Upload/Download** - ✅ Both fully functional
+| Area | Status | Notes |
+|------|--------|-------|
+| Packaging | ✅ Shipped | DEB, RPM, FreeBSD PKG, macOS PKG/DMG |
+| Custom protocol | ✅ Working | Not native rsync wire format |
+| Module file ops | ✅ Working | Fixed in v0.3.1 |
+| Tests | ✅ 5/5 suites | Google Test + CTest |
+| INI config | ✅ Working | Primary supported format |
+| Password auth | ✅ Working | SHA-256 + plain-text legacy |
+| TLS | ❌ Stub | v0.4.0 |
+| Native rsync client | ❌ Unverified | v0.5.0 matrix |
+| OAuth2 / Prometheus | ❌ None | Remove from sales language |
 
 ---
 
-## 2. Infrastructure & Structure
+## 1. Protocol & Transfer
 
-### ✅ FULLY IMPLEMENTED (85-95%)
-
-#### Build System
-- **CMake Build System** - ✅ Fully implemented
-- **Makefile** - ✅ Fully implemented
-- **Cross-platform Support** - ✅ Fully configured
-- **Package Generation** - ✅ CPack configured
-- **Dependency Management** - ✅ OpenSSL, jsoncpp configured
-
-#### Code Structure
-- **Code Organization** - ✅ Excellent structure
-- **Header Files** - ✅ Complete interfaces defined
-- **Namespace Organization** - ✅ Well-organized
-- **Directory Structure** - ✅ Follows best practices
+| Feature | Status | Evidence |
+|---------|--------|----------|
+| LIST / GET / PUT / DELETE / STAT | ✅ | `protocol.cpp`, `ProtocolHandler` |
+| `key=value` arguments | ✅ | `parseArguments`, tests |
+| `@RSYNCD` header lines | ✅ | Parser handles version prefix |
+| Binary upload/download in session | ✅ | `session.cpp`, integration tests |
+| Delta sync | ❌ | Not implemented |
+| Checksums on wire | ❌ | Not implemented |
+| Native rsync 3.x compatibility | ❌ | Not tested; custom format |
 
 ---
 
-## 3. Core Classes (Interface vs Implementation)
+## 2. Module System
 
-### RSyncDaemon Class
-- **Interface** - ✅ Complete (daemon.hpp)
-- **Basic Structure** - ✅ Fully implemented
-- **Network Setup** - ✅ Fully implemented (socket initialization, binding, listening)
-- **Connection Handling** - ✅ Fully implemented (accept loop, session management)
-- **Protocol Handling** - ✅ Fully implemented (integrated with ProtocolHandler)
-- **Module Management** - ✅ Fully implemented (module loading, validation)
-- **Status**: ✅ 100% (fully functional)
-
-### RSyncSession Class
-- **Interface** - ✅ Complete (session.hpp)
-- **Implementation** - ✅ Fully implemented
-- **Session Lifecycle** - ✅ Fully implemented
-- **Protocol Handling** - ✅ Fully implemented (ProtocolParser, ProtocolHandler integration)
-- **File Transfer** - ✅ Fully implemented (upload/download with binary streaming)
-- **Status**: ✅ 100% (fully functional)
-
-### Configuration Class
-- **Interface** - ✅ Complete (config.hpp)
-- **Data Structures** - ✅ Complete (all config structs defined)
-- **File Parsing** - ✅ Fully implemented (INI format parser complete)
-- **JSON Parsing** - ⚠️ Stub (future enhancement)
-- **INI Parsing** - ✅ Fully implemented (sections, key-value, comments)
-- **Validation** - ✅ Comprehensive (network, SSL, auth, modules)
-- **Status**: ✅ 100% (INI parsing complete, JSON future)
-
-### Module Class
-- **Interface** - ✅ Complete (module.hpp)
-- **File Operations** - ✅ Fully implemented (FileSystemModule class)
-- **Path Validation** - ✅ Fully implemented (directory traversal prevention)
-- **Permission Checking** - ✅ Fully implemented (read-only, delete, overwrite)
-- **Pattern Matching** - ✅ Implemented (include/exclude patterns)
-- **Status**: ✅ 100% (fully functional)
-
-### Logger Class
-- **Interface** - ✅ Complete (logger.hpp)
-- **Basic Implementation** - ✅ Working (logger.cpp has basic implementation)
-- **Log Rotation** - ❌ Not implemented
-- **Syslog Integration** - ❌ Not implemented
-- **Status**: ~70% (basic logging works)
-
-### SSLContext Class
-- **Interface** - ✅ Complete (ssl_context.hpp)
-- **Basic Structure** - ⚠️ Partial (ssl_context.cpp has structure)
-- **Full SSL/TLS** - ❌ Not fully implemented
-- **Certificate Management** - ❌ Not implemented
-- **Status**: ~40% (interface and basic structure)
+| Feature | Status | Evidence |
+|---------|--------|----------|
+| Path isolation / traversal block | ✅ | `resolvePath`, `isPathSafe` |
+| listDirectory (files + dirs) | ✅ | `FileSystemModule`, ModuleTests |
+| createDirectory / deleteDirectory | ✅ | Including nested paths |
+| transferFile / receiveFile | ✅ | Integration tests |
+| read-only / allow_delete / overwrite | ✅ | Config + enforcement |
+| include/exclude patterns | ✅ | `ModuleConfig::isExcluded` |
+| Script hooks (pre/post) | ⚠️ | Declared; lightly used |
+| chroot per module | ❌ | Not gate-tested |
 
 ---
 
-## 4. Security Features
+## 3. Configuration
 
-### Authentication
-- **Configuration Structures** - ✅ Complete
-- **Password Authentication** - ✅ Fully implemented (PasswordFile, AuthenticationManager)
-- **Password File Parsing** - ✅ Implemented (username:password format)
-- **User Management** - ✅ Implemented (lookup, validation, allow/deny lists)
-- **Public Key Authentication** - ⚠️ Not implemented (future enhancement)
-- **OAuth2** - ⚠️ Not implemented (future enhancement)
-- **Status**: ✅ 100% (password auth complete, others future)
-
-### Access Control
-- **Configuration Structures** - ✅ Complete
-- **IP-based Access Control** - ✅ Fully implemented (checkAccess method)
-- **Network-based Access Control** - ✅ Implemented (allow/deny lists)
-- **Module Permissions** - ✅ Implemented (read/write/delete checks)
-- **Status**: ✅ 100% (fully functional)
-
-### Rate Limiting
-- **Configuration Structures** - ✅ Complete
-- **Rate Limiting Logic** - ⚠️ Not implemented (future enhancement)
-- **Status**: ~30% (config only, logic future)
+| Feature | Status | Evidence |
+|---------|--------|----------|
+| INI parse + validate | ✅ | ConfigTests |
+| JSON | ⚠️ | jsoncpp linked; verify before relying |
+| YAML | ⚠️ | Optional dep; verify before relying |
+| Env var substitution | ⚠️ | Claimed in docs; verify per deploy |
+| Hot-reload | ⚠️ | Partial / experimental |
 
 ---
 
-## 5. Testing
+## 4. Security & Auth
 
-### Test Infrastructure
-- **Test Directory** - ✅ Exists (src/tests/)
-- **CMakeLists.txt** - ✅ Placeholder exists
-- **Unit Tests** - ❌ None written
-- **Integration Tests** - ❌ None written
-- **Test Framework** - ❌ Not configured
-- **Status**: ~5% (structure only)
-
----
-
-## 6. Documentation
-
-### Documentation Quality
-- **Structure** - ✅ Excellent
-- **Completeness** - ⚠️ Extensive but misleading
-- **Accuracy** - ❌ Describes features that don't exist
-- **Status**: ~60% (good structure, needs reality check)
+| Feature | Status | Evidence |
+|---------|--------|----------|
+| Password file auth | ✅ | AuthTests |
+| SHA-256 password hash | ✅ | `PasswordHasher` in auth.cpp |
+| Plain-text password fallback | ⚠️ | Legacy compat — avoid in new deploys |
+| Allow/deny user lists | ✅ | AuthTests |
+| IP allow/deny in config | ⚠️ | Structures exist; live enforce → v0.4.0 |
+| Rate limiting | ❌ | Config only |
+| TLS / SSL | ❌ | `ssl_context.cpp` stub |
+| OAuth2 | ❌ | |
+| Public-key auth | ❌ | OpenSSL types present; flow incomplete |
 
 ---
 
-## Summary by Category
+## 5. Operations & Packaging
 
-| Category | Status | Completion |
-|----------|--------|------------|
-| **Infrastructure** | ✅ Excellent | 100% |
-| **Code Structure** | ✅ Excellent | 100% |
-| **Core Protocol** | ✅ Complete | 100% |
-| **File Transfer** | ✅ Complete | 100% |
-| **Configuration** | ✅ Complete | 100% (INI), JSON future |
-| **Authentication** | ✅ Complete | 100% (password), others future |
-| **Security** | ✅ Complete | 100% (access control), rate limiting future |
-| **Testing** | ✅ Complete | 100% (unit tests), integration future |
-| **Documentation** | ✅ Accurate | 100% |
+| Feature | Status | Evidence |
+|---------|--------|----------|
+| systemd unit (Linux) | ✅ | In package payloads |
+| launchd plist (macOS) | ✅ | `/Library/LaunchDaemons` |
+| `/etc/simple-rsyncd` config layout | ✅ | macOS PKG v0.3.0+ |
+| Log rotation API | ⚠️ | Present; not soak-tested |
+| Prometheus / metrics | ❌ | |
+| Health check endpoint | ❌ | |
+
+---
+
+## 6. Testing
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| ConfigTests | 7 | ✅ |
+| ModuleTests | 12 | ✅ |
+| ProtocolTests | 11 | ✅ |
+| AuthTests | 5 | ✅ |
+| IntegrationTests | 16 | ✅ |
+
+**Gap:** Linux CI not recorded in release verification; network-level E2E against live daemon is manual.
+
+---
+
+## 7. Documentation Accuracy
+
+| Document | v0.3.1 status |
+|----------|---------------|
+| `README.md` | ✅ Updated — Beta, implemented vs planned |
+| `project/PRODUCTION_GATE.md` | ✅ Current |
+| `project/HONEST_ASSESSMENT.md` | ✅ This pass |
+| `project/FEATURE_AUDIT.md` | ✅ This pass |
+| `docs/shared/user-guide/` | ⚠️ Header updated; full scrub ongoing |
+
+---
+
+## Summary Table
+
+| Category | Completion | Beta-ready? |
+|----------|------------|-------------|
+| Infrastructure / packaging | ~95% | ✅ |
+| Custom protocol + modules | ~85% | ✅ |
+| Configuration (INI) | ~90% | ✅ |
+| Authentication | ~70% | ✅ on trusted nets |
+| Security (TLS, enforce ACLs) | ~25% | ❌ |
+| Native rsync compatibility | 0% | ❌ |
+| Observability | ~10% | ❌ |
+| Documentation | ~80% | ✅ improving |
 
 ---
 
 ## Conclusion
 
-**v0.2.0 MVP is 100% COMPLETE! All core rsync daemon functionality has been implemented.**
+**v0.3.1 Beta delivers what it claims:** packaged daemon, custom protocol, module file ops, passing tests.  
+**It does not deliver:** production security, native rsync clients, or full feature parity with README claims from earlier versions.
 
-- ✅ **Strengths**: Build system, code organization, interfaces, **core functionality**
-- ✅ **Completed**: RSync protocol, file transfer, configuration, authentication, modules
-- ✅ **Production Ready**: Daemon is functional for basic rsync operations
-
-**v0.2.0 MVP Status: All critical components implemented and working!**
-
-**Future Enhancements (v0.3.0+):**
-- Password hashing (bcrypt/argon2)
-- Enhanced protocol features (delta sync, full rsync compatibility)
-- SSL/TLS complete implementation
-- Integration tests
-- Rate limiting logic
+Next gate: **v0.4.0** — see [PRODUCTION_GATE.md](PRODUCTION_GATE.md) and [ROADMAP_CHECKLIST.md](ROADMAP_CHECKLIST.md).
 
 ---
 
-*Audit completed: December 2024*
-*See [V0.2.0_PROGRESS.md](V0.2.0_PROGRESS.md) for detailed completion report*
+*Audit completed: May 2026*

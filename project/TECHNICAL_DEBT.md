@@ -1,239 +1,123 @@
-# Simple RSync Daemon - Technical Debt
+# Simple RSync Daemon — Technical Debt
 
-**Date:** December 2024
-**Current Version:** 0.2.0
-**Purpose:** Track technical debt, known issues, and areas requiring improvement
-
----
-
-## 🎯 Overview
-
-This document tracks technical debt for the simple-rsyncd project. **v0.2.0 MVP is complete**, so critical blocking items have been resolved. Remaining items are enhancements for future releases.
-
-**Total Debt Items:** 8+
-**Estimated Effort:** ~100-200 hours (for enhancements, not blocking)
+**Date:** May 2026  
+**Current version:** 0.3.1 Beta
 
 ---
 
-## ✅ v0.2.0 MVP - COMPLETE
+## Overview
 
-All critical MVP items have been completed:
-- ✅ RSync Protocol Implementation
-- ✅ File Transfer Engine
-- ✅ Configuration File Parsing (INI format)
-- ✅ Module File Operations
-- ✅ Basic Authentication
-- ✅ Test Framework
+v0.2.0 MVP and v0.3.x packaging/beta work cleared **blocking** debt for controlled beta use. Remaining items are **security, compatibility, and ops** — tracked by gate in [PRODUCTION_GATE.md](PRODUCTION_GATE.md).
 
----
-
-## 🟡 Medium Priority (v0.3.0 Enhancements)
-
-### 1. Password Hashing
-**Status:** ⚠️ **Needs Implementation**
-**Priority:** 🟡 **MEDIUM**
-**Estimated Effort:** 10-15 hours
-
-**Action Items:**
-- [ ] Replace plain text passwords with bcrypt or argon2
-- [ ] Implement password hashing on storage
-- [ ] Implement password verification
-- [ ] Add migration tools for existing password files
-- [ ] Update password file format
-
-**Current State:** Passwords stored in plain text (functional but insecure)
-
-**Target:** v0.3.0 release
+| Priority | Items | Target |
+|----------|-------|--------|
+| 🔴 High | TLS, enforced ACLs, privilege drop | v0.4.0 |
+| 🟡 Medium | bcrypt/argon2, JSON/YAML hardening, Linux CI | v0.4.0 |
+| 🟢 Lower | Delta sync, Prometheus, soak tests | v0.5.0 |
 
 ---
 
-### 2. JSON Configuration Parsing
-**Status:** ⚠️ **Stubbed**
-**Priority:** 🟡 **MEDIUM**
-**Estimated Effort:** 15-20 hours
+## 🔴 High — v0.4.0 (security gate)
 
-**Action Items:**
-- [ ] Implement JSON parser using jsoncpp
-- [ ] Complete JSON configuration validation
-- [ ] Add JSON error reporting
-- [ ] Test with real JSON configuration files
+### TLS / SSLContext
 
-**Current State:** INI format complete, JSON parser is stub
+**Status:** Stub — `(void)` cert paths; no live handshake on accept.  
+**Effort:** ~40–60 h  
+**Actions:** Load cert/key/CA; TLS accept; cipher config; integration test with test cert.
 
-**Target:** v0.3.0 release
+### Runtime access control & rate limits
 
----
+**Status:** Config parsed; not consistently enforced on live connections.  
+**Effort:** ~20–30 h  
+**Actions:** IP/CIDR check at accept; connection cap in daemon loop; tests.
 
-### 3. Integration Tests
-**Status:** ⚠️ **Not Started**
-**Priority:** 🟡 **MEDIUM**
-**Estimated Effort:** 20-30 hours
+### Privilege drop / chroot
 
-**Action Items:**
-- [ ] Implement end-to-end protocol tests
-- [ ] Implement network integration tests
-- [ ] Implement file transfer integration tests
-- [ ] Add test fixtures and helpers
-- [ ] Set up CI/CD test automation
-
-**Current State:** Unit tests complete, integration tests missing
-
-**Target:** v0.3.0 release
+**Status:** Documented; not gate-tested.  
+**Effort:** ~15–25 h  
+**Actions:** Drop root after bind (Linux/macOS); optional chroot per module with tests.
 
 ---
 
-### 4. Enhanced Protocol Features
-**Status:** ⚠️ **Basic Implementation Only**
-**Priority:** 🟡 **MEDIUM**
-**Estimated Effort:** 30-50 hours
+## 🟡 Medium — v0.4.0 / ongoing
 
-**Action Items:**
-- [ ] Implement delta sync algorithm
-- [ ] Implement checksum calculation and verification
-- [ ] Full rsync protocol compatibility
-- [ ] Protocol optimization
-- [ ] Advanced protocol features
+### Password hashing upgrade
 
-**Current State:** Basic protocol working, advanced features missing
+**Status:** SHA-256 + salt via OpenSSL; plain-text fallback for legacy entries.  
+**Effort:** ~10–15 h  
+**Actions:** bcrypt or argon2; migration tool; document SHA-256 limitation if kept.
 
-**Target:** v0.3.0 or v0.4.0 release
-- [ ] Implement session authentication
-- [ ] Add authentication error handling
+### JSON / YAML configuration
 
-**Current State:** Configuration structures exist, no implementation
+**Status:** INI is supported; JSON/YAML need end-to-end verification.  
+**Effort:** ~15–20 h each  
+**Actions:** Parser tests; example configs in CI; error messages.
 
-**Target:** MVP release
+### Linux CI
 
----
+**Status:** macOS `ctest` verified for v0.3.1; Linux not in release checklist.  
+**Effort:** ~5–10 h  
+**Actions:** GitHub Actions or Ansible VM matrix running `ctest` on push.
 
-### 6. Test Infrastructure & Tests
-**Status:** ⚠️ **Structure Only**
-**Priority:** 🔴 **HIGH**
-**Estimated Effort:** 30-50 hours
+### Documentation drift
 
-**Action Items:**
-- [ ] Set up test framework (Google Test or similar)
-- [ ] Write unit tests for configuration
-- [ ] Write unit tests for protocol (once implemented)
-- [ ] Write integration tests
-- [ ] Add test coverage reporting
+**Status:** README + `project/` updated May 2026; user guide partially stale.  
+**Effort:** ~5–10 h  
+**Actions:** Scrub `docs/shared/user-guide/`; remove native rsync examples until v0.5.0 matrix.
 
-**Current State:** Test directory exists but empty (just placeholder CMakeLists.txt)
+### Module header bloat
 
-**Target:** MVP release
+**Status:** `module.hpp` declares many helpers without implementations.  
+**Effort:** ~20 h (incremental)  
+**Actions:** Trim or implement; reduce dead API surface.
 
 ---
 
-## 🟡 High Priority (Important for Functionality)
+## 🟢 Lower — v0.5.0 (production gate)
 
-### 7. SSL/TLS Implementation
-**Status:** ⚠️ **Partial**
-**Priority:** 🟡 **HIGH**
-**Estimated Effort:** 40-60 hours
+### Native rsync compatibility
 
-**Action Items:**
-- [ ] Complete SSL/TLS implementation
-- [ ] Implement certificate management
-- [ ] Add SSL error handling
-- [ ] Test SSL connections
+**Status:** Custom protocol only; no client matrix.  
+**Effort:** 50–100+ h (depends on scope decision)  
+**Actions:** Publish matrix or formally scope custom protocol only.
 
-**Current State:** Interface exists, implementation partial
+### Delta sync / checksums
 
----
+**Status:** Not implemented.  
+**Effort:** ~30–50 h  
 
-### 8. Error Handling
-**Status:** ⚠️ **Incomplete**
-**Priority:** 🟡 **HIGH**
-**Estimated Effort:** 20-30 hours
+### Observability
 
-**Action Items:**
-- [ ] Add comprehensive error handling
-- [ ] Implement error reporting
-- [ ] Add error recovery mechanisms
-- [ ] Improve error messages
+**Status:** No Prometheus endpoint; log rotation not soak-tested.  
+**Effort:** ~20–40 h  
+
+### Performance / soak
+
+**Status:** No benchmark baseline or 24h soak script.  
+**Effort:** ~15–25 h  
 
 ---
 
-### 9. Documentation Accuracy
-**Status:** ⚠️ **Misleading**
-**Priority:** 🟡 **MEDIUM**
-**Estimated Effort:** 15-20 hours
+## ✅ Resolved (do not re-open without regression)
 
-**Action Items:**
-- [ ] Update README to match actual status
-- [ ] Remove claims about unimplemented features
-- [ ] Add "work in progress" disclaimers
-- [ ] Update example configurations to reflect reality
-
-**Current State:** Documentation describes features that don't exist
-
----
-
-## 🟢 Medium Priority (Enhancements)
-
-### 10. Logging Enhancements
-**Status:** ⚠️ **Basic Only**
-**Priority:** 🟢 **MEDIUM**
-**Estimated Effort:** 15-20 hours
-
-**Action Items:**
-- [ ] Implement log rotation
-- [ ] Add syslog integration
-- [ ] Add structured logging
-- [ ] Improve log formatting
+| Item | Resolved in |
+|------|-------------|
+| Module list/create/upload path bugs | v0.3.1 |
+| Protocol `key=value` parsing | v0.3.1 |
+| Integration test suite | v0.3.1 |
+| Cross-platform packaging | v0.3.0 |
+| macOS PKG `/etc/simple-rsyncd` layout | v0.3.0 |
+| Duplicate source trees | v0.3.0 |
+| CTest failing (40% → 100%) | v0.3.1 |
 
 ---
 
-### 11. Access Control Implementation
-**Status:** ❌ **Not Started**
-**Priority:** 🟢 **MEDIUM**
-**Estimated Effort:** 20-30 hours
+## Recommendations
 
-**Action Items:**
-- [ ] Implement IP-based access control
-- [ ] Implement network-based access control
-- [ ] Add access logging
+1. **Do not** market v0.3.1 as production — debt is security and compatibility, not packaging.
+2. **Prioritize v0.4.0** before any internet-facing deployment.
+3. **Keep docs aligned** — update user guide when adding features, not after release.
 
 ---
 
-### 12. Rate Limiting Implementation
-**Status:** ❌ **Not Started**
-**Priority:** 🟢 **MEDIUM**
-**Estimated Effort:** 20-30 hours
-
-**Action Items:**
-- [ ] Implement rate limiting logic
-- [ ] Add connection rate limiting
-- [ ] Add bandwidth rate limiting
-
----
-
-## 📋 Summary
-
-### Critical Path to MVP
-**Total Estimated Effort:** 200-300 hours
-
-1. RSync Protocol (100-150 hours)
-2. File Transfer (50-75 hours)
-3. Configuration Parsing (20-30 hours)
-4. Module Operations (30-40 hours)
-5. Basic Authentication (20-30 hours)
-6. Testing (30-50 hours)
-
-### To Match Documentation Claims
-**Total Estimated Effort:** 500-800 hours
-
-This includes all advanced features, SSL/TLS, monitoring, etc.
-
----
-
-## 🎯 Recommendations
-
-1. **Focus on MVP first** - Get basic rsync working before adding features
-2. **Protocol first** - Implement rsync protocol before anything else
-3. **Test as you go** - Write tests for each component as you implement
-4. **Update docs** - Keep documentation aligned with reality
-
----
-
-*Last Updated: December 2024*
+*Last updated: May 2026*

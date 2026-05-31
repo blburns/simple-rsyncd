@@ -1,155 +1,74 @@
-# Implementation Summary - v0.2.0 MVP Completion
-**Date:** December 2024
-**Version:** 0.2.0
-**Status:** MVP Complete ✅
+# Implementation Summary
 
-## 🎯 Overview
-
-This document summarizes the completion of v0.2.0 MVP. All core rsync daemon functionality has been implemented and the daemon is now production-ready for basic rsync operations.
+**Last updated:** May 2026  
+**Current version:** 0.3.1 Beta
 
 ---
 
-## ✅ v0.2.0 MVP - Completed Work
+## v0.3.1 Beta (May 2026)
 
-### 1. RSync Protocol Implementation
-**Status:** ✅ **100% Complete**
+### Code fixes
 
-**Implementation:**
-- Created ProtocolParser class for parsing rsync protocol messages
-- Created ProtocolHandler class for handling protocol commands
-- Implemented all protocol commands (LIST, GET, PUT, DELETE, STAT)
-- Protocol version negotiation (supports versions 27, 29, 30)
-- Protocol error handling with error codes and messages
-- Integrated protocol into RSyncSession
+- **Module path validation** — `isPathSafe` checks module-root containment without requiring the target path to exist (unblocks create, upload, list root).
+- **Read/write permissions** — directories and module roots readable; write checks use nearest existing parent.
+- **Protocol arguments** — `parseModule`, `parsePath`, `parseArguments` on direct command lines (no `@RSYNCD` header).
+- **Empty path semantics** — `fileExists("")` / `directoryExists("")` return false.
 
-**Impact:** Daemon can now parse and handle rsync protocol messages.
+### Quality
 
----
+- CTest: **5/5 suites, 100% pass** (macOS build verified).
+- GitHub release with five platform packages.
 
-### 2. File Transfer Implementation
-**Status:** ✅ **100% Complete**
+### Documentation
 
-**Implementation:**
-- Binary data streaming (8KB chunks)
-- File upload (PUT command) with temp file handling
-- File download (GET command) with streaming
-- Transfer state management
-- Transfer progress tracking
-- Error handling and recovery
-
-**Impact:** Daemon can now transfer files (upload and download).
+- README: Beta banner, implemented vs planned, custom protocol disclaimer.
+- Internal project docs aligned to v0.3.1 (this pass).
 
 ---
 
-### 3. Configuration File Parsing
-**Status:** ✅ **100% Complete**
+## v0.3.0 (May 2026) — Packaging milestone
 
-**Implementation:**
-- INI format parser with section support ([global], [module:name])
-- Key-value parsing with whitespace trimming
-- Comment support (# and ;)
-- Configuration validation (network, SSL, auth, modules)
-- Error reporting with line numbers
-
-**Impact:** Daemon can now read and parse configuration files.
+- Cross-platform `make static-package` (DEB, RPM, FreeBSD PKG, macOS PKG/DMG).
+- macOS PKG: config under `/etc/simple-rsyncd`, CPack payload rebuild script.
+- Consolidated source tree; duplicate `src/core/` removed.
+- **Tests were still failing** — fixed in v0.3.1.
 
 ---
 
-### 4. Module File Operations
-**Status:** ✅ **100% Complete**
+## v0.2.0 MVP (2025) — Core implementation
 
-**Implementation:**
-- FileSystemModule class implementing all Module virtual methods
-- File operations (list, read, write, delete, stat)
-- Directory operations (list, create, delete)
-- Path validation with directory traversal prevention
-- Permission checking (read-only, delete, overwrite)
-- Pattern matching (include/exclude patterns)
+Completed once; still the foundation:
 
-**Impact:** Modules can now perform actual file system operations.
+| Component | Status |
+|-----------|--------|
+| Custom protocol (LIST/GET/PUT/DELETE/STAT) | ✅ |
+| File transfer in sessions | ✅ |
+| INI configuration | ✅ |
+| FileSystemModule | ✅ |
+| Password authentication | ✅ |
+| Network accept + sessions | ✅ |
+| Google Test unit tests | ✅ |
 
----
-
-### 5. Basic Authentication
-**Status:** ✅ **100% Complete**
-
-**Implementation:**
-- PasswordFile class for password file management
-- AuthenticationManager class for authentication
-- Password file parsing (username:password format)
-- User lookup and validation
-- Allow/deny lists
-- IP-based access control
-- Module permission checking
-
-**Impact:** Daemon can now authenticate users and enforce access control.
+Not part of MVP but added later: integration tests, SHA-256 hashing, packaging.
 
 ---
 
-### 6. Network Layer
-**Status:** ✅ **100% Complete**
+## Not yet implemented (by design — later gates)
 
-**Implementation:**
-- TCP socket initialization and binding
-- Connection acceptance loop
-- Session management
-- Thread-safe operations
-- Connection limits
-- Access control per connection
-
-**Impact:** Daemon can now accept and manage network connections.
+| Feature | Target |
+|---------|--------|
+| TLS handshake | v0.4.0 |
+| Enforced rate limits / IP ACLs | v0.4.0 |
+| Privilege drop, chroot hardening | v0.4.0 |
+| Native rsync client matrix | v0.5.0 |
+| Prometheus / soak tests | v0.5.0 |
 
 ---
 
-### 7. Test Framework
-**Status:** ✅ **100% Complete**
+## Next steps
 
-**Implementation:**
-- Google Test integration via CMake FetchContent
-- Unit tests for configuration parsing
-- Unit tests for module operations
-- Unit tests for protocol parsing
-- CTest integration
-
-**Impact:** Test framework is set up with unit tests for core components.
+See [PRODUCTION_GATE.md](PRODUCTION_GATE.md) Gate 2 (v0.4.0).
 
 ---
 
-## 📊 v0.2.0 MVP Status Summary
-
-**What's Working:**
-- ✅ Build system (CMake, Makefile)
-- ✅ Code structure and organization
-- ✅ Class interfaces and headers
-- ✅ Cross-platform configuration
-- ✅ **RSync protocol implementation**
-- ✅ **File transfer engine**
-- ✅ **Configuration file parsing (INI format)**
-- ✅ **Module file operations**
-- ✅ **Authentication (password-based)**
-- ✅ **Network layer (socket handling)**
-- ✅ **Test framework (Google Test with unit tests)**
-
-**v0.2.0 MVP Status: 100% COMPLETE ✅**
-
----
-
-## 🎯 Next Steps (v0.3.0)
-
-### Immediate Priorities
-1. Password hashing (replace plain text with bcrypt/argon2) - 10-15 hours
-2. Integration tests (end-to-end protocol and network tests) - 20-30 hours
-3. Enhanced error handling - 15-20 hours
-4. Performance optimization - 20-30 hours
-
-### Secondary Priorities
-1. SSL/TLS complete implementation
-2. Enhanced protocol features (delta sync, full rsync compatibility)
-3. Advanced features (rate limiting, advanced access control)
-4. Documentation (user guides, API documentation)
-
----
-
-*Last Updated: December 2024*
-*v0.2.0 MVP: 100% Complete*
-*See [V0.2.0_PROGRESS.md](V0.2.0_PROGRESS.md) for detailed completion report*
+*For historical v0.2.0 detail, see git history prior to v0.3.0.*

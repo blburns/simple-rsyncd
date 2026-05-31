@@ -1,20 +1,24 @@
 # User Guide
 
-This guide covers everything you need to know to use Simple RSync Daemon effectively.
+This guide covers using Simple RSync Daemon. **Read this together with the Beta scope notes below.**
 
-**Version**: v0.3.0
+**Version:** v0.3.1 Beta  
+**Status:** Controlled early-adopter use — not production-ready. See [project/PRODUCTION_GATE.md](../../project/PRODUCTION_GATE.md).
 
-**New Features in v0.3.0:**
-- Password hashing with SHA-256
-- Password policies and expiration
-- User database management
-- Session management
-- Configuration hot-reload
-- Environment variable substitution
-- **Multiple configuration formats**: INI, JSON, and YAML
-- Enhanced logging with rotation
-- Structured JSON logging
-- Comprehensive error handling
+## Beta scope (v0.3.1)
+
+**Supported today**
+
+- INI configuration, module definitions, password auth (SHA-256 hashes supported; plain-text legacy entries possible)
+- Custom protocol commands: `LIST`, `GET`, `PUT`, `DELETE`, `STAT` with optional `key=value` arguments
+- Packages: Linux DEB/RPM, FreeBSD PKG, macOS PKG/DMG
+
+**Not supported / not verified**
+
+- Native `rsync(1)` client (`rsync rsync://…`) — **not guaranteed**
+- TLS on the wire (config may say `ssl_enabled`; handshake incomplete)
+- OAuth2, Prometheus, enforced rate limiting
+- YAML/JSON config — verify before production use; prefer INI
 
 ## 🚀 Quick Start
 
@@ -33,14 +37,17 @@ simple-rsyncd start --config /path/to/rsyncd.conf
 
 ### Basic Test
 
-```bash
-# List available modules
-rsync rsync://localhost/
+Use the **custom protocol** over TCP (default port 873), not native rsync, until a client compatibility matrix is published (v0.5.0 gate).
 
-# Test file transfer
-echo "Hello World" > test.txt
-rsync -avz test.txt rsync://localhost/public/
+```bash
+# Verify the daemon starts and config loads
+simple-rsyncd test --config /etc/simple-rsyncd/rsyncd.conf.example
+
+# Example protocol line (send over TCP after connecting)
+# LIST mymodule /path recursive=true
 ```
+
+For integration examples, see `src/tests/test_integration.cpp` and the project README.
 
 ## 📋 Command Reference
 
