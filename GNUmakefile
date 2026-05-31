@@ -211,8 +211,11 @@ CPACK_PACKAGES_CMD = \
 	( ls $(BUILD_DIR)/$(PROJECT_NAME)-*.pkg 1>/dev/null 2>&1 && \
 	  mv $(BUILD_DIR)/$(PROJECT_NAME)-*.pkg $(DIST_DIR)/ && echo "  PKG package moved" ) || \
 	  echo "  Warning: No PKG package found" && \
-	( ls -lh $(DIST_DIR)/ 2>/dev/null | grep -E '\.(dmg|pkg)$$' || \
-	  echo "  No packages found in $(DIST_DIR)" )
+	found=0; \
+	for f in $(DIST_DIR)/$(PROJECT_NAME)-*.dmg $(DIST_DIR)/$(PROJECT_NAME)-*.pkg; do \
+	  if [ -f "$$f" ]; then ls -lh "$$f"; found=1; fi; \
+	done; \
+	[ "$$found" -eq 1 ] || echo "  No packages found in $(DIST_DIR)"
 else ifeq ($(PLATFORM),linux)
 # Build DEB on Debian/Ubuntu and RPM on RHEL/CentOS; skip formats when tools are missing
 CPACK_PACKAGES_CMD = \
@@ -234,8 +237,11 @@ CPACK_PACKAGES_CMD = \
 	else \
 		echo "  Skipping DEB (dpkg-deb not available)"; \
 	fi && \
-	( ls -lh $(DIST_DIR)/ 2>/dev/null | grep -E '\.(deb|rpm)$$' || \
-	  echo "  No packages found in $(DIST_DIR)" )
+	found=0; \
+	for f in $(DIST_DIR)/$(PROJECT_NAME)-*.deb $(DIST_DIR)/$(PROJECT_NAME)-*.rpm; do \
+	  if [ -f "$$f" ]; then ls -lh "$$f"; found=1; fi; \
+	done; \
+	[ "$$found" -eq 1 ] || echo "  No packages found in $(DIST_DIR)"
 else ifeq ($(PLATFORM),freebsd)
 CPACK_PACKAGES_CMD = \
 	@mkdir -p $(DIST_DIR) && \
@@ -243,7 +249,11 @@ CPACK_PACKAGES_CMD = \
 	( cd $(BUILD_DIR) && cpack -G FREEBSD ) && \
 	( ls $(BUILD_DIR)/*.pkg 1>/dev/null 2>&1 && mv $(BUILD_DIR)/*.pkg $(DIST_DIR)/ && \
 	  echo "  FreeBSD package created" ) || echo "  Warning: No FreeBSD package found" && \
-	( ls -lh $(DIST_DIR)/*.pkg 2>/dev/null || echo "  No packages found in $(DIST_DIR)" )
+	found=0; \
+	for f in $(DIST_DIR)/$(PROJECT_NAME)-*.pkg $(DIST_DIR)/*.pkg; do \
+	  if [ -f "$$f" ]; then ls -lh "$$f"; found=1; fi; \
+	done; \
+	[ "$$found" -eq 1 ] || echo "  No packages found in $(DIST_DIR)"
 else ifeq ($(PLATFORM),windows)
 CPACK_PACKAGES_CMD = \
 	@$(MKDIR) $(DIST_DIR) && \
@@ -253,8 +263,11 @@ CPACK_PACKAGES_CMD = \
 	$(CP) $(BUILD_DIR)/$(PROJECT_NAME)-*.msi $(DIST_DIR)/ 2>/dev/null || true && \
 	$(CP) $(BUILD_DIR)/$(PROJECT_NAME)-*.zip $(DIST_DIR)/ 2>/dev/null || true && \
 	echo "Windows packages created: MSI and ZIP" && \
-	( ls -lh $(DIST_DIR)/ 2>/dev/null | grep -E '\.(msi|zip)$$' || \
-	  echo "  No packages found in $(DIST_DIR)" )
+	found=0; \
+	for f in $(DIST_DIR)/$(PROJECT_NAME)-*.msi $(DIST_DIR)/$(PROJECT_NAME)-*.zip; do \
+	  if [ -f "$$f" ]; then ls -lh "$$f"; found=1; fi; \
+	done; \
+	[ "$$found" -eq 1 ] || echo "  No packages found in $(DIST_DIR)"
 else
 CPACK_PACKAGES_CMD = @echo "Package generation not supported on this platform"
 endif
