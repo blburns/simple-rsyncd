@@ -457,10 +457,40 @@ std::string Module::resolvePath(const std::string& path) const {
 
     // Additional check: ensure no ".." escaped
     if (resolved_str.find("..") != std::string::npos) {
-        return ""; // Directory traversal attempt
+        return "";
     }
 
-    return resolved_absolute.string();
+    if (!config_.allow_symlinks) {
+        std::filesystem::path walk = base_absolute;
+        for (const auto& part : relative_path) {
+            if (part == "." || part.empty()) {
+                continue;
+            }
+            if (part == "..") {
+                return "";
+            }
+            walk /= part;
+            if (std::filesystem::exists(walk) && std::filesystem::is_symlink(walk)) {
+                return "";
+            }
+        }
+    }
+
+    try {
+        const std::filesystem::path canonical =
+            std::filesystem::weakly_canonical(resolved_absolute);
+        const std::filesystem::path base_canonical =
+            std::filesystem::weakly_canonical(base_absolute);
+        const std::string canonical_str = canonical.string();
+        const std::string base_canonical_str = base_canonical.string();
+        if (canonical_str.length() < base_canonical_str.length() ||
+            canonical_str.compare(0, base_canonical_str.length(), base_canonical_str) != 0) {
+            return "";
+        }
+        return canonical.string();
+    } catch (const std::exception&) {
+        return resolved_absolute.string();
+    }
 }
 
 bool Module::validatePath(const std::string& path) const {

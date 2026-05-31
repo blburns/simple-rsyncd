@@ -238,6 +238,8 @@ struct ModuleConfig {
     std::string post_delete_script;
     std::string pre_list_script;
     std::string post_list_script;
+    bool allow_symlinks = false;
+    bool allow_hardlinks = false;
     std::map<std::string, std::string> custom_options;
 
     /**
