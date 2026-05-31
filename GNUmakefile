@@ -250,7 +250,7 @@ CPACK_PACKAGES_CMD = \
 	( ls $(BUILD_DIR)/*.pkg 1>/dev/null 2>&1 && mv $(BUILD_DIR)/*.pkg $(DIST_DIR)/ && \
 	  echo "  FreeBSD package created" ) || echo "  Warning: No FreeBSD package found" && \
 	found=0; \
-	for f in $(DIST_DIR)/$(PROJECT_NAME)-*.pkg $(DIST_DIR)/*.pkg; do \
+	for f in $(DIST_DIR)/$(PROJECT_NAME)-*.pkg; do \
 	  if [ -f "$$f" ]; then ls -lh "$$f"; found=1; fi; \
 	done; \
 	[ "$$found" -eq 1 ] || echo "  No packages found in $(DIST_DIR)"
