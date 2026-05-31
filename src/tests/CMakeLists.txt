@@ -52,9 +52,30 @@ target_link_libraries(test_integration
     GTest::gtest_main
 )
 
+add_executable(test_security test_security.cpp)
+target_link_libraries(test_security
+    simple-rsyncd_lib
+    GTest::gtest_main
+)
+
+add_executable(test_ssl test_ssl.cpp)
+target_link_libraries(test_ssl
+    simple-rsyncd_lib
+    GTest::gtest_main
+)
+
+add_executable(test_public_key test_public_key.cpp)
+target_link_libraries(test_public_key
+    simple-rsyncd_lib
+    GTest::gtest_main
+)
+
 # Add tests to CTest
 add_test(NAME ConfigTests COMMAND test_config)
 add_test(NAME ModuleTests COMMAND test_module)
 add_test(NAME ProtocolTests COMMAND test_protocol)
 add_test(NAME AuthTests COMMAND test_auth)
 add_test(NAME IntegrationTests COMMAND test_integration)
+add_test(NAME SecurityTests COMMAND test_security)
+add_test(NAME SSLTests COMMAND test_ssl)
+add_test(NAME PublicKeyTests COMMAND test_public_key)
