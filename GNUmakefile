@@ -234,7 +234,7 @@ CPACK_PACKAGES_CMD = \
 	else \
 		echo "  Skipping DEB (dpkg-deb not available)"; \
 	fi && \
-	( ls -lh $(DIST_DIR)/$(PROJECT_NAME)-*.deb $(DIST_DIR)/$(PROJECT_NAME)-*.rpm 2>/dev/null || \
+	( ls -lh $(DIST_DIR)/ 2>/dev/null | grep -E '\.(deb|rpm)$$' || \
 	  echo "  No packages found in $(DIST_DIR)" )
 else ifeq ($(PLATFORM),freebsd)
 CPACK_PACKAGES_CMD = \
@@ -253,7 +253,7 @@ CPACK_PACKAGES_CMD = \
 	$(CP) $(BUILD_DIR)/$(PROJECT_NAME)-*.msi $(DIST_DIR)/ 2>/dev/null || true && \
 	$(CP) $(BUILD_DIR)/$(PROJECT_NAME)-*.zip $(DIST_DIR)/ 2>/dev/null || true && \
 	echo "Windows packages created: MSI and ZIP" && \
-	( ls -lh $(DIST_DIR)/$(PROJECT_NAME)-*.msi $(DIST_DIR)/$(PROJECT_NAME)-*.zip 2>/dev/null || \
+	( ls -lh $(DIST_DIR)/ 2>/dev/null | grep -E '\.(msi|zip)$$' || \
 	  echo "  No packages found in $(DIST_DIR)" )
 else
 CPACK_PACKAGES_CMD = @echo "Package generation not supported on this platform"
