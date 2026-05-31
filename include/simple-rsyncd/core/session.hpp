@@ -26,6 +26,9 @@
 
 namespace simple_rsyncd {
 
+class SSLConnection;
+class AuthenticationManager;
+
 // Forward declaration
 class RSyncDaemon;
 
@@ -33,7 +36,9 @@ class RSyncSession {
 public:
     RSyncSession(int client_socket, const std::string& client_address,
                  std::shared_ptr<Configuration> config,
-                 const std::map<std::string, std::shared_ptr<Module>>& modules);
+                 const std::map<std::string, std::shared_ptr<Module>>& modules,
+                 AuthenticationManager* auth_manager = nullptr,
+                 std::unique_ptr<SSLConnection> ssl_connection = nullptr);
     ~RSyncSession();
 
     std::string getClientAddress() const;
@@ -47,8 +52,10 @@ public:
 
 private:
     int client_socket_;
+    std::unique_ptr<SSLConnection> ssl_connection_;
     std::string client_address_;
     std::shared_ptr<Configuration> config_;
+    AuthenticationManager* auth_manager_;
     bool active_;
     std::chrono::steady_clock::time_point start_time_;
 
@@ -73,8 +80,11 @@ private:
 
     bool readRequest();
     bool writeResponse(const std::string& response);
+    ssize_t readSocket(void* buffer, size_t length);
+    ssize_t writeSocket(const void* buffer, size_t length);
     bool parseRequest(const std::string& request);
     std::string handleProtocolMessage(const ProtocolMessage& message);
+    std::string handleAuthMessage(const ProtocolMessage& message);
 
     // File transfer methods
     bool startFileUpload(const std::string& module_name, const std::string& path);

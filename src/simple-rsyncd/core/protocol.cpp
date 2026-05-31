@@ -120,6 +120,8 @@ ProtocolCommand ProtocolParser::parseCommand(const std::string& line) {
         return ProtocolCommand::DELETE;
     } else if (cmd == "STAT" || cmd == "STATUS" || cmd == "INFO") {
         return ProtocolCommand::STAT;
+    } else if (cmd == "AUTH" || cmd == "LOGIN") {
+        return ProtocolCommand::AUTH;
     }
 
     return ProtocolCommand::UNKNOWN;

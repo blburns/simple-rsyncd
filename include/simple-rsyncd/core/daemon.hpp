@@ -30,6 +30,7 @@
 #include "simple-rsyncd/core/session.hpp"
 #include "simple-rsyncd/utils/logger.hpp"
 #include "simple-rsyncd/security/ssl_context.hpp"
+#include "simple-rsyncd/security/rate_limiter.hpp"
 #include "simple-rsyncd/core/auth.hpp"
 
 namespace simple_rsyncd {
@@ -152,7 +153,7 @@ private:
     void handleConnection(int client_socket, const std::string& client_address);
     void cleanupSessions();
     bool validateClient(const std::string& client_address);
-    void logAccess(const std::string& client_address, const std::string& module, bool allowed);
+    void logAccess(const std::string& client_address, const std::string& module, bool allowed) const;
 
     // Configuration validation
     bool validateConfiguration() const;
@@ -205,14 +206,7 @@ private:
                         const std::string& operation) const;
 
     // Rate limiting
-    struct RateLimit {
-        std::chrono::steady_clock::time_point last_check;
-        size_t request_count;
-        size_t max_requests;
-        std::chrono::seconds window;
-    };
-    mutable std::map<std::string, RateLimit> rate_limits_;
-    mutable std::mutex rate_limit_mutex_;
+    std::unique_ptr<ConnectionRateLimiter> rate_limiter_;
     bool checkRateLimit(const std::string& client_address) const;
     void updateRateLimit(const std::string& client_address);
 

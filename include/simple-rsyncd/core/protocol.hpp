@@ -45,6 +45,7 @@ enum class ProtocolCommand {
     PUT,       // Put file
     DELETE,    // Delete file
     STAT,      // Get file stats
+    AUTH,      // Authenticate (password or public key)
     UNKNOWN
 };
 

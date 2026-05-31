@@ -17,6 +17,8 @@
 #include "simple-rsyncd/core/session.hpp"
 #include "simple-rsyncd/core/protocol.hpp"
 #include "simple-rsyncd/core/module.hpp"
+#include "simple-rsyncd/core/auth.hpp"
+#include "simple-rsyncd/security/ssl_context.hpp"
 #include <unistd.h>
 #include <iostream>
 #include <sys/socket.h>
@@ -29,10 +31,14 @@ namespace simple_rsyncd {
 
 RSyncSession::RSyncSession(int client_socket, const std::string& client_address,
                            std::shared_ptr<Configuration> config,
-                           const std::map<std::string, std::shared_ptr<Module>>& modules)
+                           const std::map<std::string, std::shared_ptr<Module>>& modules,
+                           AuthenticationManager* auth_manager,
+                           std::unique_ptr<SSLConnection> ssl_connection)
     : client_socket_(client_socket)
+    , ssl_connection_(std::move(ssl_connection))
     , client_address_(client_address)
     , config_(config)
+    , auth_manager_(auth_manager)
     , active_(true)
     , start_time_(std::chrono::steady_clock::now())
     , parser_(std::make_unique<ProtocolParser>())
@@ -60,11 +66,37 @@ bool RSyncSession::isActive() const {
 }
 
 void RSyncSession::close() {
+    if (ssl_connection_) {
+        ssl_connection_->close();
+        client_socket_ = -1;
+        active_ = false;
+        return;
+    }
     if (active_ && client_socket_ >= 0) {
         ::close(client_socket_);
         client_socket_ = -1;
         active_ = false;
     }
+}
+
+ssize_t RSyncSession::readSocket(void* buffer, size_t length) {
+    if (ssl_connection_ && ssl_connection_->isOpen()) {
+        return ssl_connection_->read(buffer, length);
+    }
+    if (client_socket_ < 0) {
+        return -1;
+    }
+    return recv(client_socket_, buffer, length, 0);
+}
+
+ssize_t RSyncSession::writeSocket(const void* buffer, size_t length) {
+    if (ssl_connection_ && ssl_connection_->isOpen()) {
+        return ssl_connection_->write(buffer, length);
+    }
+    if (client_socket_ < 0) {
+        return -1;
+    }
+    return send(client_socket_, buffer, length, 0);
 }
 
 bool RSyncSession::processRequest() {
@@ -79,7 +111,7 @@ bool RSyncSession::processRequest() {
 
     // Read request from socket
     std::vector<uint8_t> buffer(4096);
-    ssize_t bytes_read = recv(client_socket_, buffer.data(), buffer.size() - 1, 0);
+    ssize_t bytes_read = readSocket(buffer.data(), buffer.size() - 1);
 
     if (bytes_read <= 0) {
         active_ = false;
@@ -160,7 +192,7 @@ bool RSyncSession::writeResponse(const std::string& response) {
     }
 
     // Send response to client
-    ssize_t bytes_sent = send(client_socket_, response.c_str(), response.length(), 0);
+    ssize_t bytes_sent = writeSocket(response.c_str(), response.length());
     return bytes_sent > 0;
 }
 
@@ -175,16 +207,56 @@ std::string RSyncSession::handleProtocolMessage(const ProtocolMessage& message) 
         handler_->setModule(message.module);
     }
 
-    // Check authentication if required
-    if (config_ && config_->auth.enabled && authenticated_user_.empty()) {
-        // Authentication required but not yet authenticated
-        // For now, allow and set a default user
-        // TODO: Implement proper authentication handshake
-        authenticated_user_ = "anonymous";
+    // Public-key auth must complete before other commands (except AUTH).
+    if (config_ && config_->auth.enabled && config_->auth.method == "public_key" &&
+        authenticated_user_.empty() && message.command != ProtocolCommand::AUTH) {
+        return parser_->buildErrorResponse(401, "Authentication required: send AUTH command");
     }
 
+    if (message.command == ProtocolCommand::AUTH) {
+        return handleAuthMessage(message);
+    }
     // Handle the protocol message
     return handler_->handle(message);
+}
+
+std::string RSyncSession::handleAuthMessage(const ProtocolMessage& message) {
+    if (!config_ || !config_->auth.enabled) {
+        authenticated_user_ = "anonymous";
+        return parser_->buildResponse(true, "Authentication disabled");
+    }
+
+    if (config_->auth.method == "public_key") {
+        if (!auth_manager_) {
+            return parser_->buildErrorResponse(500, "Authentication manager unavailable");
+        }
+
+        const auto sig_it = message.arguments.find("signature");
+        if (message.module.empty() || message.path.empty() || sig_it == message.arguments.end()) {
+            return parser_->buildErrorResponse(400,
+                "AUTH requires: AUTH <user> <challenge> signature=<base64_ssh_sig>");
+        }
+
+        if (auth_manager_->authenticateUserWithKey(message.module, message.path, sig_it->second)) {
+            authenticated_user_ = message.module;
+            return parser_->buildResponse(true, "Authenticated: " + message.module);
+        }
+        return parser_->buildErrorResponse(403, "Public key authentication failed");
+    }
+
+    if (config_->auth.method == "password") {
+        const auto pass_it = message.arguments.find("password");
+        if (message.module.empty() || pass_it == message.arguments.end()) {
+            return parser_->buildErrorResponse(400, "AUTH requires: AUTH <user> _ password=<secret>");
+        }
+        if (auth_manager_ && auth_manager_->authenticateUser(message.module, pass_it->second)) {
+            authenticated_user_ = message.module;
+            return parser_->buildResponse(true, "Authenticated: " + message.module);
+        }
+        return parser_->buildErrorResponse(403, "Password authentication failed");
+    }
+
+    return parser_->buildErrorResponse(501, "Unsupported authentication method");
 }
 
 bool RSyncSession::startFileUpload(const std::string& module_name, const std::string& path) {
@@ -268,7 +340,7 @@ bool RSyncSession::continueFileTransfer() {
         size_t bytes_read = download_file_.gcount();
 
         if (bytes_read > 0) {
-            ssize_t bytes_sent = send(client_socket_, buffer.data(), bytes_read, 0);
+            ssize_t bytes_sent = writeSocket(buffer.data(), bytes_read);
             if (bytes_sent < 0) {
                 endFileTransfer();
                 return false;
@@ -294,7 +366,7 @@ bool RSyncSession::continueFileTransfer() {
     } else if (transfer_state_ == TransferState::RECEIVING_FILE) {
         // Receive file data
         std::vector<uint8_t> buffer(8192); // 8KB chunks
-        ssize_t bytes_received = recv(client_socket_, buffer.data(), buffer.size(), 0);
+        ssize_t bytes_received = readSocket(buffer.data(), buffer.size());
 
         if (bytes_received > 0) {
             upload_file_.write(reinterpret_cast<const char*>(buffer.data()), bytes_received);

@@ -33,7 +33,7 @@
 
 #include "simple-rsyncd/core/daemon.hpp"
 #include "simple-rsyncd/config/config.hpp"
-#include "simple-rsyncd/utils/logger.hpp"
+#include "simple-rsyncd/security/privileges.hpp"
 
 // Global daemon instance for signal handling
 std::unique_ptr<simple_rsyncd::RSyncDaemon> g_daemon;
@@ -94,7 +94,7 @@ void printUsage() {
  * @brief Print version information
  */
 void printVersion() {
-    std::cout << "simple-rsyncd v0.3.0" << std::endl;
+    std::cout << "simple-rsyncd v0.4.0" << std::endl;
     std::cout << "Simple RSync Daemon - A lightweight and secure rsync server" << std::endl;
     std::cout << "Copyright (c) 2024 simple-rsyncd contributors" << std::endl;
     std::cout << "License: Apache 2.0" << std::endl;
@@ -254,20 +254,7 @@ void removePidFile(const std::string& pid_file) {
  * @return true if successful, false otherwise
  */
 bool dropPrivileges(const std::string& user, const std::string& group) {
-    if (user.empty() && group.empty()) {
-        return true;
-    }
-
-    // Implementation would depend on platform-specific code
-    // For now, just log the intention
-    if (!user.empty()) {
-        std::cout << "Would drop privileges to user: " << user << std::endl;
-    }
-    if (!group.empty()) {
-        std::cout << "Would drop privileges to group: " << group << std::endl;
-    }
-
-    return true;
+    return simple_rsyncd::dropProcessPrivileges(user, group);
 }
 
 /**

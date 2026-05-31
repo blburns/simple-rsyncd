@@ -20,6 +20,9 @@
 #include "simple-rsyncd/core/session.hpp"
 #include "simple-rsyncd/core/module.hpp"
 #include "simple-rsyncd/core/auth.hpp"
+#include "simple-rsyncd/security/network_access.hpp"
+#include "simple-rsyncd/security/privileges.hpp"
+#include "simple-rsyncd/security/rate_limiter.hpp"
 
 #include <iostream>
 #include <thread>
@@ -91,10 +94,44 @@ bool RSyncDaemon::start() {
         return false;
     }
 
+    // Initialize SSL when enabled
+    if (!initializeSSL()) {
+        logger_->error("Failed to initialize SSL/TLS");
+        return false;
+    }
+
     // Initialize network
     if (!initializeNetwork()) {
         logger_->error("Failed to initialize network");
         return false;
+    }
+
+    // Optional chroot (requires root, before privilege drop)
+    if (config_ && config_->security.chroot_enabled && !config_->security.chroot_directory.empty()) {
+        if (!enterChroot(config_->security.chroot_directory)) {
+            logger_->error("Failed to enter chroot: " + config_->security.chroot_directory);
+            return false;
+        }
+        logger_->info("Entered chroot: " + config_->security.chroot_directory);
+    }
+
+    // Drop privileges after bind (requires root for setuid)
+    if (config_ && config_->security.drop_privileges) {
+        if (!dropProcessPrivileges(config_->security.user, config_->security.group)) {
+            logger_->error("Failed to drop privileges");
+            return false;
+        }
+        if (!config_->security.user.empty() || !config_->security.group.empty()) {
+            logger_->info("Dropped privileges to user=" + config_->security.user +
+                          " group=" + config_->security.group);
+        }
+    }
+
+    if (config_ && config_->rate_limit.enabled) {
+        rate_limiter_ = std::make_unique<ConnectionRateLimiter>(
+            config_->rate_limit.max_connections_per_minute,
+            config_->rate_limit.max_connections_per_hour);
+        logger_->info("Connection rate limiting enabled");
     }
 
     // Set up signal handlers
@@ -230,7 +267,40 @@ time_t RSyncDaemon::getUptime() const {
 }
 
 std::string RSyncDaemon::getVersion() const {
-    return "0.3.0";
+    return "0.4.0";
+}
+
+bool RSyncDaemon::initializeSSL() {
+    if (!config_ || !config_->ssl.enabled) {
+        return true;
+    }
+
+    ssl_context_ = std::make_unique<SSLContext>();
+    if (!ssl_context_->initialize(config_->ssl.certificate_file,
+                                  config_->ssl.private_key_file,
+                                  config_->ssl.ca_file,
+                                  config_->ssl.tls_version,
+                                  config_->ssl.cipher_suite)) {
+        logger_->error("SSL initialization failed: " + ssl_context_->lastError());
+        return false;
+    }
+
+    logger_->info("SSL/TLS enabled (min TLS " + config_->ssl.tls_version + ")");
+    return true;
+}
+
+bool RSyncDaemon::checkRateLimit(const std::string& client_address) const {
+    if (!config_ || !config_->rate_limit.enabled || !rate_limiter_) {
+        return true;
+    }
+    return rate_limiter_->allowConnection(client_address);
+}
+
+void RSyncDaemon::updateRateLimit(const std::string& client_address) {
+    if (!config_ || !config_->rate_limit.enabled || !rate_limiter_) {
+        return;
+    }
+    rate_limiter_->recordConnection(client_address);
 }
 
 // Private methods implementation
@@ -253,7 +323,10 @@ bool RSyncDaemon::loadModules() {
 
     for (const auto& [name, module_config] : config_->modules) {
         try {
-            auto module = createModule(module_config);
+            ModuleConfig secured_config = module_config;
+            secured_config.allow_symlinks = config_->security.allow_symlinks;
+            secured_config.allow_hardlinks = config_->security.allow_hardlinks;
+            auto module = createModule(secured_config);
             if (module && module->validate()) {
                 modules_[name] = module;
                 logger_->info("Loaded module: " + name + " at " + module_config.path);
@@ -441,36 +514,39 @@ bool RSyncDaemon::checkAuthentication(const std::string& username, const std::st
 }
 
 bool RSyncDaemon::checkAccess(const std::string& client_address, const std::string& module_name) const {
+    (void)module_name;
     if (!config_ || !config_->access.enabled) {
-        return true; // Access control disabled, allow all
+        return true;
     }
 
-    // Check denied hosts first
-    for (const auto& denied : config_->access.denied_hosts) {
-        if (client_address == denied) {
-            std::lock_guard<std::mutex> lock(stats_mutex_);
-            stats_.access_denied++;
-            return false;
-        }
+    if (!NetworkAccess::isAllowed(client_address,
+                                  config_->access.denied_hosts,
+                                  config_->access.denied_networks,
+                                  config_->access.allowed_hosts,
+                                  config_->access.allowed_networks)) {
+        std::lock_guard<std::mutex> lock(stats_mutex_);
+        stats_.access_denied++;
+        logAccess(client_address, module_name, false);
+        return false;
     }
 
-    // Check allowed hosts
-    if (!config_->access.allowed_hosts.empty()) {
-        bool allowed = false;
-        for (const auto& allowed_host : config_->access.allowed_hosts) {
-            if (client_address == allowed_host) {
-                allowed = true;
-                break;
-            }
-        }
-        if (!allowed) {
-            std::lock_guard<std::mutex> lock(stats_mutex_);
-            stats_.access_denied++;
-            return false;
-        }
-    }
-
+    logAccess(client_address, module_name, true);
     return true;
+}
+
+void RSyncDaemon::logAccess(const std::string& client_address,
+                            const std::string& module,
+                            bool allowed) const {
+    if (!logger_) {
+        return;
+    }
+    logger_->info(std::string("access ") + (allowed ? "allowed" : "denied") +
+                  " client=" + client_address +
+                  (module.empty() ? "" : " module=" + module));
+}
+
+bool RSyncDaemon::validateClient(const std::string& client_address) {
+    return checkAccess(client_address, "") && checkRateLimit(client_address);
 }
 
 bool RSyncDaemon::checkPermissions(const std::string& username, const std::string& module_name,
@@ -603,9 +679,15 @@ void RSyncDaemon::acceptLoop() {
         inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
         std::string client_address = std::string(client_ip);
 
-        // Check access control
+        // Check access control and rate limits
         if (!checkAccess(client_address, "")) {
             logger_->warn("Access denied for " + client_address);
+            close(client_socket);
+            continue;
+        }
+
+        if (!checkRateLimit(client_address)) {
+            logger_->warn("Rate limit exceeded for " + client_address);
             close(client_socket);
             continue;
         }
@@ -620,6 +702,8 @@ void RSyncDaemon::acceptLoop() {
             }
         }
 
+        updateRateLimit(client_address);
+
         // Get modules map (need to lock modules_mutex_)
         std::map<std::string, std::shared_ptr<Module>> modules_copy;
         {
@@ -627,8 +711,24 @@ void RSyncDaemon::acceptLoop() {
             modules_copy = modules_;
         }
 
+        AuthenticationManager* auth_ptr = auth_manager_ ? auth_manager_.get() : nullptr;
+
         try {
-            auto session = std::make_unique<RSyncSession>(client_socket, client_address, config_, modules_copy);
+            std::unique_ptr<RSyncSession> session;
+            if (config_->ssl.enabled && ssl_context_ && ssl_context_->isInitialized()) {
+                auto ssl_conn = ssl_context_->acceptConnection(client_socket);
+                if (!ssl_conn) {
+                    logger_->error("TLS handshake failed for " + client_address + ": " +
+                                   ssl_context_->lastError());
+                    close(client_socket);
+                    continue;
+                }
+                session = std::make_unique<RSyncSession>(client_socket, client_address, config_,
+                                                         modules_copy, auth_ptr, std::move(ssl_conn));
+            } else {
+                session = std::make_unique<RSyncSession>(client_socket, client_address, config_,
+                                                         modules_copy, auth_ptr);
+            }
             {
                 std::lock_guard<std::mutex> lock(sessions_mutex_);
                 active_sessions_.push_back(std::move(session));
