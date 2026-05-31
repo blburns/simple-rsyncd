@@ -5,6 +5,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(simple-rsyncd VERSION 0.3.0 LANGUAGES CXX)
 
+include(GNUInstallDirs)
+if(UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Installation prefix" FORCE)
+endif()
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -210,33 +215,42 @@ if(ENABLE_STATIC_LINKING)
 endif()
 
 # Install targets
-install(TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-)
-
-install(DIRECTORY include/
-    DESTINATION include
-    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-)
-
-# Install configuration files
-install(DIRECTORY config/
-    DESTINATION etc/${PROJECT_NAME}
-    FILES_MATCHING PATTERN "*.conf" PATTERN "*.example"
-)
-
-# Install service files
-if(UNIX AND NOT APPLE)
-    install(FILES deployment/systemd/${PROJECT_NAME}.service
-        DESTINATION lib/systemd/system
+if(APPLE)
+    install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
     )
-elseif(APPLE)
-    # Relative path so CPack stages under DESTDIR instead of writing to /Library
+    install(DIRECTORY include/
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+    )
+    install(DIRECTORY config/
+        DESTINATION etc/${PROJECT_NAME}
+        FILES_MATCHING PATTERN "*.conf" PATTERN "*.example"
+    )
     install(FILES deployment/launchd/com.simpledaemons.${PROJECT_NAME}.plist
-        DESTINATION Library/LaunchDaemons
+        DESTINATION /Library/LaunchDaemons
     )
+else()
+    install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+    install(DIRECTORY include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+    )
+    install(DIRECTORY config/
+        DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}
+        FILES_MATCHING PATTERN "*.conf" PATTERN "*.example"
+    )
+    if(UNIX)
+        install(FILES deployment/systemd/${PROJECT_NAME}.service
+            DESTINATION lib/systemd/system
+        )
+    endif()
 endif()
 
 # Tests
@@ -259,9 +273,15 @@ if(ENABLE_PACKAGING)
     set(CPACK_PACKAGE_CONTACT "info@simpledaemons.com")
     set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/simpledaemons/${PROJECT_NAME}")
 
-    # Package files
-    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-    set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+    # Package files — productbuild requires .txt/.html resources on macOS
+    if(APPLE)
+        set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/packaging/LICENSE.txt")
+        set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/packaging/assets/readme.html")
+        set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_CURRENT_SOURCE_DIR}/packaging/assets/welcome.html")
+    else()
+        set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+        set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+    endif()
 
     # Platform-specific package settings
     if(WIN32)
@@ -283,8 +303,12 @@ if(ENABLE_PACKAGING)
     elseif(APPLE)
         # macOS DMG and PKG packages
         set(CPACK_GENERATOR "DragNDrop;productbuild")
-        set(CPACK_PACKAGING_INSTALL_PREFIX "/")
+        set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local")
         set(CPACK_SET_DESTDIR TRUE)
+        set(CPACK_PRODUCTBUILD_DOMAINS TRUE)
+        set(CPACK_PRODUCTBUILD_DOMAINS_ANYWHERE TRUE)
+        set(CPACK_PRODUCTBUILD_DOMAINS_ROOT TRUE)
+        set(CPACK_PACKAGE_RELOCATABLE FALSE)
 
         # DMG settings
         set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME}")
@@ -463,6 +487,7 @@ if(ENABLE_PACKAGING)
     )
 
     # Include CPack configuration
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
     include(CPack)
 endif()
 

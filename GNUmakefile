@@ -200,8 +200,10 @@ ifeq ($(PLATFORM),macos)
 CPACK_PACKAGES_CMD = \
 	@mkdir -p $(DIST_DIR) && \
 	echo "Building macOS packages..." && \
-	( cd $(BUILD_DIR) && cpack -G DragNDrop ) && \
-	( cd $(BUILD_DIR) && cpack -G productbuild ) && \
+	( cd $(BUILD_DIR) && cpack -G DragNDrop ) || echo "  Warning: DMG generation failed" && \
+	( cd $(BUILD_DIR) && cpack -G productbuild ) || echo "  Warning: PKG generation failed" && \
+	( packaging/macos/pkg/rebuild-from-cpack.sh $(PROJECT_NAME) $(VERSION) $(BUILD_DIR) ) || \
+	  echo "  Warning: PKG rebuild failed" && \
 	echo "Moving packages to $(DIST_DIR)..." && \
 	( ls $(BUILD_DIR)/$(PROJECT_NAME)-*.dmg 1>/dev/null 2>&1 && \
 	  mv $(BUILD_DIR)/$(PROJECT_NAME)-*.dmg $(DIST_DIR)/ && echo "  DMG package moved" ) || \
@@ -209,8 +211,7 @@ CPACK_PACKAGES_CMD = \
 	( ls $(BUILD_DIR)/$(PROJECT_NAME)-*.pkg 1>/dev/null 2>&1 && \
 	  mv $(BUILD_DIR)/$(PROJECT_NAME)-*.pkg $(DIST_DIR)/ && echo "  PKG package moved" ) || \
 	  echo "  Warning: No PKG package found" && \
-	echo "macOS packages created: DMG and PKG" && \
-	( ls -lh $(DIST_DIR)/$(PROJECT_NAME)-*.dmg $(DIST_DIR)/$(PROJECT_NAME)-*.pkg 2>/dev/null || \
+	( ls -lh $(DIST_DIR)/ 2>/dev/null | grep -E '\.(dmg|pkg)$$' || \
 	  echo "  No packages found in $(DIST_DIR)" )
 else ifeq ($(PLATFORM),linux)
 # Build DEB on Debian/Ubuntu and RPM on RHEL/CentOS; skip formats when tools are missing
@@ -794,6 +795,7 @@ ifeq ($(PLATFORM),macos)
 	@echo "Building PKG package..."
 	@mkdir -p $(DIST_DIR)
 	cd $(BUILD_DIR) && cpack -G productbuild
+	packaging/macos/pkg/rebuild-from-cpack.sh $(PROJECT_NAME) $(VERSION) $(BUILD_DIR)
 	mv $(BUILD_DIR)/$(PROJECT_NAME)-$(VERSION)-*.pkg $(DIST_DIR)/
 	@echo "PKG package created: $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION)-*.pkg"
 else

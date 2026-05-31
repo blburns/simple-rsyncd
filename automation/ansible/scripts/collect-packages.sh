@@ -63,9 +63,10 @@ check_prerequisites() {
 create_dist_structure() {
     print_info "Creating local dist directory structure..."
     
-    mkdir -p "$DIST_DIR"/{linux,source,macos}
+    mkdir -p "$DIST_DIR"/{linux,source,macos,freebsd}
     mkdir -p "$DIST_DIR/linux"/{deb,rpm}
     mkdir -p "$DIST_DIR/macos"/{dmg,pkg}
+    mkdir -p "$DIST_DIR/freebsd"/pkg
     
     print_success "Dist directory structure created: $DIST_DIR"
 }
@@ -77,6 +78,7 @@ fetch_packages() {
     # Ensure dist directory structure exists before Ansible runs
     mkdir -p "$DIST_DIR/linux"/{deb,rpm}
     mkdir -p "$DIST_DIR/macos"/{dmg,pkg}
+    mkdir -p "$DIST_DIR/freebsd"/pkg
     mkdir -p "$DIST_DIR/source"
     
     # Create a temporary playbook for fetching packages
@@ -216,25 +218,50 @@ fetch_packages() {
         - (item.path | regex_search('\.dmg$')) is not none
         - (centralized_packages.files | default([]) | length) == 0
           
-    - name: Fetch PKG packages from centralized (preferred)
+    - name: Fetch FreeBSD PKG packages from centralized (preferred)
+      fetch:
+        src: "{{ item.path }}"
+        dest: "{{ local_dist_dir }}/freebsd/pkg/{{ item.path | basename }}"
+        flat: yes
+      loop: "{{ centralized_packages.files | default([]) }}"
+      when:
+        - centralized_packages.files is defined
+        - (item.path | regex_search('\.pkg$')) is not none
+        - (item.path | regex_search('freebsd')) is not none
+
+    - name: Fetch macOS PKG packages from centralized (preferred)
       fetch:
         src: "{{ item.path }}"
         dest: "{{ local_dist_dir }}/macos/pkg/{{ inventory_hostname }}-{{ item.path | basename }}"
         flat: yes
       loop: "{{ centralized_packages.files | default([]) }}"
-      when: 
+      when:
         - centralized_packages.files is defined
         - (item.path | regex_search('\.pkg$')) is not none
-          
-    - name: Fetch PKG packages from dist
+        - (item.path | regex_search('freebsd')) is none
+
+    - name: Fetch FreeBSD PKG packages from dist
+      fetch:
+        src: "{{ item.path }}"
+        dest: "{{ local_dist_dir }}/freebsd/pkg/{{ item.path | basename }}"
+        flat: yes
+      loop: "{{ dist_packages.files | default([]) }}"
+      when:
+        - dist_packages.files is defined
+        - (item.path | regex_search('\.pkg$')) is not none
+        - (item.path | regex_search('freebsd')) is not none
+        - (centralized_packages.files | default([]) | length) == 0
+
+    - name: Fetch macOS PKG packages from dist
       fetch:
         src: "{{ item.path }}"
         dest: "{{ local_dist_dir }}/macos/pkg/{{ inventory_hostname }}-{{ item.path | basename }}"
         flat: yes
       loop: "{{ dist_packages.files | default([]) }}"
-      when: 
+      when:
         - dist_packages.files is defined
         - (item.path | regex_search('\.pkg$')) is not none
+        - (item.path | regex_search('freebsd')) is none
         - (centralized_packages.files | default([]) | length) == 0
           
     - name: Fetch source packages from centralized (preferred)
@@ -293,15 +320,28 @@ fetch_packages() {
         - (item.path | regex_search('\.dmg$')) is not none
         - (dist_packages.files | default([]) | length) == 0
         
-    - name: Fetch PKG packages from build (fallback)
+    - name: Fetch FreeBSD PKG packages from build (fallback)
+      fetch:
+        src: "{{ item.path }}"
+        dest: "{{ local_dist_dir }}/freebsd/pkg/{{ item.path | basename }}"
+        flat: yes
+      loop: "{{ build_packages.files | default([]) }}"
+      when:
+        - build_packages.files is defined
+        - (item.path | regex_search('\.pkg$')) is not none
+        - (item.path | regex_search('freebsd')) is not none
+        - (dist_packages.files | default([]) | length) == 0
+
+    - name: Fetch macOS PKG packages from build (fallback)
       fetch:
         src: "{{ item.path }}"
         dest: "{{ local_dist_dir }}/macos/pkg/{{ inventory_hostname }}-{{ item.path | basename }}"
         flat: yes
       loop: "{{ build_packages.files | default([]) }}"
-      when: 
+      when:
         - build_packages.files is defined
         - (item.path | regex_search('\.pkg$')) is not none
+        - (item.path | regex_search('freebsd')) is none
         - (dist_packages.files | default([]) | length) == 0
         
     - name: Fetch source packages from build (fallback)
@@ -344,17 +384,18 @@ organize_packages() {
     
     # Remove hostname prefix from package names and copy to centralized directory
     local copied=0
-    for dir in "$DIST_DIR/linux"/{deb,rpm} "$DIST_DIR/macos"/{dmg,pkg} "$DIST_DIR/source"; do
+    for dir in "$DIST_DIR/linux"/{deb,rpm} "$DIST_DIR/macos"/{dmg,pkg} "$DIST_DIR/freebsd"/pkg "$DIST_DIR/source"; do
         if [ -d "$dir" ]; then
             cd "$dir"
             shopt -s nullglob
             for file in *; do
                 if [ -f "$file" ]; then
                     # Remove hostname prefix if present
-                    if [[ "$file" =~ ^(BUILD_DEB|BUILD_RPM|BUILD_MACOS)- ]]; then
+                    if [[ "$file" =~ ^(BUILD_DEB|BUILD_RPM|BUILD_MACOS|BUILD_PKG)- ]]; then
                         new_name="${file#BUILD_DEB-}"
                         new_name="${new_name#BUILD_RPM-}"
                         new_name="${new_name#BUILD_MACOS-}"
+                        new_name="${new_name#BUILD_PKG-}"
                         if [ "$file" != "$new_name" ]; then
                             mv "$file" "$new_name"
                             print_info "Renamed: $file -> $new_name"
@@ -448,6 +489,21 @@ display_summary() {
     echo "DMG packages (macOS):"
     if ls "$DIST_DIR/macos/dmg"/*.dmg 1> /dev/null 2>&1; then
         for file in "$DIST_DIR/macos/dmg"/*.dmg; do
+            if [ -f "$file" ]; then
+                size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo "0")
+                echo "  $(basename "$file") ($(numfmt --to=iec-i --suffix=B "$size" 2>/dev/null || echo "${size}B"))"
+                total=$((total + size))
+                count=$((count + 1))
+            fi
+        done
+    else
+        echo "  (none)"
+    fi
+    
+    echo ""
+    echo "PKG packages (FreeBSD):"
+    if ls "$DIST_DIR/freebsd/pkg"/*.pkg 1> /dev/null 2>&1; then
+        for file in "$DIST_DIR/freebsd/pkg"/*.pkg; do
             if [ -f "$file" ]; then
                 size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo "0")
                 echo "  $(basename "$file") ($(numfmt --to=iec-i --suffix=B "$size" 2>/dev/null || echo "${size}B"))"
