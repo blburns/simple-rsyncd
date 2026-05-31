@@ -226,8 +226,13 @@ if(APPLE)
         FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
     )
     install(DIRECTORY config/
-        DESTINATION etc/${PROJECT_NAME}
-        FILES_MATCHING PATTERN "*.conf" PATTERN "*.example"
+        DESTINATION /etc/${PROJECT_NAME}
+        FILES_MATCHING
+            PATTERN "*.conf"
+            PATTERN "*.example"
+            PATTERN "*.yaml"
+            PATTERN "*.json"
+            PATTERN "README.md"
     )
     install(FILES deployment/launchd/com.simpledaemons.${PROJECT_NAME}.plist
         DESTINATION /Library/LaunchDaemons

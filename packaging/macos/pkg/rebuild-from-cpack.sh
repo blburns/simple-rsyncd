@@ -5,7 +5,7 @@
 # creating Contents/Packages inside it, which incorrectly bundles
 # Contents/ into the payload (installer then writes to /Contents/... on the
 # system volume and fails). This script rebuilds the component and product
-# packages from a clean payload containing only usr/ and Library/.
+# packages from a clean payload containing usr/, etc/, and Library/.
 
 set -euo pipefail
 
@@ -33,13 +33,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ ! -d "$STAGE/usr" ] && [ ! -d "$STAGE/Library" ]; then
-    echo "error: staging directory missing usr/ or Library/: $STAGE" >&2
+if [ ! -d "$STAGE/usr" ] && [ ! -d "$STAGE/etc" ] && [ ! -d "$STAGE/Library" ]; then
+    echo "error: staging directory missing usr/, etc/, or Library/: $STAGE" >&2
     exit 1
 fi
 
 mkdir -p "$PAYLOAD"
 [ -d "$STAGE/usr" ] && cp -R "$STAGE/usr" "$PAYLOAD/"
+[ -d "$STAGE/etc" ] && cp -R "$STAGE/etc" "$PAYLOAD/"
 [ -d "$STAGE/Library" ] && cp -R "$STAGE/Library" "$PAYLOAD/"
 
 mkdir -p "$STAGE/Contents/Packages"
