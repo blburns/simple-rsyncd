@@ -2,27 +2,30 @@
 
 A lightweight rsync-style daemon in C++ for modern server environments.
 
-> **Release status: v0.3.1 Beta** — Installers and core file operations are tested (`ctest` 5/5 suites). This is **not** a drop-in replacement for native `rsyncd`; TLS, Prometheus, OAuth2, and full `rsync(1)` wire compatibility are planned for later releases. See [project/PRODUCTION_GATE.md](project/PRODUCTION_GATE.md).
+> **Release status: v0.4.0 Security-ready beta** — TLS, IP/CIDR access control, rate limiting, privilege drop, and symlink hardening are implemented (`ctest` 7/7). Still **not** a native `rsyncd` drop-in or general production release. See [project/PRODUCTION_GATE.md](project/PRODUCTION_GATE.md) and [docs/security/THREAT_MODEL.md](docs/security/THREAT_MODEL.md).
 
 ## 🚀 Features
 
-### Implemented (v0.3.1)
+### Implemented (v0.4.0)
 
 - **Multi-platform packaging**: Linux (DEB/RPM), FreeBSD (PKG), macOS (PKG/DMG)
-- **Module system**: Path isolation, read-only/list/delete/overwrite permissions, include/exclude patterns
-- **File operations**: Upload, download, delete, directory list/create/delete with path traversal protection
+- **Module system**: Path isolation, permissions, include/exclude, symlink escape blocking
 - **Custom protocol**: LIST / GET / PUT / DELETE / STAT with `key=value` arguments
-- **Authentication**: Password file auth with SHA-256 hashing, allow/deny user lists
-- **Configuration**: INI format (JSON/YAML parsers present; verify your format before relying on it)
-- **Logging**: Structured logging with rotation support
-- **Tests**: Google Test unit and integration suites (all passing)
+- **TLS 1.2+**: Optional encryption via `[ssl]` config (`SSLContext` + handshake on accept)
+- **Access control**: IP/CIDR allow/deny enforced at connection accept
+- **Rate limiting**: Per-IP connection limits (minute/hour windows)
+- **Hardening**: Privilege drop after bind; optional chroot (documented)
+- **Authentication**: SHA-256 password hashes; `reject_plaintext_passwords` option
+- **Tests**: 7 CTest suites including security and TLS handshake tests
+- **CI**: Build, test, and cppcheck on push
 
-### Planned (not yet production-ready)
+### Planned (Gate 3 / production)
 
-- **SSL/TLS encryption** — interface exists; handshake not fully implemented
-- **OAuth2, Prometheus, rate limiting enforcement** — config stubs only
-- **Native rsync client compatibility** — use the custom protocol or bundled test client for now
-- **YAML hot-reload** — partial; treat as experimental
+- **Native rsync client compatibility** — client matrix (v0.5.0)
+- **bcrypt/argon2** password storage upgrade
+- **Public-key auth** — parsing exists; verification incomplete
+- **OAuth2, Prometheus** — not implemented
+- **YAML hot-reload** — partial; prefer INI
 
 ## 📋 Requirements
 

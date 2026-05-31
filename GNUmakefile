@@ -19,7 +19,7 @@ endif
 
 # Variables
 PROJECT_NAME = simple-rsyncd
-VERSION = 0.3.1
+VERSION = 0.4.0
 BUILD_DIR = build
 DIST_DIR = dist
 PACKAGE_DIR = packaging
