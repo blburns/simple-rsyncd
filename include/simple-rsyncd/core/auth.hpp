@@ -125,7 +125,7 @@ public:
      * @brief Constructor
      * @param filename Password file path
      */
-    explicit PasswordFile(const std::string& filename);
+    explicit PasswordFile(const std::string& filename, bool reject_plaintext = false);
 
     /**
      * @brief Load password file
@@ -175,6 +175,7 @@ public:
 
 private:
     std::string filename_;
+    bool reject_plaintext_;
     std::map<std::string, std::string> users_; // username -> password (plain or hashed)
     std::map<std::string, UserInfo> user_info_; // username -> user info
     bool loaded_;
@@ -521,6 +522,13 @@ public:
      * @return true if authenticated, false otherwise
      */
     bool authenticateUser(const std::string& username, const std::string& password);
+
+    /**
+     * @brief Authenticate user with public key signature (legacy bool API)
+     */
+    bool authenticateUserWithKey(const std::string& username,
+                                 const std::string& challenge,
+                                 const std::string& signature_b64);
 
     /**
      * @brief Check if authentication is enabled

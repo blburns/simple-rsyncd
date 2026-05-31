@@ -276,6 +276,10 @@ void Configuration::parseGlobalConfig(const std::string& key, const std::string&
         auth.public_key_file = value;
     } else if (key == "auth_realm") {
         auth.realm = value;
+    } else if (key == "auth_anonymous_access" || key == "anonymous_access") {
+        auth.anonymous_access = (value == "true" || value == "1" || value == "yes");
+    } else if (key == "reject_plaintext_passwords") {
+        auth.reject_plaintext_passwords = (value == "true" || value == "1" || value == "yes");
     }
     // Log settings
     else if (key == "log_level" || key == "log") {

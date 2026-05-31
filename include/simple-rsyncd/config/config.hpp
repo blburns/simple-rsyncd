@@ -82,6 +82,7 @@ struct AuthConfig {
     bool anonymous_access = false;
     std::vector<std::string> allowed_users;
     std::vector<std::string> denied_users;
+    bool reject_plaintext_passwords = false;
     PasswordPolicy password_policy;
     std::chrono::seconds session_timeout{3600}; // Default 1 hour
     bool enable_session_management = true;
