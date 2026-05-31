@@ -470,7 +470,7 @@ TEST_F(IntegrationTest, FullScenario_DirectoryOperations) {
 
     // Step 3: List directory
     DirectoryListing listing = module->listDirectory("testdir", false);
-    EXPECT_GT(listing.total_files, 0);
+    EXPECT_GT(listing.total_directories, 0);
 
     // Step 4: Delete nested directory
     EXPECT_TRUE(module->deleteDirectory("testdir/nested", false));

@@ -80,14 +80,10 @@ ProtocolMessage ProtocolParser::parse(const std::string& data) {
             // Parse as command
             message.command = parseCommand(line);
             if (message.command != ProtocolCommand::UNKNOWN) {
-                // Try to extract module and path
-                std::istringstream cmd_stream(line);
-                std::string cmd, module, path;
-                if (cmd_stream >> cmd >> module >> path) {
-                    message.module = module;
-                    message.path = path;
-                    message.valid = true;
-                }
+                message.module = parseModule(line);
+                message.path = parsePath(line);
+                message.arguments = parseArguments(line);
+                message.valid = !message.module.empty();
             }
             return message;
         }

@@ -47,27 +47,24 @@ Simple RSync Daemon is a lightweight, secure, and feature-rich rsync daemon impl
   - Authentication: **100%** (password-based authentication)
   - Test framework: **100%** (Google Test integrated with unit tests)
 
-## 🚧 Current Status
+## 🚧 Current Status (v0.3.1 Beta)
 
-The project has reached **v0.2.0 MVP - 100% COMPLETE** with:
-- ✅ Excellent build system and infrastructure
-- ✅ Well-structured code organization
-- ✅ Comprehensive class interfaces
-- ✅ **RSync protocol implementation complete**
-- ✅ **File transfer functionality implemented**
-- ✅ **Configuration parsing complete (INI format)**
-- ✅ **Test framework set up with unit tests**
+- ✅ **All CTest suites passing** (Config, Module, Protocol, Auth, Integration)
+- ✅ **Cross-platform packaging** (DEB, RPM, FreeBSD PKG, macOS PKG/DMG)
+- ✅ **Core file operations** — list, upload, download, delete, mkdir/rmdir
+- ⚠️ **Beta** — not production-ready; TLS, native rsync client, and monitoring still planned
+
+See [PRODUCTION_GATE.md](PRODUCTION_GATE.md) for release criteria.
 
 ## 📊 Project Metrics
 
 - **Lines of Code**: ~8,000+ (source + headers + tests)
-- **Status**: v0.2.0 MVP Complete - Production Ready
-- **Platform Support**: 3 major platforms (Linux, macOS, Windows) - configured
-- **Build Systems**: 2 (CMake, Makefile) - working
-- **Test Coverage**: Unit tests implemented (Google Test framework)
-- **Core Functionality**: 100% (v0.2.0 MVP complete)
+- **Status**: v0.3.1 Beta
+- **Platform Support**: Linux, macOS, FreeBSD (Windows configured)
+- **Test Coverage**: 5/5 CTest suites green (Google Test)
+- **Core Functionality**: Module FS + custom protocol stable for beta use
 
-## 🔄 Next Steps (v0.3.0)
+## 🔄 Next Steps (v0.4.0)
 
 ### Immediate Priorities
 1. **Password Hashing** - Replace plain text with bcrypt/argon2 (10-15 hours)
@@ -96,7 +93,7 @@ See [V0.2.0_PROGRESS.md](V0.2.0_PROGRESS.md) for detailed completion report.
 
 ---
 
-*Last Updated: December 2024*
+*Last Updated: February 2025*
 *Project Status: v0.2.0 MVP - 100% Complete*
 *See [V0.2.0_PROGRESS.md](V0.2.0_PROGRESS.md) for detailed completion report*
 

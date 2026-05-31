@@ -3,7 +3,7 @@
 # Copyright 2024 SimpleDaemons
 
 cmake_minimum_required(VERSION 3.16)
-project(simple-rsyncd VERSION 0.3.0 LANGUAGES CXX)
+project(simple-rsyncd VERSION 0.3.1 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 if(UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")

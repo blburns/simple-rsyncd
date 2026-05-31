@@ -116,6 +116,9 @@ public:
     }
 
     bool fileExists(const std::string& path) override {
+        if (path.empty()) {
+            return false;
+        }
         std::string full_path = resolvePath(path);
         if (full_path.empty()) {
             return false;
@@ -128,6 +131,9 @@ public:
     }
 
     bool directoryExists(const std::string& path) override {
+        if (path.empty()) {
+            return false;
+        }
         std::string full_path = resolvePath(path);
         if (full_path.empty()) {
             return false;
@@ -519,7 +525,10 @@ bool Module::isPathTraversal(const std::string& path) const {
 }
 
 bool Module::isPathSafe(const std::string& path) const {
-    return !isPathTraversal(path) && validatePath(path);
+    if (isPathTraversal(path)) {
+        return false;
+    }
+    return !resolvePath(path).empty();
 }
 
 std::string Module::normalizePath(const std::string& path) const {
@@ -545,16 +554,17 @@ bool Module::checkFilePermissions(const std::string& path, const std::string& op
 }
 
 bool Module::checkReadPermission(const std::string& path) const {
-    // Check if file exists (need to use const_cast or make fileExists const)
     std::string resolved = resolvePath(path);
-    if (resolved.empty()) {
+    if (resolved.empty() || !std::filesystem::exists(resolved)) {
         return false;
     }
 
-    // Check if file is readable
-    std::filesystem::path file_path(resolved);
-    if (std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path)) {
-        std::ifstream test_file(file_path);
+    if (std::filesystem::is_directory(resolved)) {
+        return true;
+    }
+
+    if (std::filesystem::is_regular_file(resolved)) {
+        std::ifstream test_file(resolved);
         return test_file.good();
     }
 
@@ -562,29 +572,27 @@ bool Module::checkReadPermission(const std::string& path) const {
 }
 
 bool Module::checkWritePermission(const std::string& path) const {
-    // Check module is not read-only
     if (isReadOnly()) {
         return false;
     }
 
-    // Check if directory is writable
     std::string resolved = resolvePath(path);
     if (resolved.empty()) {
         return false;
     }
 
-    std::filesystem::path file_path(resolved);
-    std::filesystem::path parent_dir = file_path.parent_path();
+    std::filesystem::path target(resolved);
+    std::filesystem::path parent_dir = target.parent_path();
+    if (parent_dir.empty() || !std::filesystem::exists(parent_dir)) {
+        parent_dir = std::filesystem::path(config_.path);
+    }
 
-    if (!parent_dir.empty() && std::filesystem::exists(parent_dir)) {
-        // Check if we can write to parent directory
-        std::filesystem::path test_file = parent_dir / ".rsyncd_write_test";
-        std::ofstream test(test_file);
-        if (test.is_open()) {
-            test.close();
-            std::filesystem::remove(test_file);
-            return true;
-        }
+    std::filesystem::path test_path = parent_dir / ".rsyncd_write_test";
+    std::ofstream test(test_path);
+    if (test.is_open()) {
+        test.close();
+        std::filesystem::remove(test_path);
+        return true;
     }
 
     return false;

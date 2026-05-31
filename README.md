@@ -1,26 +1,28 @@
 # Simple RSync Daemon (simple-rsyncd)
 
-A lightweight, secure, and feature-rich rsync daemon implementation in C++ designed for modern server environments.
+A lightweight rsync-style daemon in C++ for modern server environments.
+
+> **Release status: v0.3.1 Beta** — Installers and core file operations are tested (`ctest` 5/5 suites). This is **not** a drop-in replacement for native `rsyncd`; TLS, Prometheus, OAuth2, and full `rsync(1)` wire compatibility are planned for later releases. See [project/PRODUCTION_GATE.md](project/PRODUCTION_GATE.md).
 
 ## 🚀 Features
 
-- **Multi-Platform Support**: Linux, macOS, and Windows
-- **SSL/TLS Encryption**: Secure file transfers with modern cryptography
-- **Authentication**: Multiple authentication methods (password, public key, OAuth2)
-  - **v0.3.0**: Password hashing (SHA-256), password policies, user database, session management
-- **Access Control**: IP-based and network-based access restrictions
-- **Module System**: Flexible module configuration with path-based access control
-  - **v0.3.0**: Pattern matching (include/exclude), script hooks (pre/post operations)
-- **Configuration**: Support for INI, JSON, and YAML formats
-  - **v0.3.0**: Environment variable substitution, automatic hot-reload, YAML support
-- **Rate Limiting**: Configurable connection and bandwidth limits
-- **Monitoring**: Built-in metrics, health checks, and Prometheus integration
-- **Logging**: Comprehensive logging with rotation and multiple outputs
-  - **v0.3.0**: Structured JSON logging, log rotation, filtering
-- **Error Handling**: Comprehensive error system with codes and context
-  - **v0.3.0**: Error categories, recovery suggestions, structured error reporting
-- **Performance**: Optimized for high-throughput file transfers
-- **Security**: Chroot support, privilege dropping, and path validation
+### Implemented (v0.3.1)
+
+- **Multi-platform packaging**: Linux (DEB/RPM), FreeBSD (PKG), macOS (PKG/DMG)
+- **Module system**: Path isolation, read-only/list/delete/overwrite permissions, include/exclude patterns
+- **File operations**: Upload, download, delete, directory list/create/delete with path traversal protection
+- **Custom protocol**: LIST / GET / PUT / DELETE / STAT with `key=value` arguments
+- **Authentication**: Password file auth with SHA-256 hashing, allow/deny user lists
+- **Configuration**: INI format (JSON/YAML parsers present; verify your format before relying on it)
+- **Logging**: Structured logging with rotation support
+- **Tests**: Google Test unit and integration suites (all passing)
+
+### Planned (not yet production-ready)
+
+- **SSL/TLS encryption** — interface exists; handshake not fully implemented
+- **OAuth2, Prometheus, rate limiting enforcement** — config stubs only
+- **Native rsync client compatibility** — use the custom protocol or bundled test client for now
+- **YAML hot-reload** — partial; treat as experimental
 
 ## 📋 Requirements
 
@@ -184,22 +186,20 @@ modules:
 
 ### Client Usage
 
+simple-rsyncd uses a **simplified custom protocol** (not full native rsync wire format). For beta testing, use the daemon’s protocol commands or the project test client.
+
 ```bash
-# Basic rsync to daemon
-rsync -avz /local/path/ rsync://server/module/
+# Example protocol commands (over TCP to bind_port, default 873)
+# LIST <module> <path> [key=value ...]
+# GET  <module> <path>
+# PUT  <module> <path>
+# DELETE <module> <path> [recursive=true]
 
-# With authentication
-rsync -avz --password-file=/path/to/password /local/path/ rsync://user@server/module/
-
-# With SSL/TLS
-rsync -avz -e "rsync --rsh='openssl s_client -quiet -connect server:873'" /local/path/ /module/
-
-# List available modules
-rsync rsync://server/
-
-# List module contents
-rsync rsync://server/module/
+# List available modules (after connecting and authenticating if enabled)
+# See docs/ and src/tests/ for worked examples.
 ```
+
+Native `rsync rsync://…` compatibility is **not guaranteed** in v0.3.1; see the v0.5.0 client matrix in [project/PRODUCTION_GATE.md](project/PRODUCTION_GATE.md).
 
 ## 🏗️ Architecture
 

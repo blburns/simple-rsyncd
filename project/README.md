@@ -16,6 +16,7 @@ This directory contains project management, development, and internal documentat
 ### Planning & Roadmap
 - **[ROADMAP.md](../ROADMAP.md)** - High-level development roadmap, milestones, and timeline
 - **[ROADMAP_CHECKLIST.md](ROADMAP_CHECKLIST.md)** - Detailed, granular checklists for all development tasks
+- **[PRODUCTION_GATE.md](PRODUCTION_GATE.md)** - Objective beta / security / production release gates (v0.3.1 → v0.5.0)
 
 ### Technical Debt
 - **[TECHNICAL_DEBT.md](TECHNICAL_DEBT.md)** - Technical debt items, priorities, and action plans
